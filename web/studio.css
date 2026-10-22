@@ -216,7 +216,8 @@
 @media(prefers-reduced-motion:reduce){.fo-studio *,.fo-studio *:before,.fo-studio *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 /* 画布变换只作用于舞台，操作层始终使用屏幕尺寸。 */
-.fo-stage{will-change:transform}
+/* Let the browser rasterize DOM text at the current canvas scale. A permanent
+   will-change layer would stretch cached glyphs when zooming in. */
 .fo-selection-actions{left:0;top:0;bottom:auto;transform:none;translate:none;width:max-content;max-width:calc(100% - 24px);z-index:7}
 .fo-selection-actions:not([hidden]){animation:fo-selection-reveal .16s ease-out backwards}
 .fo-selection-actions.is-outside{visibility:hidden;pointer-events:none}
