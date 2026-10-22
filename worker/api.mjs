@@ -137,8 +137,8 @@ export async function handleAI(request, { fetchImpl = fetch, timeoutMs } = {}) {
       method: target.method,
       headers: { authorization: `Bearer ${target.apiKey}`, 'content-type': 'application/json' },
       ...(target.method === 'POST' ? { body: JSON.stringify(target.body) } : {}),
-      credentials: 'omit',
-      redirect: 'error',
+      // workerd accepts manual/follow; reject 3xx below without sending the key onward.
+      redirect: 'manual',
       signal: controller.signal,
     });
     if (controller.signal.aborted) throw new DOMException('Aborted', 'AbortError');

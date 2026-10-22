@@ -57,8 +57,8 @@ test('成功正文原样返回，付费 POST 只转发一次，且不传用户 c
     assert.equal(url, 'https://api.openai.com/v1/images/generations');
     assert.equal(init.method, 'POST');
     assert.deepEqual(init.headers, { authorization: `Bearer ${apiKey}`, 'content-type': 'application/json' });
-    assert.equal(init.credentials, 'omit');
-    assert.equal(init.redirect, 'error');
+    assert.equal(Object.hasOwn(init, 'credentials'), false);
+    assert.equal(init.redirect, 'manual');
     assert.deepEqual(JSON.parse(init.body), base.body);
     return new Response(raw, { headers: { 'content-type': 'application/json', 'set-cookie': 'bad=1', 'cache-control': 'public,max-age=3600', 'access-control-allow-origin': '*' } });
   } });
@@ -79,6 +79,38 @@ test('查询只转发 GET，不携带正文，Ark 成功结构保持供应商协
     return json(payload);
   } });
   assert.deepEqual(await result.json(), payload);
+});
+
+test('上游 fetch 选项兼容 workerd，不会在发请求前被运行时拒绝', async () => {
+  let calls = 0;
+  const result = await handleAI(request({ ...ark, path: '/contents/generations/tasks?page_size=1', method: 'GET', body: undefined }), { fetchImpl: async (_, init) => {
+    calls++;
+    // 模拟 workerd 的 RequestInit 约束；无需密钥或真实供应商请求。
+    if (!['follow', 'manual'].includes(init.redirect)) throw new TypeError('workerd only supports follow or manual redirects');
+    if (Object.hasOwn(init, 'credentials')) throw new TypeError('workerd does not implement credentials');
+    return json({ error: { message: '模拟供应商：无效测试密钥' } }, { status: 401 });
+  } });
+  assert.equal(calls, 1);
+  assert.equal(result.status, 401, '应到达供应商鉴权响应，不能因不兼容的 fetch 选项变成 502');
+  assert.match((await result.json()).error.message, /模拟供应商/);
+});
+
+test('301、302、303、307、308 均拒绝跳转，每个请求只调用一次上游 fetch', async () => {
+  for (const status of [301, 302, 303, 307, 308]) {
+    let calls = 0;
+    let receivedInit;
+    const result = await handleAI(request(), { fetchImpl: async (url, init) => {
+      calls++;
+      receivedInit = init;
+      assert.equal(url, 'https://api.openai.com/v1/images/generations');
+      return new Response(null, { status, headers: { location: 'https://evil.example/steal-key' } });
+    } });
+    assert.equal(calls, 1, `${status} 不得重发或跟随 Location`);
+    assert.equal(receivedInit.redirect, 'manual', `${status} 必须让调用方显式拒绝跳转`);
+    assert.equal(result.status, 502);
+    assert.equal((await result.json()).error.code, 'UPSTREAM_REDIRECT');
+    assert.equal(result.headers.get('location'), null);
+  }
 });
 
 test('上游鉴权/限流错误保留 HTTP 状态但脱敏 key，不自动重试', async () => {
