@@ -60,7 +60,7 @@
       frame.onload = resolve;
       frame.onerror = () => reject(new Error('iframe 加载失败'));
     });
-    frame.src = '../dist/index.html?canvas-integration=' + Date.now() + '#studio';
+    frame.src = '../index.html?canvas-integration=' + Date.now() + '#studio';
     frameHost.append(frame);
     await Promise.race([loaded, delay(12000).then(() => { throw new Error('iframe 加载超时'); })]);
     const w = frame.contentWindow;

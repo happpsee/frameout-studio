@@ -9,11 +9,15 @@
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
   <link rel="preload" href="assets/anton-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="app.css?v=2-motion">
-  <link rel="stylesheet" href="studio.css?v=3-canvas">
+  <link rel="stylesheet" href="studio.css?v=4-api">
+  <link rel="stylesheet" href="ai-settings.css?v=4-api">
   <link rel="stylesheet" href="motion.css?v=2-motion">
   <script defer src="icons.js"></script>
   <script defer src="canvas-camera.js?v=3-canvas"></script>
-  <script defer src="studio.js?v=3-canvas"></script>
+  <script defer src="ai-client.js?v=4-api"></script>
+  <script defer src="ai-settings.js?v=4-api"></script>
+  <script defer src="media-store.js?v=4-api"></script>
+  <script defer src="studio.js?v=4-api"></script>
   <script defer src="app.js?v=3-canvas"></script>
   <script defer src="motion.js?v=2-motion"></script>
 </head>
@@ -37,7 +41,7 @@
             <div class="headline-wrap"><h1 id="hero-title"><span>MAKE A</span><span class="lime-text">SCENE.</span></h1><span class="hero-sticker" aria-hidden="true"><svg viewBox="0 0 110 110"><path d="m55 2 10 27 26-13-13 27 30 12-30 11 13 27-26-13-10 28-11-28-27 13 13-27L2 55l28-12-13-27 27 13Z" fill="currentColor"/><path d="M39 46v5m30-5v5M36 63q19 20 38 0" stroke="#151613" stroke-width="4" stroke-linecap="round" fill="none"/></svg><span>STAY<br>CURIOUS</span></span></div>
             <p class="hero-outline" aria-hidden="true">YOUR WAY.</p>
             <div class="hero-description"><h2>把灵感摊开。<br>让故事发生。</h2><p>从一张图，到一个镜头，再到你的故事。<br>在自由画布上，让每一个想法都有位置。</p></div>
-            <div class="hero-actions"><button class="button button-lime button-large js-open-studio">打开创作画布 <span data-icon="arrow-up-right"></span></button><span class="hero-action-note">自由探索 · 随时撤销<br><small>本次体验使用演示素材</small></span></div>
+            <div class="hero-actions"><button class="button button-lime button-large js-open-studio">打开创作画布 <span data-icon="arrow-up-right"></span></button><span class="hero-action-note">自由探索 · 随时撤销<br><small>自带演示素材 · 可接入你的 API</small></span></div>
           </div>
           <div class="hero-art" id="hero-art">
             <span class="art-coordinate coordinate-top">[ IDEA → FRAME ]</span>

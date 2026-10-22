@@ -1,0 +1,41 @@
+/* API preferences share the canvas chrome; credentials have no persistent field. */
+.fo-studio .fo-api-dialog{width:720px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;overflow:hidden;background:#1b1f16;border:1px solid #4a573b;border-radius:10px;color:var(--fo-paper)}
+.fo-api-dialog .fo-api-form{display:flex;flex-direction:column;max-height:calc(100dvh - 34px);margin:0}
+.fo-api-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding:28px 30px 23px;border-bottom:1px solid #3c4632;flex:none}
+.fo-api-head .fo-eyebrow{font-size:8px;letter-spacing:1.8px;color:var(--fo-lime)}
+.fo-api-head h2{margin:11px 0 8px!important;font:500 27px/1.4 Arial,"PingFang SC",sans-serif!important;letter-spacing:1px}
+.fo-api-head p{margin:0;font-size:11px;line-height:1.8;color:#a8b59a}
+.fo-api-dialog .fo-api-close{margin:-7px -9px 0 0;font-size:24px!important}
+.fo-api-body{padding:24px 30px 12px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#586847 transparent;min-height:0}
+.fo-api-section{margin:0 0 26px}
+.fo-api-section-title{display:block;margin-bottom:18px;font:9px/1.6 "Courier New",monospace;color:#94ab77;letter-spacing:1.1px}
+.fo-api-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px 18px}
+.fo-api-field{display:flex;flex-direction:column;min-width:0;margin-bottom:17px;gap:8px}
+.fo-api-grid>.fo-api-field{margin:0}
+.fo-api-field>label,.fo-api-label-row label{font-size:11px;line-height:1.5;color:#d2ddc5}
+.fo-api-field>input,.fo-api-field>select,.fo-api-key-row>input{width:100%;height:42px;min-width:0;border:1px solid #4a583c;background:#171c13;color:#eff3e8;border-radius:4px;padding:10px 12px;font:12px Arial,sans-serif;line-height:20px;box-shadow:none}
+.fo-api-field>input::placeholder,.fo-api-key-row>input::placeholder{color:#67765a}
+.fo-api-field>input[readonly]{background:#22291d;color:#9da990;border-style:dashed}
+.fo-api-field>input:disabled,.fo-api-field>select:disabled{opacity:.42;cursor:not-allowed}
+.fo-api-field>small{color:#879a74;font-size:10px;line-height:1.8;overflow-wrap:anywhere}
+.fo-api-label-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.fo-api-key-state{font-size:9px;color:#8ba46c}
+.fo-api-key-row{display:flex;align-items:stretch;gap:8px}
+.fo-api-key-row>input{flex:1;width:0;font-family:"Courier New",monospace;letter-spacing:.3px}
+.fo-api-dialog .fo-api-reveal{flex:none;min-width:52px;padding:8px 11px;border:1px solid #4a583c;border-radius:4px;background:#2e3825;font-size:10px;color:#c1d3ad}
+.fo-api-dialog .fo-api-reveal:hover{background:#414e34}
+.fo-api-capability-note{margin:14px 0 0;padding:12px 13px;border-left:2px solid #627f43;background:#25301e;color:#9eb887;font-size:10px;line-height:1.9;overflow-wrap:anywhere}
+.fo-api-connection{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.fo-api-dialog .fo-api-test{min-height:38px;min-width:99px;padding:9px 14px;border:1px solid #718d52;border-radius:4px;background:transparent;color:#d4e8bb;font-size:11px}
+.fo-api-dialog .fo-api-test:not(:disabled):hover{background:#344529;border-color:#b5ff2a}
+.fo-api-connection>span{font-size:10px;color:#839574;line-height:1.7}
+.fo-api-status{min-height:20px;margin:10px 0 5px;font-size:11px;color:#9eae8d;line-height:1.8;overflow-wrap:anywhere}
+.fo-api-status[data-state="success"]{color:#b5e489}
+.fo-api-status[data-state="error"]{color:#f1ab96}
+.fo-api-footer{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 30px;border-top:1px solid #3c4632;background:#1e2519;flex:none}
+.fo-api-dialog .fo-api-clear{padding:9px 0;background:transparent;color:#96a786;font-size:10px;min-height:38px;text-align:left}
+.fo-api-dialog .fo-api-clear:hover{color:#e7b19a}
+.fo-api-footer .fo-primary-button{min-height:40px;white-space:nowrap}
+.fo-api-footer .fo-primary-button>span{margin-left:12px;font-size:18px;font-weight:400}
+@media(max-width:540px){.fo-studio .fo-api-dialog{max-width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:8px}.fo-api-dialog .fo-api-form{max-height:calc(100dvh - 22px)}.fo-api-head{padding:22px 20px 18px;gap:12px}.fo-api-head h2{font-size:24px!important}.fo-api-head p{font-size:10px}.fo-api-body{padding:20px 20px 8px}.fo-api-grid{grid-template-columns:1fr;gap:15px}.fo-api-field>input,.fo-api-field>select,.fo-api-key-row>input{font-size:16px;height:43px;padding:10px}.fo-api-field>small,.fo-api-capability-note{font-size:10px}.fo-api-footer{padding:14px 20px;gap:12px}.fo-api-footer .fo-primary-button{min-height:42px;font-size:11px!important;padding:9px 13px}.fo-api-footer .fo-primary-button>span{margin-left:3px}.fo-api-dialog .fo-api-clear{font-size:10px;max-width:130px;line-height:1.6}}
+@media(pointer:coarse){.fo-api-dialog .fo-api-reveal,.fo-api-dialog .fo-api-test,.fo-api-dialog .fo-api-clear{min-height:44px}.fo-api-field>input,.fo-api-field>select,.fo-api-key-row>input{font-size:16px}}

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { create, normalizeWheel, clamp } = require('../dist/canvas-camera.js');
+const { create, normalizeWheel, clamp } = require('../web/canvas-camera.js');
 
 function harness(t, extra = {}) {
   let time = 0;

@@ -24,6 +24,10 @@
   const pointerCaptures = new Map();
   let pinch = null;
   let hasSavedCamera = false;
+  let apiSettings, generationMode = 'image', activeGeneration = null;
+  const mediaURLs = new Map();
+  const missingMedia = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#252c20"/><text x="320" y="185" fill="#b5c69e" text-anchor="middle" font-family="sans-serif" font-size="22">素材暂不可用</text></svg>');
+  const pendingMedia = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#252c20"/><text x="320" y="185" fill="#b5c69e" text-anchor="middle" font-family="sans-serif" font-size="22">视频生成任务</text></svg>');
 
   function initialState() {
     return {
@@ -44,7 +48,7 @@
     try {
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (saved && saved.version === 1 && Array.isArray(saved.cards) && Array.isArray(saved.sequence)) {
-        const cards = saved.cards.filter((card) => card && typeof card.id === 'string' && typeof card.src === 'string' && !card.src.startsWith('blob:') && Number.isFinite(card.x) && Number.isFinite(card.y));
+        const cards = saved.cards.filter((card) => card && typeof card.id === 'string' && (typeof card.src === 'string' || typeof card.mediaId === 'string') && (card.mediaId || !card.src?.startsWith('blob:')) && Number.isFinite(card.x) && Number.isFinite(card.y)).map((card) => ({ ...card, src: card.mediaId ? missingMedia : card.src, missingMedia: Boolean(card.mediaId), ...(card.job && ['submitting', 'queued', 'running'].includes(card.job.status) ? { job: { ...card.job, status: 'paused', error: card.job.id ? '页面已刷新，可继续查询此任务' : '未取得任务号，请在供应商后台确认提交状态' } } : {}) }));
         const camera = { ...initialState().camera };
         hasSavedCamera = ['x', 'y', 'zoom'].every((key) => Number.isFinite(saved.camera?.[key]));
         for (const key of ['x', 'y', 'zoom']) if (Number.isFinite(saved.camera?.[key])) camera[key] = saved.camera[key];
@@ -75,6 +79,7 @@
   }
 
   function undo() {
+    if (activeGeneration) { toast('先停止等待，再撤销；视频任务号会保留'); return; }
     if (!undoStack.length) return;
     if (pointers.size) resetGesture(true);
     redoStack.push(snapshot());
@@ -83,6 +88,7 @@
   }
 
   function redo() {
+    if (activeGeneration) { toast('先停止等待，再重做；视频任务号会保留'); return; }
     if (!redoStack.length) return;
     if (pointers.size) resetGesture(true);
     undoStack.push(snapshot());
@@ -92,8 +98,8 @@
 
   function refreshHistoryButtons() {
     if (!root) return;
-    root.querySelector('[data-action="undo"]').disabled = undoStack.length === 0;
-    root.querySelector('[data-action="redo"]').disabled = redoStack.length === 0;
+    root.querySelector('[data-action="undo"]').disabled = undoStack.length === 0 || Boolean(activeGeneration);
+    root.querySelector('[data-action="redo"]').disabled = redoStack.length === 0 || Boolean(activeGeneration);
   }
 
   function save() {
@@ -105,6 +111,10 @@
         if (cameraController) state.camera = cameraController.get();
         const saved = clone(state);
         saved.cards = saved.cards.filter((card) => !card.sessionOnly);
+        saved.cards.forEach((card) => {
+          if (card.mediaId) { card.src = ''; delete card.missingMedia; }
+          else if (card.job && card.job.status !== 'succeeded') card.src = pendingMedia;
+        });
         saved.sequence = saved.sequence.filter((item) => saved.cards.some((card) => card.id === item.cardId));
         if (!saved.cards.some((card) => card.id === saved.selected)) saved.selected = null;
         localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
@@ -246,19 +256,37 @@
   }
 
   function createMedia(card, className) {
-    const media = document.createElement(card.kind === 'video' ? 'video' : 'img');
+    const isVideo = card.kind === 'video' && !card.missingMedia;
+    const media = document.createElement(isVideo ? 'video' : 'img');
     media.className = className || '';
     media.src = card.src;
     media.draggable = false;
-    if (card.kind === 'video') {
+    if (isVideo) {
       media.muted = true;
       media.playsInline = true;
       media.preload = 'metadata';
+      if (card.poster) media.poster = card.poster;
     } else {
       media.alt = card.name;
     }
     media.style.objectPosition = card.crop || '50% 50%';
+    if (card.provider) media.style.objectFit = 'contain';
     return media;
+  }
+
+  async function hydrateMedia() {
+    const cards = state.cards.filter((card) => card.mediaId && card.missingMedia);
+    await Promise.all(cards.map(async (card) => {
+      try {
+        const blob = await window.FrameoutMediaStore.get(card.mediaId);
+        if (!blob || !state.cards.includes(card)) return;
+        const url = URL.createObjectURL(blob);
+        mediaURLs.set(card.mediaId, url);
+        card.src = url;
+        card.missingMedia = false;
+      } catch (_) { /* Keep an honest missing-media placeholder. */ }
+    }));
+    if (cards.length) renderScene();
   }
 
   function renderScene() {
@@ -292,9 +320,9 @@
       header.className = 'fo-card-top';
       const kind = document.createElement('span');
       kind.innerHTML = icon(card.motion || card.kind === 'video' ? 'film' : 'image');
-      kind.append(document.createTextNode(card.motion ? '动态预览' : card.kind === 'video' ? '本地视频' : card.sessionOnly ? '本地图片' : card.label || '画面'));
+      kind.append(document.createTextNode(card.job && card.job.status !== 'succeeded' ? '视频任务' : card.missingMedia ? '素材需重新导入' : card.motion ? '动态预览' : card.label || (card.kind === 'video' ? '本地视频' : card.sessionOnly ? '本地图片' : '画面')));
       const detail = document.createElement('span');
-      detail.textContent = card.motion ? '4 SEC' : '16:9';
+      detail.textContent = card.job && card.job.status !== 'succeeded' ? videoStatus(card.job) : card.motion ? '4 SEC' : card.kind === 'video' ? `${card.duration || 4} SEC` : card.size || card.ratio || '16:9';
       header.append(kind, detail);
 
       const mediaButton = document.createElement('button');
@@ -306,6 +334,12 @@
       marker.className = 'fo-media-marker';
       marker.textContent = card.motion ? '▶' : '+';
       mediaButton.append(marker);
+      if (card.job && card.job.status !== 'succeeded') {
+        const status = document.createElement('span');
+        status.className = 'fo-job-status';
+        status.textContent = videoStatus(card.job);
+        mediaButton.append(status);
+      }
       mediaButton.addEventListener('click', () => selectCard(card.id));
       mediaButton.addEventListener('dblclick', (event) => {
         event.stopPropagation();
@@ -317,7 +351,7 @@
       const name = document.createElement('span');
       name.textContent = card.name;
       const label = document.createElement('span');
-      label.textContent = card.sessionOnly ? 'LOCAL' : 'EXPLORATION';
+      label.textContent = card.provider ? card.provider.toUpperCase() : card.sessionOnly ? 'LOCAL' : 'EXPLORATION';
       footer.append(name, label);
       item.append(header, mediaButton, footer);
       stage.append(item);
@@ -334,12 +368,25 @@
 
   function renderSelection() {
     const card = state.cards.find((item) => item.id === state.selected);
+    root.querySelector('.fo-task-note').hidden = true;
     selectedActions.hidden = !card;
     if (!card) return;
     selectedActions.querySelector('.fo-selected-name').textContent = card.name;
     const videoButton = selectedActions.querySelector('[data-action="motion"]');
-    videoButton.disabled = busy || card.kind === 'video';
-    videoButton.title = card.kind === 'video' ? '这个素材已经是视频' : '使用示例画面展示动态预览';
+    const pending = Boolean(card.job && card.job.status !== 'succeeded');
+    videoButton.disabled = busy || card.kind === 'video' || card.missingMedia || pending;
+    videoButton.querySelector('span').textContent = generationMode === 'demo' ? '演示生成视频' : '生成视频';
+    videoButton.title = generationMode === 'demo' ? '使用示例画面展示动态预览' : '将选中图片作为视频首帧';
+    const resume = selectedActions.querySelector('[data-action="resume-video"]');
+    resume.hidden = !pending;
+    resume.disabled = busy;
+    selectedActions.querySelector('[data-action="add"]').disabled = pending || card.missingMedia;
+    const download = selectedActions.querySelector('[data-action="download-media"]');
+    download.hidden = !card.provider;
+    download.disabled = pending || card.missingMedia;
+    const taskNote = root.querySelector('.fo-task-note');
+    taskNote.hidden = !pending && !card.remoteTemporary;
+    taskNote.textContent = pending ? `${videoStatus(card.job)} · ${card.job.id || '尚未取得任务号'}${card.job.error ? ' · ' + card.job.error : ''}` : card.remoteTemporary ? '供应商素材链接可能过期，请及时下载保存。' : '';
     refreshViewportLayout();
     positionSelection(cameraController ? cameraController.get() : state.camera);
   }
@@ -461,9 +508,10 @@
   }
 
   function addToSequence(cardId) {
-    if (!state.cards.some((card) => card.id === cardId)) return;
+    const card = state.cards.find((item) => item.id === cardId);
+    if (!card || card.missingMedia || (card.job && card.job.status !== 'succeeded')) return;
     remember();
-    state.sequence.push({ id: uid(), cardId, duration: 4 });
+    state.sequence.push({ id: uid(), cardId, duration: card.kind === 'video' ? clamp(Number(card.duration) || 4, 1, 15) : 4 });
     renderSequence();
     save();
     toast('已加入成片 · 在下方拖动调整顺序');
@@ -471,6 +519,7 @@
 
   function removeSelected() {
     if (!state.selected) return;
+    if (activeGeneration?.cardId === state.selected) stopGeneration();
     remember();
     const id = state.selected;
     state.cards = state.cards.filter((card) => card.id !== id);
@@ -490,14 +539,26 @@
     return cameraToWorld(rect.left + rect.width / 2 - 110 * state.camera.zoom, rect.top + Math.max(100, rect.height / 2 - 130 * state.camera.zoom));
   }
 
-  function setBusy(value) {
+  function updateGenerationUI(message) {
+    const config = apiSettings?.getConfig();
+    const provider = config && window.FrameoutAI.PROVIDERS[config.provider];
+    const demo = generationMode === 'demo';
+    const button = root.querySelector('[data-action="generate"]');
+    button.disabled = busy;
+    button.querySelector('span').textContent = busy ? '生成中' : demo ? '演示生成' : generationMode === 'video' ? '生成视频' : '生成图片';
+    root.querySelector('.fo-generation-mode').value = generationMode;
+    root.querySelector('.fo-generation-mode').disabled = busy;
+    root.querySelector('.fo-demo-badge').innerHTML = '<i></i>' + (demo ? '演示模式' : '真实 API');
+    root.querySelector('.fo-generation-state').textContent = message || (demo ? '内置示例素材 · 无需账号' : apiSettings?.hasKey() ? `${provider?.label || 'API'} · 按供应商计费` : '先配置 API Key，再开始生成');
+    root.querySelector('[data-action="cancel-generation"]').hidden = !activeGeneration;
+    renderSelection();
+  }
+
+  function setBusy(value, message) {
     busy = value;
     composer.classList.toggle('is-busy', value);
-    const button = root.querySelector('[data-action="generate"]');
-    button.disabled = value;
-    button.querySelector('span').textContent = value ? '正在准备画面' : '演示生成';
-    root.querySelector('.fo-generation-state').textContent = value ? '正在用示例素材演示生成过程…' : '内置示例素材 · 无需账号';
-    renderSelection();
+    updateGenerationUI(message);
+    refreshHistoryButtons();
   }
 
   function generate() {
@@ -509,6 +570,8 @@
       toast('写下一点想法，例如：森林深处，一位宇航员抬头看光');
       return;
     }
+    if (generationMode === 'image') { generateImage(text); return; }
+    if (generationMode === 'video') { generateVideo(text); return; }
     setBusy(true);
     setTimeout(() => {
       remember();
@@ -528,6 +591,13 @@
   function generateMotion() {
     const source = state.cards.find((card) => card.id === state.selected);
     if (!source || busy || source.kind === 'video') return;
+    if (generationMode !== 'demo') {
+      const input = root.querySelector('.fo-prompt');
+      const prompt = input.value.trim();
+      if (!prompt) { toast('先在下方写下运镜或动作描述，再生成视频'); input.focus(); return; }
+      generateVideo(prompt, source);
+      return;
+    }
     setBusy(true);
     toast('正在准备动态预览…');
     setTimeout(() => {
@@ -541,6 +611,211 @@
       save();
       toast('动态预览已准备好 · 双击画面查看');
     }, 950);
+  }
+
+  function videoStatus(job) {
+    const labels = { submitting: '正在提交', queued: '排队中', running: '生成中', paused: '等待继续查询', failed: '生成失败', succeeded: '已完成' };
+    return (labels[job.status] || '等待查询') + (job.status === 'running' && Number.isFinite(job.progress) ? ` ${Math.round(job.progress)}%` : '');
+  }
+
+  function requestConfig(video = false) {
+    const config = apiSettings.getConfig();
+    if (!config.key) { toast('在 API 设置里填写你自己的密钥'); apiSettings.open(); return null; }
+    if (video && config.provider === 'openai') { toast('OpenAI 官方视频 API 已下线，请切换火山方舟或可用的兼容接口'); apiSettings.open(); return null; }
+    return config;
+  }
+
+  async function storeGeneratedMedia(result) {
+    if (!result.src || !/^(https:\/\/|data:(image|video)\/|blob:)/i.test(result.src)) throw new Error('接口未返回可用的图片或视频地址');
+    if (/^https:/i.test(result.src)) return { src: result.src, remoteTemporary: true };
+    const blob = await (await fetch(result.src)).blob();
+    const src = URL.createObjectURL(blob);
+    try {
+      const mediaId = await window.FrameoutMediaStore.put(blob);
+      mediaURLs.set(mediaId, src);
+      if (result.src.startsWith('blob:')) URL.revokeObjectURL(result.src);
+      return { src, mediaId, mimeType: blob.type };
+    } catch (_) {
+      toast('生成结果已显示，但浏览器存储不可用，请及时下载');
+      return { src, sessionOnly: true, mimeType: blob.type };
+    }
+  }
+
+  async function generateImage(prompt) {
+    const config = requestConfig();
+    if (!config) return;
+    const task = { kind: 'image', controller: new AbortController() };
+    activeGeneration = task;
+    setBusy(true, '图片生成中，请稍候…');
+    try {
+      const result = await window.FrameoutAI.createClient(config).generateImage({ prompt, signal: task.controller.signal });
+      if (task.controller.signal.aborted) return;
+      const media = await storeGeneratedMedia(result);
+      if (task.controller.signal.aborted) return;
+      remember();
+      const card = { id: uid(), ...newCardPosition(), ...media, name: prompt.slice(0, 18), prompt, kind: 'image', provider: result.provider, model: result.model, size: config.imageSize, requestId: result.requestId, crop: '50% 50%', tone: 'normal', label: 'AI 生成图片', generatedAt: new Date().toISOString() };
+      state.cards.push(card);
+      state.selected = card.id;
+      root.querySelector('.fo-prompt').value = '';
+      renderScene();
+      save();
+      toast('真实生成结果已加入画布');
+    } catch (error) {
+      if (error.name !== 'AbortError') toast(error.message || '图片生成失败，请检查 API 配置');
+    } finally {
+      if (activeGeneration === task) { activeGeneration = null; setBusy(false); }
+    }
+  }
+
+  async function referenceForAPI(card, signal) {
+    if (!card) return undefined;
+    if (card.missingMedia) throw new Error('首帧素材已不可用，请重新导入');
+    if (card.src.startsWith('https://')) return card.src;
+    const response = await fetch(card.src, { signal, credentials: 'omit' });
+    if (!response.ok) throw new Error('无法读取首帧素材');
+    const blob = await response.blob();
+    if (!/^image\//.test(blob.type)) throw new Error('首帧必须是图片');
+    if (blob.size > 10 * 1024 * 1024) throw new Error('首帧图片请控制在 10MB 以内');
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('首帧图片读取失败'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  function jobConfig(config) {
+    const value = {};
+    for (const key of ['provider', 'baseUrl', 'imageModel', 'videoModel', 'imageSize', 'videoRatio', 'duration', 'resolution', 'transport']) value[key] = config[key];
+    return value;
+  }
+
+  function updateJob(card, patch) {
+    if (!state.cards.includes(card)) return;
+    Object.assign(card.job, patch);
+    const element = stage.querySelector(`.fo-card[data-id="${card.id}"]`);
+    if (element) {
+      const status = videoStatus(card.job);
+      element.querySelector('.fo-card-top>span:last-child').textContent = status;
+      const badge = element.querySelector('.fo-job-status');
+      if (badge) badge.textContent = status;
+    }
+    if (state.selected === card.id) renderSelection();
+    save();
+  }
+
+  function abortableDelay(ms, signal) {
+    return new Promise((resolve, reject) => {
+      if (signal.aborted) { reject(new DOMException('已停止等待', 'AbortError')); return; }
+      const timer = setTimeout(() => { signal.removeEventListener('abort', abort); resolve(); }, ms);
+      function abort() { clearTimeout(timer); reject(new DOMException('已停止等待', 'AbortError')); }
+      signal.addEventListener('abort', abort, { once: true });
+    });
+  }
+
+  async function pollVideo(card, client, task, first) {
+    const started = Date.now();
+    let result = first;
+    while (!task.controller.signal.aborted && state.cards.includes(card)) {
+      if (!result) result = await client.getVideo({ id: card.job.id, signal: task.controller.signal });
+      if (result.status === 'succeeded' && !result.src) result = await client.getVideo({ id: card.job.id, signal: task.controller.signal });
+      if (result.status === 'succeeded') {
+        const media = await storeGeneratedMedia(result);
+        if (task.controller.signal.aborted || !state.cards.includes(card)) return;
+        remember();
+        Object.assign(card, media, { kind: 'video', label: 'AI 生成视频', duration: Number(card.job.config.duration) || 5, generatedAt: new Date().toISOString() });
+        card.job.status = 'succeeded';
+        delete card.job.error;
+        renderScene();
+        save();
+        toast('真实视频已加入画布 · 双击播放');
+        return;
+      }
+      if (result.status === 'failed') {
+        updateJob(card, { status: 'failed', error: result.error || '供应商返回生成失败' });
+        throw new Error(card.job.error);
+      }
+      updateJob(card, { status: result.status, progress: result.progress, error: '' });
+      updateGenerationUI(`${videoStatus(card.job)} · 你可以停止等待，稍后继续查询`);
+      if (Date.now() - started > 15 * 60 * 1000) {
+        updateJob(card, { status: 'paused', error: '等待时间较长，可稍后继续查询同一任务' });
+        return;
+      }
+      await abortableDelay(Date.now() - started > 60000 ? 7000 : 3000, task.controller.signal);
+      result = null;
+    }
+  }
+
+  async function generateVideo(prompt, source) {
+    const config = requestConfig(true);
+    if (!config) return;
+    const task = { kind: 'video', controller: new AbortController() };
+    activeGeneration = task;
+    setBusy(true, '正在提交视频任务…');
+    let card;
+    try {
+      const client = window.FrameoutAI.createClient(config);
+      const reference = await referenceForAPI(source, task.controller.signal);
+      if (task.controller.signal.aborted) return;
+      remember();
+      card = { id: uid(), ...(source ? { x: source.x + 300, y: source.y + 30 } : newCardPosition()), name: prompt.slice(0, 18) + ' · 视频', prompt, src: source?.src || pendingMedia, kind: 'image', provider: config.provider, model: config.videoModel, tone: 'normal', label: '视频任务', job: { status: 'submitting', config: jobConfig(config), createdAt: Date.now() } };
+      task.cardId = card.id;
+      state.cards.push(card);
+      state.selected = card.id;
+      renderScene(); save();
+      const result = await client.submitVideo({ prompt, reference, signal: task.controller.signal });
+      if (!result.id) throw new Error('接口未返回任务号，请先在供应商后台确认是否已提交');
+      updateJob(card, { id: result.id, status: result.status || 'queued' });
+      if (task.controller.signal.aborted) { updateJob(card, { status: 'paused' }); return; }
+      root.querySelector('.fo-prompt').value = '';
+      await pollVideo(card, client, task, result);
+    } catch (error) {
+      if (card && card.job.status !== 'failed' && state.cards.includes(card)) updateJob(card, { status: 'paused', error: error.name === 'AbortError' ? '已停止本页等待' : error.message });
+      if (error.name !== 'AbortError') toast(error.message || '视频任务失败');
+    } finally {
+      if (activeGeneration === task) { activeGeneration = null; setBusy(false); }
+    }
+  }
+
+  async function resumeVideo() {
+    if (busy) return;
+    const card = state.cards.find((item) => item.id === state.selected);
+    if (!card?.job) return;
+    if (!card.job.id) { toast('没有取得任务号，请先在供应商后台确认提交状态，避免重复扣费'); return; }
+    const current = requestConfig(true);
+    if (!current) return;
+    const config = card.job.config;
+    if (current.provider !== config.provider || current.baseUrl.replace(/\/$/, '') !== config.baseUrl.replace(/\/$/, '')) {
+      toast('请在设置中切回该任务原来的供应商与 API 地址'); apiSettings.open(); return;
+    }
+    const task = { kind: 'video', cardId: card.id, controller: new AbortController() };
+    activeGeneration = task;
+    setBusy(true, '正在查询已有视频任务…');
+    try { await pollVideo(card, window.FrameoutAI.createClient({ ...config, key: current.key }), task); }
+    catch (error) {
+      if (card.job.status !== 'failed') updateJob(card, { status: 'paused', error: error.name === 'AbortError' ? '已停止本页等待' : error.message });
+      if (error.name !== 'AbortError') toast(error.message || '任务查询失败');
+    } finally { if (activeGeneration === task) { activeGeneration = null; setBusy(false); } }
+  }
+
+  function stopGeneration() {
+    if (!activeGeneration) return;
+    const task = activeGeneration;
+    task.controller.abort();
+    activeGeneration = null;
+    setBusy(false);
+    toast(task.kind === 'video' ? '已停止本页等待；已提交任务仍可能在供应商运行' : '已停止等待；已提交的生成请求仍可能计费');
+  }
+
+  function downloadMedia() {
+    const card = state.cards.find((item) => item.id === state.selected);
+    if (!card || card.missingMedia || (card.job && card.job.status !== 'succeeded')) return;
+    const link = document.createElement('a');
+    link.href = card.src;
+    const extension = { 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif', 'video/webm': 'webm' }[card.mimeType] || (card.kind === 'video' ? 'mp4' : 'png');
+    link.download = `frameout-${card.id}.${extension}`;
+    if (card.remoteTemporary) { link.target = '_blank'; link.rel = 'noopener noreferrer'; }
+    link.click();
   }
 
   function importFiles(files) {
@@ -563,8 +838,12 @@
   }
 
   function exportProject() {
-    const project = { ...clone(state), exportedAt: new Date().toISOString(), format: 'FRAMEOUT demo project', notice: '这是项目 JSON，不是视频文件。本地导入素材需要重新选择原文件。' };
-    project.cards = project.cards.map((card) => card.sessionOnly ? { ...card, src: '', relinkRequired: true } : card);
+    const project = { ...clone(state), exportedAt: new Date().toISOString(), format: 'FRAMEOUT project', notice: '这是项目 JSON，不是视频文件。生成素材保存在本浏览器或供应商临时链接，请另行下载媒体文件。本文件不含 API Key。' };
+    project.cards = project.cards.map((card) => {
+      const value = { ...card };
+      if (value.sessionOnly || value.mediaId || value.src?.startsWith('blob:')) { value.src = ''; value.relinkRequired = true; }
+      return value;
+    });
     const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -644,7 +923,8 @@
 
   function openPreview(single) {
     const selected = state.cards.find((card) => card.id === state.selected);
-    const items = single && selected ? [{ card: selected, duration: 4 }] : state.sequence.map((item) => ({ card: state.cards.find((card) => card.id === item.cardId), duration: item.duration })).filter((item) => item.card);
+    if (single && selected && (selected.missingMedia || (selected.job && selected.job.status !== 'succeeded'))) { toast('该素材尚未生成完成或需要重新导入'); return; }
+    const items = single && selected ? [{ card: selected, duration: selected.kind === 'video' ? clamp(Number(selected.duration) || 4, 1, 15) : 4 }] : state.sequence.map((item) => ({ card: state.cards.find((card) => card.id === item.cardId), duration: item.duration })).filter((item) => item.card);
     if (!items.length) {
       toast('先选择素材并加入成片，再开始预览');
       return;
@@ -683,6 +963,10 @@
     switch (action) {
       case 'home': closePreview(); if (typeof window.closeStudio === 'function') window.closeStudio(); break;
       case 'help': root.querySelector('.fo-help-dialog').showModal(); break;
+      case 'api-settings': apiSettings.open(); break;
+      case 'cancel-generation': stopGeneration(); break;
+      case 'resume-video': resumeVideo(); break;
+      case 'download-media': downloadMedia(); break;
       case 'close-help': root.querySelector('.fo-help-dialog').close(); break;
       case 'upload': root.querySelector('.fo-file-input').click(); break;
       case 'undo': undo(); break;
@@ -769,6 +1053,12 @@
   }
 
   function connectEvents() {
+    composer.addEventListener('submit', (event) => event.preventDefault());
+    root.querySelector('.fo-generation-mode').addEventListener('change', (event) => {
+      generationMode = event.target.value;
+      try { localStorage.setItem('frameout-generation-mode', generationMode); } catch (_) { /* Session mode still works. */ }
+      updateGenerationUI();
+    });
     root.addEventListener('click', (event) => {
       const button = event.target.closest('[data-action]');
       if (button && !button.disabled) handleAction(button.dataset.action);
@@ -989,7 +1279,7 @@
           <button type="button" class="fo-brand" data-action="home" aria-label="返回 FRAMEOUT 首页"><span class="fo-brand-mark">F<span>↗</span></span><span>FRAMEOUT<span class="fo-brand-zh">帧外</span></span></button>
           <div class="fo-project"><span class="fo-project-divider">/</span><div><span class="fo-project-title">森林来信</span><span class="fo-save"><i></i><span class="fo-save-label">已保存到此浏览器</span></span></div></div>
           <nav class="fo-workspace-tabs" aria-label="工作区"><button type="button" class="is-active">画布</button><button type="button" data-action="help">使用指南 ${icon('arrow-up-right')}</button></nav>
-          <div class="fo-header-actions"><button type="button" class="fo-text-button fo-export-button" data-action="export">${icon('download')}<span>导出项目</span></button><button type="button" class="fo-primary-button" data-action="preview">${icon('play')}<span>预览成片</span></button></div>
+          <div class="fo-header-actions"><button type="button" class="fo-text-button fo-api-button" data-action="api-settings" aria-label="API 设置">${icon('settings')}<span>API 设置</span></button><button type="button" class="fo-text-button fo-export-button" data-action="export" aria-label="导出项目">${icon('download')}<span>导出项目</span></button><button type="button" class="fo-primary-button" data-action="preview">${icon('play')}<span>预览成片</span></button></div>
         </header>
         <main class="fo-viewport" aria-label="无限创作画布">
           <div class="fo-canvas-intro"><span class="fo-eyebrow">YOUR CREATIVE SPACE</span><span class="fo-canvas-count">3 个素材</span></div>
@@ -1005,11 +1295,12 @@
             <span class="fo-tool-divider"></span>
             <button type="button" data-action="help" class="fo-icon-button" title="使用指南" aria-label="打开使用指南">${icon('help') || '?'}</button>
           </aside>
-          <div class="fo-selection-actions" hidden><span class="fo-selected-name"></span><button type="button" class="fo-small-button" data-action="motion">${icon('film')}<span>演示生成视频</span></button><button type="button" class="fo-small-button fo-add-shot" data-action="add">${icon('plus')}<span>加入成片</span></button><button type="button" class="fo-icon-button" data-action="delete" aria-label="删除选中素材" title="删除素材">${icon('trash') || '×'}</button></div>
-          <form class="fo-composer" onsubmit="return false">
-            <div class="fo-composer-top"><label for="fo-prompt">让想法，先有一个画面。</label><span class="fo-demo-badge"><i></i>演示模式</span></div>
-            <textarea class="fo-prompt" id="fo-prompt" rows="1" placeholder="森林深处，一位宇航员抬头看光…" maxlength="500"></textarea>
-            <div class="fo-composer-bottom"><span class="fo-generation-state">内置示例素材 · 无需账号</span><button type="button" class="fo-generate-button" data-action="generate">${icon('sparkles')}<span>演示生成</span>${icon('arrow-up-right')}</button></div>
+          <div class="fo-selection-actions" hidden><span class="fo-selected-name"></span><button type="button" class="fo-small-button" data-action="motion">${icon('film')}<span>生成视频</span></button><button type="button" class="fo-small-button" data-action="resume-video" hidden>${icon('clock')}<span>继续查询</span></button><button type="button" class="fo-small-button fo-add-shot" data-action="add">${icon('plus')}<span>加入成片</span></button><button type="button" class="fo-icon-button" data-action="download-media" aria-label="下载生成素材" title="下载素材，供应商临时链接将在新标签页打开" hidden>${icon('download')}</button><button type="button" class="fo-icon-button" data-action="delete" aria-label="删除选中素材" title="删除素材">${icon('trash') || '×'}</button></div>
+          <form class="fo-composer">
+            <div class="fo-composer-top"><label for="fo-prompt">让想法，先有一个画面。</label><select class="fo-generation-mode" aria-label="生成模式"><option value="image">真实图片</option><option value="video">真实视频</option><option value="demo">演示素材</option></select><span class="fo-demo-badge"><i></i>真实 API</span></div>
+            <textarea class="fo-prompt" id="fo-prompt" rows="2" placeholder="森林深处，一位宇航员抬头看光…" maxlength="4000"></textarea>
+            <p class="fo-task-note" role="status" hidden></p>
+            <div class="fo-composer-bottom"><span class="fo-generation-state">先配置 API Key，再开始生成</span><button type="button" class="fo-cancel-generation" data-action="cancel-generation" hidden>停止等待</button><button type="button" class="fo-generate-button" data-action="generate">${icon('sparkles')}<span>生成图片</span>${icon('arrow-up-right')}</button></div>
             <div class="fo-generation-line"></div>
           </form>
           <div class="fo-camera-tools" aria-label="缩放控制"><button type="button" class="fo-icon-button" data-action="zoom-out" aria-label="缩小">${icon('minus') || '−'}</button><button type="button" class="fo-zoom-label" data-action="zoom-options" aria-expanded="false" aria-controls="fo-zoom-popover" aria-haspopup="dialog" aria-label="缩放比例选项">80%</button><button type="button" class="fo-icon-button" data-action="zoom-in" aria-label="放大">${icon('plus') || '+'}</button><span class="fo-tool-divider"></span><button type="button" class="fo-icon-button" data-action="fit" aria-label="适应全部素材" title="适应全部素材 · ⌘ / Ctrl 0">${icon('maximize') || '⛶'}</button><div class="fo-zoom-popover" id="fo-zoom-popover" role="dialog" aria-label="画布缩放" hidden><form class="fo-zoom-form"><label for="fo-zoom-input">缩放比例</label><div><input class="fo-zoom-input" id="fo-zoom-input" type="text" inputmode="decimal" autocomplete="off" aria-label="缩放比例"><span>%</span><button type="submit">应用</button></div></form><div class="fo-zoom-presets"><button type="button" data-zoom="50">50%</button><button type="button" data-zoom="100">100%</button><button type="button" data-zoom="200">200%</button></div><button type="button" class="fo-zoom-fit" data-action="fit">适应全部素材<span>⌘ / Ctrl 0</span></button></div></div>
@@ -1024,7 +1315,7 @@
         <div class="fo-toast" role="status" aria-live="polite"></div>
       </div>
       <dialog class="fo-preview-dialog" aria-labelledby="fo-preview-heading"><div class="fo-preview-head"><div><span class="fo-eyebrow">SCREENING ROOM</span><h2 class="fo-preview-title" id="fo-preview-heading">森林来信</h2></div><button type="button" class="fo-icon-button" data-action="close-preview" aria-label="关闭预览">${icon('x') || '×'}</button></div><div class="fo-preview-screen"></div><div class="fo-preview-description"><span class="fo-preview-shot"></span><span>浏览器内动态预览</span></div><div class="fo-preview-controls"><button type="button" class="fo-icon-button" data-action="prev-preview" aria-label="上一个镜头">${icon('chevron-left') || '‹'}</button><button type="button" class="fo-preview-play" data-action="toggle-preview" aria-label="暂停预览">${icon('pause') || 'Ⅱ'}</button><button type="button" class="fo-icon-button" data-action="next-preview" aria-label="下一个镜头">${icon('chevron-right') || '›'}</button><input class="fo-preview-progress" type="range" min="0" max="4" value="0" step="0.01" aria-label="预览播放位置"><span class="fo-preview-time">00:00 / 00:04</span></div></dialog>
-      <dialog class="fo-help-dialog" aria-labelledby="fo-help-heading"><button type="button" class="fo-icon-button fo-help-close" data-action="close-help" aria-label="关闭使用指南">${icon('x') || '×'}</button><span class="fo-eyebrow">A LITTLE GUIDE</span><h2 id="fo-help-heading">把想法摊开，<br>再把故事连起来。</h2><p>画布用来探索和比较。只有加入下方成片区的镜头，才会按顺序播放。</p><dl><div><dt>平移画布</dt><dd>双指滚动 / 滚轮 · 拖动空白处<br>空格 + 拖动，或鼠标中键</dd></div><div><dt>缩放画布</dt><dd>触控板捏合 · ⌘ / Ctrl + 滚轮<br>⌘ / Ctrl ＋ / −，或点击比例</dd></div><div><dt>触屏操作</dt><dd>单指拖动 · 双指平移与缩放</dd></div><div><dt>查看素材</dt><dd>单击选择，双击预览</dd></div><div><dt>撤销 / 重做</dt><dd>⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z</dd></div><div><dt>删除素材</dt><dd>选中后按 Delete / Backspace</dd></div><div><dt>适应画布</dt><dd>⌘ / Ctrl 0，或点击适应按钮</dd></div></dl><div class="fo-help-note"><strong>这是一间可以动手的演示工作室。</strong><span>演示生成使用内置样例；动态预览展示镜头运动效果。真实 AI 生成与视频编码尚未接入。项目保存在当前浏览器，本地导入文件仅本次页面会话可用。</span></div><button type="button" class="fo-primary-button" data-action="close-help">开始探索 ${icon('arrow-up-right')}</button></dialog>
+      <dialog class="fo-help-dialog" aria-labelledby="fo-help-heading"><button type="button" class="fo-icon-button fo-help-close" data-action="close-help" aria-label="关闭使用指南">${icon('x') || '×'}</button><span class="fo-eyebrow">A LITTLE GUIDE</span><h2 id="fo-help-heading">把想法摊开，<br>再把故事连起来。</h2><p>画布用来探索和比较。只有加入下方成片区的镜头，才会按顺序播放。</p><dl><div><dt>平移画布</dt><dd>双指滚动 / 滚轮 · 拖动空白处<br>空格 + 拖动，或鼠标中键</dd></div><div><dt>缩放画布</dt><dd>触控板捏合 · ⌘ / Ctrl + 滚轮<br>⌘ / Ctrl ＋ / −，或点击比例</dd></div><div><dt>触屏操作</dt><dd>单指拖动 · 双指平移与缩放</dd></div><div><dt>查看素材</dt><dd>单击选择，双击预览</dd></div><div><dt>撤销 / 重做</dt><dd>⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z</dd></div><div><dt>删除素材</dt><dd>选中后按 Delete / Backspace</dd></div><div><dt>适应画布</dt><dd>⌘ / Ctrl 0，或点击适应按钮</dd></div></dl><div class="fo-help-note"><strong>这是一间可以动手的演示工作室。</strong><span>真实图片与视频需在 API 设置填写自己的供应商密钥，费用由供应商收取；演示模式使用内置样例。生成素材保存在本浏览器或供应商临时链接，请及时下载。成片区支持顺序预览，尚不导出编码后的 MP4。</span></div><button type="button" class="fo-primary-button" data-action="close-help">开始探索 ${icon('arrow-up-right')}</button></dialog>
     `;
     viewport = root.querySelector('.fo-viewport');
     stage = root.querySelector('.fo-stage');
@@ -1034,10 +1325,14 @@
     zoomLabel = root.querySelector('.fo-zoom-label');
     zoomPopover = root.querySelector('.fo-zoom-popover');
     zoomInput = root.querySelector('.fo-zoom-input');
+    try { const mode = localStorage.getItem('frameout-generation-mode'); if (['image', 'video', 'demo'].includes(mode)) generationMode = mode; } catch (_) { /* Default to real image generation. */ }
+    apiSettings = window.FrameoutAISettings.create({ root, onChange: () => updateGenerationUI(), onClear: stopGeneration });
     cameraController = window.FrameoutCamera.create({ initial: state.camera, onRender: applyCamera, onRest: save, reducedMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches });
     refreshViewportLayout();
     renderScene();
+    updateGenerationUI();
     connectEvents();
+    hydrateMedia();
     window.addEventListener('resize', () => {
       if (viewport.clientWidth) { refreshViewportLayout(); applyCamera(); }
     });
