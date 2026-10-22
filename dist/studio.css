@@ -168,3 +168,49 @@
 @media(max-width:540px){.fo-app{min-height:660px}.fo-header{height:68px;min-height:68px;padding:0 13px;gap:10px}.fo-brand>span:last-child{font-size:20px;gap:0}.fo-brand-mark{width:26px;height:28px;line-height:27px;font-size:23px}.fo-brand-mark>span{right:-7px;top:-5px;font-size:14px;width:17px;height:17px}.fo-project{display:none}.fo-header-actions{gap:7px}.fo-header-actions .fo-primary-button{font-size:10px!important;min-height:38px;padding:9px 10px}.fo-export-button{width:34px;padding:8px!important}.fo-export-button>span{display:none}.fo-header-actions .fo-text-button svg{width:17px;height:17px}.fo-viewport{min-height:420px}.fo-canvas-intro{left:16px;top:17px;gap:9px}.fo-canvas-intro .fo-eyebrow{font-size:7px;letter-spacing:1px}.fo-canvas-count{font-size:8px;padding-left:9px}.fo-canvas-tools{top:45px;left:12px;width:40px;gap:0;padding:2px}.fo-canvas-tools .fo-icon-button{min-height:38px;height:38px;width:34px}.fo-canvas-tools .fo-tool-divider{margin:2px 0}.fo-composer{width:calc(100% - 28px);left:50%;bottom:64px;padding:12px 12px 9px}.fo-composer-top{margin-bottom:8px}.fo-composer-top label{font-size:11px}.fo-demo-badge{font-size:8px}.fo-prompt{font-size:16px!important;height:30px;line-height:24px}.fo-generation-state{font-size:7px;max-width:160px}.fo-generate-button{min-height:36px;padding:8px;font-size:10px!important}.fo-selection-actions{bottom:218px;left:50%;max-width:calc(100% - 28px);gap:2px;padding:4px}.fo-small-button{font-size:10px!important;min-height:38px;padding:7px}.fo-selection-actions .fo-icon-button{height:38px;width:35px;min-width:35px}.fo-camera-tools{bottom:12px;right:13px}.fo-camera-tools .fo-icon-button{height:36px;min-height:36px;width:36px}.fo-timeline{height:141px;min-height:141px;padding:12px 13px;gap:9px;flex-direction:column}.fo-timeline-label{width:100%;min-width:0;display:flex;flex-direction:row;align-items:center;gap:15px;padding:0}.fo-timeline-label>div{flex-direction:row;align-items:center;gap:8px}.fo-timeline-label .fo-eyebrow{font-size:7px}.fo-timeline-label strong{font-size:10px}.fo-sequence-summary{margin-left:auto}.fo-timeline-hint{display:none}.fo-timeline-track{min-height:82px}.fo-seq-item{height:78px;min-width:238px}.fo-sequence-empty{padding:0 13px;gap:10px}.fo-sequence-empty>span:nth-child(2){font-size:11px}.fo-sequence-empty small{font-size:8px}.fo-sequence-arrow{font-size:23px}.fo-toast{top:78px;width:max-content;font-size:10px;max-width:calc(100% - 24px);padding:9px 12px}.fo-canvas-empty{top:30%}.fo-canvas-empty>span{font-size:39px}.fo-canvas-empty p{font-size:11px}.fo-preview-head{padding:16px}.fo-preview-head>div{gap:8px;align-items:flex-start;flex-direction:column}.fo-preview-head h2{font-size:12px!important}.fo-preview-head .fo-eyebrow{font-size:7px}.fo-preview-controls{padding:12px;gap:2px}.fo-preview-controls>.fo-icon-button{width:32px;min-width:32px;padding:7px}.fo-preview-progress{margin:0 8px}.fo-preview-time{font-size:8px}.fo-preview-description{padding:12px 14px 0;gap:8px;font-size:9px}.fo-preview-description>span:last-child{font-size:7px}.fo-preview-play{width:32px;min-width:32px;height:32px}.fo-help-dialog{padding:28px 21px!important}.fo-help-dialog h2{font-size:23px!important}.fo-help-dialog dl>div{gap:12px;font-size:10px}.fo-help-dialog p{font-size:11px}.fo-help-note{font-size:9px}.fo-file-drop-hint{font-size:16px}.fo-file-drop-hint svg{width:24px;height:24px}}
 @media(pointer:coarse){.fo-icon-button{min-width:40px;min-height:40px}.fo-canvas-tools{width:48px}.fo-canvas-tools .fo-icon-button{width:42px;min-height:42px}.fo-tiny-button{height:26px;width:26px}.fo-small-button{min-height:42px}.fo-selection-actions .fo-icon-button{min-height:42px;min-width:40px}.fo-duration-label select{min-height:28px}.fo-preview-play{min-height:40px;min-width:40px}}
 @media(prefers-reduced-motion:reduce){.fo-studio *,.fo-studio *:before,.fo-studio *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* A calm arrival, then immediate canvas control. Camera and drag coordinates stay unanimated. */
+.fo-card.is-entering{animation:fo-card-arrive .64s cubic-bezier(.16,1,.3,1) var(--fo-entry-delay,0ms) backwards}
+.fo-card.is-dragging{animation:none!important}
+.fo-card:not(.is-dragging):hover{outline-color:#b5ff2a80;box-shadow:0 14px 36px #0005}
+.fo-card.is-selected:not(.is-dragging){box-shadow:0 0 0 4px #b5ff2a13,0 12px 34px #0005}
+.fo-card-top,.fo-card-bottom{transition:background .2s,color .2s}
+.fo-card.is-selected .fo-card-top{background:#343d28}
+.fo-media:not(.is-motion) img{transition:transform .65s cubic-bezier(.2,.7,.2,1)}
+@media(hover:hover){.fo-card:not(.is-dragging):hover .fo-media:not(.is-motion) img{transform:scale(1.035)}}
+.fo-studio:not([hidden]) .fo-header{animation:fo-chrome-arrive .55s cubic-bezier(.16,1,.3,1) backwards}
+.fo-studio:not([hidden]) .fo-canvas-tools{animation:fo-tools-arrive .55s cubic-bezier(.16,1,.3,1) .12s backwards}
+.fo-studio:not([hidden]) .fo-composer{animation:fo-chrome-arrive .65s cubic-bezier(.16,1,.3,1) .2s backwards}
+.fo-studio:not([hidden]) .fo-timeline{animation:fo-chrome-arrive .6s cubic-bezier(.16,1,.3,1) .13s backwards}
+.fo-selection-actions:not([hidden]){animation:fo-chrome-arrive .28s cubic-bezier(.16,1,.3,1) backwards}
+.fo-composer{transition:border-color .25s,box-shadow .25s,background .25s}
+.fo-composer:focus-within{border-color:var(--fo-lime);box-shadow:0 0 0 3px #b5ff2a10,0 16px 36px #0005;background:#2d3426}
+.fo-composer.is-busy{border-color:#b5ff2a;box-shadow:0 0 0 3px #b5ff2a14,0 16px 36px #0005}
+.fo-composer.is-busy .fo-demo-badge i{animation:fo-busy-pulse .55s ease-in-out 2 alternate}
+.fo-generate-button{transition:background .18s,box-shadow .18s}
+.fo-generate-button:not(:disabled):hover{background:#d0ff7a;box-shadow:0 0 0 3px #b5ff2a16}
+.fo-generate-button:not(:disabled):active{background:#9fe91e}
+.fo-icon-button>svg,.fo-small-button>svg,.fo-text-button>svg{transition:transform .2s cubic-bezier(.2,.7,.2,1)}
+.fo-icon-button:not(:disabled):hover>svg,.fo-small-button:not(:disabled):hover>svg{transform:translateY(-1px)}
+.fo-text-button:not(:disabled):hover>svg{transform:translateY(2px)}
+.fo-workspace-tabs button:after{transform-origin:left center;animation:fo-tab-line .4s cubic-bezier(.16,1,.3,1) backwards}
+.fo-seq-item{transition:background .2s,border-color .2s,box-shadow .2s}
+.fo-seq-item.is-entering{animation:fo-shot-arrive .42s cubic-bezier(.16,1,.3,1) backwards}
+.fo-seq-item:hover{background:#303a26;border-color:#748b52}
+.fo-seq-item.is-drop-target{background:#344a22;box-shadow:0 0 0 4px #b5ff2a10}
+.fo-seq-item.is-dragging{animation:none!important}
+.fo-seq-thumb img,.fo-seq-thumb video{transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+.fo-seq-thumb:hover img,.fo-seq-thumb:hover video{transform:scale(1.07)}
+.fo-studio dialog[open]{animation:fo-dialog-arrive .45s cubic-bezier(.16,1,.3,1) backwards}
+.fo-studio dialog[open]::backdrop{animation:fo-backdrop-arrive .3s ease-out backwards}
+.fo-viewport.is-file-drop .fo-file-drop-hint{animation:fo-drop-arrive .2s ease-out backwards}
+@keyframes fo-card-arrive{from{opacity:0;transform:translateY(32px) rotate(-2deg) scale(.97)}to{opacity:1;transform:none}}
+@keyframes fo-chrome-arrive{from{opacity:0;translate:0 18px}to{opacity:1;translate:0 0}}
+@keyframes fo-tools-arrive{from{opacity:0;translate:-15px 0}to{opacity:1;translate:0 0}}
+@keyframes fo-shot-arrive{from{opacity:0;transform:translateX(24px) scale(.96)}to{opacity:1;transform:none}}
+@keyframes fo-dialog-arrive{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes fo-backdrop-arrive{from{opacity:0}to{opacity:1}}
+@keyframes fo-drop-arrive{from{opacity:0;transform:scale(.985)}to{opacity:1;transform:none}}
+@keyframes fo-tab-line{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes fo-busy-pulse{from{opacity:.35;box-shadow:0 0 0 0 #b5ff2a30}to{opacity:1;box-shadow:0 0 0 4px #b5ff2a00}}
+@media(prefers-reduced-motion:reduce){.fo-studio *,.fo-studio *:before,.fo-studio *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

@@ -185,6 +185,7 @@
   }
 
   function renderScene() {
+    const previousCards = new Set(Array.from(stage.querySelectorAll('.fo-card'), (card) => card.dataset.id));
     stage.replaceChildren();
     const group = document.createElement('div');
     group.className = 'fo-mood-group';
@@ -196,9 +197,13 @@
     note.innerHTML = '<span class="fo-note-pin"></span><span>先把想法<br>摊开。</span><small>MAKE ROOM FOR IDEAS ↗</small>';
     stage.append(note);
 
-    for (const card of state.cards) {
+    for (const [index, card] of state.cards.entries()) {
       const item = document.createElement('article');
       item.className = `fo-card${state.selected === card.id ? ' is-selected' : ''}`;
+      if (!previousCards.has(card.id)) {
+        item.classList.add('is-entering');
+        item.style.setProperty('--fo-entry-delay', `${previousCards.size ? 0 : Math.min(index, 5) * 85}ms`);
+      }
       item.dataset.id = card.id;
       item.style.left = card.x + 'px';
       item.style.top = card.y + 'px';
@@ -257,6 +262,7 @@
   }
 
   function renderSequence() {
+    const previousPositions = new Map(Array.from(sequenceList.children, (item) => [item.dataset.sequenceId, item.offsetLeft]));
     sequenceList.replaceChildren();
     const total = state.sequence.reduce((sum, item) => sum + item.duration, 0);
     root.querySelector('.fo-sequence-summary').textContent = `${state.sequence.length} 个镜头 · ${timeLabel(total)}`;
@@ -268,6 +274,7 @@
       if (!card) continue;
       const element = document.createElement('div');
       element.className = 'fo-seq-item';
+      if (!previousPositions.has(item.id)) element.classList.add('is-entering');
       element.draggable = true;
       element.dataset.sequenceId = item.id;
       const number = document.createElement('span');
@@ -359,6 +366,13 @@
         save();
       });
       sequenceList.append(element);
+    }
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      for (const element of sequenceList.children) {
+        const previous = previousPositions.get(element.dataset.sequenceId);
+        const offset = previous === undefined ? 0 : previous - element.offsetLeft;
+        if (offset) element.animate([{ transform: `translateX(${offset}px)` }, { transform: 'translateX(0)' }], { duration: 340, easing: 'cubic-bezier(.2,.7,.2,1)' });
+      }
     }
   }
 

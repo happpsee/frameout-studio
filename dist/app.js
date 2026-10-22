@@ -20,6 +20,7 @@
       savedScroll = window.scrollY;
       studioOpener = document.activeElement;
     }
+    const activate = () => {
     dialog.close();
     landing.hidden = true;
     studioRoot.hidden = false;
@@ -34,8 +35,13 @@
       requestAnimationFrame(() => window.FrameoutStudio.fit());
     }
     studioRoot.querySelector('.fo-brand')?.focus({preventScroll:true});
+    window.dispatchEvent(new Event('frameout:studiochange'));
+    };
+    if (!landing.hidden && window.FrameoutMotion) window.FrameoutMotion.transition(activate, 'studio');
+    else activate();
   };
   window.closeStudio = () => {
+    const activate = () => {
     if (window.FrameoutStudio) window.FrameoutStudio.pause();
     studioRoot.hidden = true;
     landing.hidden = false;
@@ -45,6 +51,10 @@
     if (location.hash === '#studio') history.replaceState(null, '', location.pathname + location.search);
     requestAnimationFrame(() => window.scrollTo({top:savedScroll,behavior:'instant'}));
     if (studioOpener?.isConnected) studioOpener.focus({preventScroll:true});
+    window.dispatchEvent(new Event('frameout:studiochange'));
+    };
+    if (!studioRoot.hidden && window.FrameoutMotion) window.FrameoutMotion.transition(activate, 'landing');
+    else activate();
   };
   fillIcons();
   if (window.FrameoutStudio) window.FrameoutStudio.mount(studioRoot);

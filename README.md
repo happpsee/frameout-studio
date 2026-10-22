@@ -15,6 +15,8 @@ python3 -m http.server 4179 --directory dist --bind 127.0.0.1
 ## 已实现
 
 - 响应式首页、三个灵感示例入口、动态取景弹窗。
+- 分字与遮罩编排的开场、阻尼鼠标视差、可逆的滚动场景（素材散落 → 主镜头 → 镜头序列）、案例错峰揭露与首页/画布转场。
+- 新素材入场、镜头序列重排动画；拖拽与摄像机坐标保持即时更新，不加过渡。
 - 无限画布平移、鼠标锚定缩放、适应素材、素材拖拽与选择。
 - 上传本地图片或视频、删除、撤销与重做。
 - 明确标注为演示的素材生成与动态取景。
@@ -30,6 +32,7 @@ python3 -m http.server 4179 --directory dist --bind 127.0.0.1
 
 - `dist/index.html`、`app.css`、`app.js`：原创首页和页面切换。
 - `dist/studio.js`、`studio.css`：画布、生成演示、镜头序列和预览。
+- `dist/motion.js`、`motion.css`：原生 Web Animations / requestAnimationFrame 动效编排，尊重减少动态效果偏好，装饰动画离屏暂停。
 - `dist/icons.js`：代码绘制的矢量图标。
 - `dist/assets/forest-astronaut.png`：使用内置 imagegen 新生成的森林探索者剧照。
 - `dist/assets/IMAGE-PROMPT.md`：原创图生成提示词和说明。
@@ -40,4 +43,4 @@ python3 -m http.server 4179 --directory dist --bind 127.0.0.1
 
 ## 验证
 
-已检查 JavaScript 语法，并在浏览器验证首页/画布切换、素材生成演示、撤销重做、镜头加入与播放预览；桌面与 390px 手机宽度均已截图检查。真实 AI 与视频编码属于后续接入范围。
+已检查 JavaScript 语法，并在浏览器验证首页/画布切换、素材生成演示、撤销重做、镜头加入与播放预览；桌面与 390px 手机宽度均已截图检查。动效更新另验证了桌面滚动阶段 01→02→03→02→01 的可逆构图、鼠标拖拽、镜头重排、390×844 手机布局、首页/画布转场，以及减少动态模式没有长空白或残留遮罩。页面控制台无异常。真实 AI 与视频编码属于后续接入范围。
