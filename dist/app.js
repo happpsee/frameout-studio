@@ -32,7 +32,7 @@
     window.dispatchEvent(new Event('resize'));
     if (!studioSeen) {
       studioSeen = true;
-      requestAnimationFrame(() => window.FrameoutStudio.fit());
+      requestAnimationFrame(() => window.FrameoutStudio.enter());
     }
     studioRoot.querySelector('.fo-brand')?.focus({preventScroll:true});
     window.dispatchEvent(new Event('frameout:studiochange'));

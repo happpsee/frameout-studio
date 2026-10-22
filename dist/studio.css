@@ -214,3 +214,33 @@
 @keyframes fo-tab-line{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes fo-busy-pulse{from{opacity:.35;box-shadow:0 0 0 0 #b5ff2a30}to{opacity:1;box-shadow:0 0 0 4px #b5ff2a00}}
 @media(prefers-reduced-motion:reduce){.fo-studio *,.fo-studio *:before,.fo-studio *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* 画布变换只作用于舞台，操作层始终使用屏幕尺寸。 */
+.fo-stage{will-change:transform}
+.fo-selection-actions{left:0;top:0;bottom:auto;transform:none;translate:none;width:max-content;max-width:calc(100% - 24px);z-index:7}
+.fo-selection-actions:not([hidden]){animation:fo-selection-reveal .16s ease-out backwards}
+.fo-selection-actions.is-outside{visibility:hidden;pointer-events:none}
+.fo-selection-actions .fo-small-button{flex-shrink:0}
+.fo-card.is-dragging{animation:none!important}
+.fo-composer,.fo-canvas-tools,.fo-camera-tools,.fo-selection-actions{touch-action:manipulation}
+.fo-camera-tools{z-index:8}
+.fo-camera-tools .fo-zoom-label{display:inline-flex;align-items:center;justify-content:center;width:49px;min-height:34px;padding:0 5px;border-radius:3px;background:transparent;color:#c6d2b5;font:10px "Courier New",monospace;text-align:center}
+.fo-camera-tools .fo-zoom-label:hover,.fo-camera-tools .fo-zoom-label[aria-expanded="true"]{background:#414936;color:var(--fo-paper)}
+.fo-zoom-popover{position:absolute;right:-1px;bottom:calc(100% + 10px);width:220px;max-width:calc(100vw - 28px);padding:14px;background:#242820;border:1px solid #4c573f;border-radius:7px;box-shadow:0 12px 38px #0007;z-index:12;cursor:default}
+.fo-zoom-form{margin:0}
+.fo-zoom-form>label{display:block;margin-bottom:9px;color:#b7c3a6;font-size:10px}
+.fo-zoom-form>div{display:flex;align-items:center;gap:7px;min-width:0}
+.fo-zoom-form .fo-zoom-input{min-width:0;width:100%;height:36px;padding:8px 9px;border:1px solid #59674a;border-radius:3px;background:#171c13;color:var(--fo-paper);font:12px "Courier New",monospace}
+.fo-zoom-form>div>span{color:#9cab8c;font:11px "Courier New",monospace}
+.fo-zoom-form button{flex:none;min-height:36px;padding:7px 10px;border-radius:3px;background:var(--fo-lime);color:var(--fo-ink);font-size:10px;font-weight:600}
+.fo-zoom-form button:hover{background:#d0ff7a}
+.fo-zoom-presets{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:12px}
+.fo-zoom-presets button{min-height:36px;padding:7px 5px;border:1px solid #414c35;border-radius:3px;background:#303929;color:#c6d2b5;font:10px "Courier New",monospace}
+.fo-zoom-presets button:hover,.fo-zoom-presets button[aria-pressed="true"]{border-color:#819767;background:#414e34;color:var(--fo-paper)}
+.fo-zoom-popover .fo-zoom-fit{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px;width:100%;margin-top:11px;padding:10px 0 0;border-top:1px solid #414c35;border-radius:0;background:transparent;color:#d2ddc5;font-size:10px;text-align:left}
+.fo-zoom-fit>span{color:#839574;font:8px "Courier New",monospace;white-space:nowrap}
+.fo-zoom-popover .fo-zoom-fit:hover{color:var(--fo-lime)}
+.fo-zoom-popover>small{display:block;margin-top:10px;color:#839574;font-size:9px;line-height:1.7}
+@keyframes fo-selection-reveal{from{opacity:0}to{opacity:1}}
+@media(max-width:540px){.fo-selection-actions{gap:2px;padding:4px}.fo-camera-tools .fo-zoom-label{min-height:36px}.fo-zoom-popover{right:-1px}}
+@media(pointer:coarse){.fo-camera-tools .fo-zoom-label{min-height:40px}.fo-zoom-form .fo-zoom-input{height:40px;font-size:16px}.fo-zoom-form button,.fo-zoom-presets button{min-height:40px}.fo-zoom-popover .fo-zoom-fit{min-height:44px}}

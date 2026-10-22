@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FRAMEOUT 画布集成验收</title>
+<style>
+  :root{color-scheme:dark;font:14px/1.6 system-ui,sans-serif;background:#151613;color:#f5f5f0}
+  body{margin:24px}h1{font-size:24px;margin:0 0 8px}p{max-width:1000px;color:#afb6a4}
+  button{font:inherit;padding:9px 16px;margin:0 8px 8px 0;background:#b5ff2a;color:#151613;border:0;border-radius:4px;cursor:pointer}button:disabled{opacity:.4;cursor:wait}
+  #summary{font-weight:700;margin:12px 0}#results{padding-left:24px;max-width:1300px}.pass{color:#c3ed96}.fail{color:#ff9e94}
+  #frame-host{max-width:100%;overflow:auto;border:1px solid #48533c;background:#080b06}iframe{display:block;border:0;background:#151613}
+  code{background:#292f23;padding:2px 5px}small{color:#9aa48d}
+  body.preview-mode{margin:0}.preview-mode>h1,.preview-mode>p,.preview-mode>#controls,.preview-mode>#summary,.preview-mode>#results{display:none}
+  .preview-mode #frame-host{border:0;width:max-content;max-width:none;margin:0 auto;overflow:visible}
+</style>
+<h1>FRAMEOUT 画布集成验收</h1>
+<p>本页以同源 iframe 加载实际站点，用 <strong>DOM 合成事件</strong>检查交互集成。指针捕获仅在 iframe 中临时 mock，以支持非可信 PointerEvent；不改生产代码。本页不能证明原生触控板手感、实际命中测试或帧率，需另做手动检查。测试结束会销毁 iframe 并恢复运行前的浏览器项目存档。</p>
+<div id="controls"><button id="desktop">运行桌面 1440 × 900</button><button id="mobile">运行移动 390 × 844</button><button id="both">运行两种尺寸</button></div>
+<div id="summary" role="status" aria-live="polite">尚未运行</div>
+<ol id="results"></ol>
+<div id="frame-host"></div>
+<script>
+(() => {
+  'use strict';
+  const storageKey = 'frameout-studio-v1';
+  const summary = document.getElementById('summary');
+  const results = document.getElementById('results');
+  const frameHost = document.getElementById('frame-host');
+  const buttons = Array.from(document.querySelectorAll('button'));
+  let passed = 0, failed = 0, running = false;
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const assert = (condition, message) => { if (!condition) throw new Error(message); };
+  const near = (actual, expected, tolerance = .75) => assert(Math.abs(actual - expected) <= tolerance, `预期 ${expected}，实际 ${actual}，容差 ${tolerance}`);
+  async function test(mode, name, fn) {
+    const item = document.createElement('li');
+    results.append(item);
+    try {
+      const detail = await fn();
+      item.className = 'pass';
+      item.textContent = `PASS · ${mode} · ${name}${detail ? ' · ' + detail : ''}`;
+      passed++;
+    } catch (error) {
+      item.className = 'fail';
+      item.textContent = `FAIL · ${mode} · ${name} · ${error.message || error}`;
+      failed++;
+    }
+    summary.textContent = `运行中：${passed} PASS / ${failed} FAIL`;
+  }
+
+  async function createFrame(width, height) {
+    frameHost.replaceChildren();
+    localStorage.removeItem(storageKey);
+    const frame = document.createElement('iframe');
+    frame.title = `${width} × ${height} FRAMEOUT 实际页面`;
+    frame.width = width;
+    frame.height = height;
+    frame.style.width = width + 'px';
+    frame.style.height = height + 'px';
+    const loaded = new Promise((resolve, reject) => {
+      frame.onload = resolve;
+      frame.onerror = () => reject(new Error('iframe 加载失败'));
+    });
+    frame.src = '../dist/index.html?canvas-integration=' + Date.now() + '#studio';
+    frameHost.append(frame);
+    await Promise.race([loaded, delay(12000).then(() => { throw new Error('iframe 加载超时'); })]);
+    const w = frame.contentWindow;
+    const d = w.document;
+    for (let index = 0; index < 120; index++) {
+      const root = d.querySelector('#studio-root');
+      if (w.FrameoutStudio && root && !root.hidden && d.querySelector('.fo-viewport')?.clientWidth) break;
+      await delay(50);
+    }
+    assert(w.FrameoutStudio && !d.querySelector('#studio-root').hidden && d.querySelector('.fo-viewport')?.clientWidth, '画布未初始化或仍处于隐藏状态');
+    await delay(450);
+    return {frame, w, d};
+  }
+
+  function mockPointerCapture(w) {
+    const captured = new Map();
+    const prototype = w.Element.prototype;
+    const original = {};
+    for (const name of ['setPointerCapture', 'hasPointerCapture', 'releasePointerCapture']) original[name] = prototype[name];
+    prototype.setPointerCapture = function(id) { captured.set(id, this); };
+    prototype.hasPointerCapture = function(id) { return captured.get(id) === this; };
+    prototype.releasePointerCapture = function(id) {
+      if (captured.get(id) !== this) return;
+      captured.delete(id);
+      this.dispatchEvent(new w.PointerEvent('lostpointercapture', {bubbles:true, pointerId:id}));
+    };
+    return () => { for (const [name, value] of Object.entries(original)) prototype[name] = value; captured.clear(); };
+  }
+
+  async function runMode(width, height) {
+    const mode = `${width}×${height}（合成事件）`;
+    let frame, unmock;
+    try {
+      const context = await createFrame(width, height);
+      frame = context.frame;
+      const {w, d} = context;
+      const errors = [];
+      w.addEventListener('error', event => errors.push(event.message));
+      w.addEventListener('unhandledrejection', event => errors.push(String(event.reason)));
+      unmock = mockPointerCapture(w);
+      const q = selector => { const element = d.querySelector(selector); assert(element, `缺少元素 ${selector}`); return element; };
+      const state = () => w.FrameoutStudio.getState();
+      const viewport = q('.fo-viewport');
+      const frames = (count = 2) => new Promise(resolve => {
+        const next = () => count-- > 0 ? w.requestAnimationFrame(next) : resolve();
+        w.requestAnimationFrame(next);
+      });
+      const settle = async () => { await delay(260); await frames(); };
+      const click = selector => q(selector).click();
+      const pointer = (target, type, x, y, id = 21, pointerType = 'mouse', extra = {}) => target.dispatchEvent(new w.PointerEvent(type, {bubbles:true,cancelable:true,pointerId:id,pointerType,button:0,buttons:type === 'pointerup' || type === 'pointercancel' ? 0 : 1,isPrimary:id !== 32,clientX:x,clientY:y,...extra}));
+      const wheel = async (dx, dy, extra = {}) => {
+        const rect = viewport.getBoundingClientRect();
+        const event = new w.WheelEvent('wheel', {bubbles:true,cancelable:true,clientX:rect.left + rect.width * .55,clientY:rect.top + rect.height * .35,deltaX:dx,deltaY:dy,deltaMode:0,...extra});
+        viewport.dispatchEvent(event);
+        await frames();
+        return event;
+      };
+      const setZoom = async value => {
+        click('[data-action="zoom-options"]');
+        const input = q('.fo-zoom-input');
+        input.value = String(value);
+        input.dispatchEvent(new w.Event('input', {bubbles:true}));
+        q('.fo-zoom-form').dispatchEvent(new w.Event('submit', {bubbles:true,cancelable:true}));
+        await settle();
+      };
+      const fit = async () => { w.FrameoutStudio.fit(); await settle(); };
+      const revealCard = async (id, x = 100, y = 120) => {
+        const current = state();
+        const card = current.cards.find(item => item.id === id);
+        await wheel(current.camera.x + card.x * current.camera.zoom - x, current.camera.y + card.y * current.camera.zoom - y);
+      };
+      const cardElement = id => q(`.fo-card[data-id="${id}"]`);
+      const select = async id => { cardElement(id).querySelector('.fo-media').click(); await frames(); };
+      const firstId = state().cards[0]?.id;
+
+      await test(mode, '实际画布挂载与尺寸', () => {
+        assert(firstId && state().cards.length === 3, '初始示例素材不完整');
+        near(viewport.getBoundingClientRect().width, width, 1);
+        return '3 个初始素材';
+      });
+      await test(mode, '比例表单应用 100%', async () => { await setZoom(100); near(state().camera.zoom, 1, 1e-6); });
+      await test(mode, '比例表单应用 50%', async () => { await setZoom(50); near(state().camera.zoom, .5, 1e-6); });
+      await test(mode, '普通纵向滚动只平移', async () => {
+        const before = state().camera;
+        await wheel(0, 47);
+        const after = state().camera;
+        near(after.zoom, before.zoom, 1e-9); near(after.x, before.x, 1e-6); near(after.y, before.y - 47, 1e-6);
+      });
+      await test(mode, 'deltaX 横向平移', async () => {
+        const before = state().camera;
+        await wheel(39, 0);
+        const after = state().camera;
+        near(after.zoom, before.zoom, 1e-9); near(after.x, before.x - 39, 1e-6); near(after.y, before.y, 1e-6);
+      });
+      await test(mode, 'Ctrl + wheel 缩放锚点不漂移', async () => {
+        const rect = viewport.getBoundingClientRect();
+        const before = state().camera;
+        const event = await wheel(0, -12, {ctrlKey:true});
+        // 使用实际派发事件的坐标，避免浏览器对构造器小数坐标的量化造成假失败。
+        const anchor = {x:event.clientX - rect.left, y:event.clientY - rect.top};
+        const world = {x:(anchor.x-before.x)/before.zoom, y:(anchor.y-before.y)/before.zoom};
+        const after = state().camera;
+        assert(after.zoom > before.zoom, '比例未增加');
+        near(after.x + world.x * after.zoom, anchor.x, 1e-6); near(after.y + world.y * after.zoom, anchor.y, 1e-6);
+      });
+      await test(mode, '行单位 deltaMode 归一化', async () => {
+        const before = state().camera;
+        await wheel(2, 3, {deltaMode:1});
+        const after = state().camera;
+        near(after.x, before.x - 32, 1e-6); near(after.y, before.y - 48, 1e-6); near(after.zoom, before.zoom, 1e-9);
+      });
+      await test(mode, '连续三次放大累计目标比例', async () => {
+        await setZoom(100);
+        click('[data-action="zoom-in"]'); click('[data-action="zoom-in"]'); click('[data-action="zoom-in"]');
+        await settle();
+        near(state().camera.zoom, 1.2 ** 3, 1e-6);
+      });
+      await test(mode, '50% 拖卡：屏幕位移与世界坐标换算', async () => {
+        await fit(); await setZoom(50); await revealCard(firstId); await select(firstId);
+        const element = cardElement(firstId), target = element.querySelector('.fo-card-top');
+        const box = element.getBoundingClientRect(), before = state().cards.find(item => item.id === firstId);
+        const x = box.left + 20, y = box.top + 10;
+        pointer(target, 'pointerdown', x, y);
+        assert(target.hasPointerCapture(21), '未在原始 target 捕获指针');
+        pointer(target, 'pointermove', x + 60, y + 24); await frames();
+        const movedBox = element.getBoundingClientRect();
+        near(movedBox.left - box.left, 60); near(movedBox.top - box.top, 24);
+        pointer(target, 'pointerup', x + 60, y + 24); await frames();
+        const after = state().cards.find(item => item.id === firstId);
+        near(after.x - before.x, 120, 1e-6); near(after.y - before.y, 48, 1e-6);
+        const releasedBox = element.getBoundingClientRect();
+        near(releasedBox.left, movedBox.left); near(releasedBox.top, movedBox.top);
+        assert(!element.classList.contains('is-dragging') && !target.hasPointerCapture(21), '拖动状态未清理');
+      });
+      await test(mode, '撤销拖卡恢复原坐标', async () => {
+        const before = state().cards.find(item => item.id === firstId);
+        click('[data-action="undo"]'); await frames();
+        const after = state().cards.find(item => item.id === firstId);
+        near(before.x - after.x, 120, 1e-6); near(before.y - after.y, 48, 1e-6);
+      });
+      await test(mode, 'pointercancel 回滚且不加入成片', async () => {
+        await revealCard(firstId); const element = cardElement(firstId), target = element.querySelector('.fo-card-top');
+        const box = element.getBoundingClientRect(), before = state(), card = before.cards.find(item => item.id === firstId);
+        const x = box.left + 20, y = box.top + 10, timeline = q('.fo-timeline').getBoundingClientRect();
+        pointer(target, 'pointerdown', x, y); pointer(target, 'pointermove', x + 30, timeline.top + 20); await frames();
+        pointer(target, 'pointercancel', x + 30, timeline.top + 20); await frames();
+        const after = state(), moved = after.cards.find(item => item.id === firstId);
+        near(moved.x, card.x, 1e-6); near(moved.y, card.y, 1e-6);
+        assert(after.sequence.length === before.sequence.length, '取消手势错误加入了镜头');
+        assert(!element.classList.contains('is-dragging'), '取消后仍处于拖动状态');
+      });
+      await test(mode, '丢失指针捕获会取消拖卡', async () => {
+        const element = cardElement(firstId), target = element.querySelector('.fo-card-top');
+        const box = element.getBoundingClientRect(), before = state().cards.find(item => item.id === firstId);
+        pointer(target, 'pointerdown', box.left+10, box.top+10); pointer(target, 'pointermove', box.left+50, box.top+30); await frames();
+        target.releasePointerCapture(21); await frames();
+        const after = state().cards.find(item => item.id === firstId);
+        near(after.x, before.x, 1e-6); near(after.y, before.y, 1e-6);
+        assert(!element.classList.contains('is-dragging'), '捕获丢失后仍在拖动');
+      });
+      await test(mode, '双指缩放退回单指平移无跳跃', async () => {
+        const rect = viewport.getBoundingClientRect(), x = rect.left + 130, y = rect.top + 170;
+        pointer(viewport, 'pointerdown', x, y, 31, 'touch'); pointer(viewport, 'pointerdown', x+80, y, 32, 'touch');
+        const initial = state().camera;
+        pointer(viewport, 'pointermove', x+120, y, 32, 'touch'); await frames();
+        const pinched = state().camera;
+        near(pinched.zoom, Math.min(4, initial.zoom * 1.5), 1e-6);
+        pointer(viewport, 'pointerup', x+120, y, 32, 'touch');
+        pointer(viewport, 'pointermove', x, y, 31, 'touch'); await frames();
+        const unchanged = state().camera;
+        near(unchanged.x, pinched.x, 1e-6); near(unchanged.y, pinched.y, 1e-6); near(unchanged.zoom, pinched.zoom, 1e-6);
+        pointer(viewport, 'pointermove', x+17, y+9, 31, 'touch'); await frames();
+        const panned = state().camera;
+        near(panned.x, pinched.x+17, 1e-6); near(panned.y, pinched.y+9, 1e-6);
+        pointer(viewport, 'pointerup', x+17, y+9, 31, 'touch'); await frames();
+      });
+      await test(mode, '选中工具条保持屏幕尺寸', async () => {
+        await setZoom(50); await revealCard(firstId); await select(firstId);
+        const small = q('.fo-selection-actions').getBoundingClientRect();
+        await setZoom(100); await revealCard(firstId); await select(firstId);
+        const normal = q('.fo-selection-actions').getBoundingClientRect();
+        assert(small.width > 100 && normal.width > 100, '工具条不可见或宽度不足');
+        near(small.width, normal.width, 1); near(small.height, normal.height, 1);
+      });
+      await test(mode, '工具条边缘避让与生成框不重叠', async () => {
+        await revealCard(firstId, -20, 10); await select(firstId);
+        const bar = q('.fo-selection-actions').getBoundingClientRect(), rect = viewport.getBoundingClientRect(), composer = q('.fo-composer').getBoundingClientRect();
+        assert(w.getComputedStyle(q('.fo-selection-actions')).visibility !== 'hidden', '工具条意外隐藏');
+        assert(bar.left >= rect.left+10 && bar.right <= rect.right-10, `水平越界：${bar.left}…${bar.right} / ${rect.left}…${rect.right}`);
+        assert(bar.top >= rect.top+40 && bar.bottom <= composer.top-8, `垂直越界或盖住生成框：${bar.top}…${bar.bottom} / 生成框${composer.top}`);
+        if (width === 390) assert(bar.width <= 366, '390px 下工具条超宽');
+      });
+      await test(mode, '缩放弹层 Escape 关闭并归还焦点', async () => {
+        click('[data-action="zoom-options"]');
+        q('.fo-zoom-input').dispatchEvent(new w.KeyboardEvent('keydown', {key:'Escape',bubbles:true,cancelable:true}));
+        assert(q('.fo-zoom-popover').hidden && d.activeElement === q('.fo-zoom-label'), '弹层未关闭或焦点未回到比例按钮');
+      });
+      await test(mode, '加入成片并打开实际预览', async () => {
+        await select(firstId); const before = state().sequence.length;
+        click('.fo-selection-actions [data-action="add"]'); await frames();
+        assert(state().sequence.length === before+1 && q('.fo-seq-item'), '加入成片未生效');
+        click('[data-action="preview"]'); await frames();
+        assert(q('.fo-preview-dialog').open && q('.fo-preview-screen img, .fo-preview-screen video'), '预览未打开或没有媒体');
+        click('[data-action="close-preview"]'); assert(!q('.fo-preview-dialog').open, '预览未关闭');
+      });
+      await test(mode, '删除素材与撤销同步恢复序列', async () => {
+        await select(firstId); const before = state();
+        click('.fo-selection-actions [data-action="delete"]'); await frames();
+        assert(state().cards.length === before.cards.length-1, '素材未删除');
+        assert(!state().sequence.some(item => item.cardId === firstId), '序列仍引用已删素材');
+        click('[data-action="undo"]'); await frames();
+        assert(state().cards.length === before.cards.length && state().sequence.length === before.sequence.length, '撤销未恢复素材和序列');
+      });
+      await test(mode, '拖动中内容重绘不会残留旧节点手势', async () => {
+        await revealCard(firstId); const element = cardElement(firstId), target = element.querySelector('.fo-card-top');
+        const box = element.getBoundingClientRect(), original = state().cards.find(item => item.id === firstId);
+        pointer(target, 'pointerdown', box.left+10, box.top+10); pointer(target, 'pointermove', box.left+50, box.top+20); await frames();
+        click('[data-action="redo"]'); await frames();
+        // redo 删除该素材，随后将其撤销；重绘应取消旧的 capture/drag。
+        click('[data-action="undo"]'); await frames();
+        const restored = state().cards.find(item => item.id === firstId);
+        near(restored.x, original.x, 1e-6); near(restored.y, original.y, 1e-6);
+        const before = state().camera;
+        await wheel(0, 15);
+        near(state().camera.y, before.y-15, 1e-6);
+        assert(!q('.fo-viewport').classList.contains('is-panning'), '重绘后残留抓手状态');
+      });
+      await test(mode, '相机静止后存档与当前视角一致', async () => {
+        await wheel(13, 19); await delay(550);
+        const saved = JSON.parse(w.localStorage.getItem(storageKey) || 'null');
+        assert(saved?.camera, '静止后没有相机存档');
+        const current = state().camera;
+        near(saved.camera.x, current.x, 1e-6); near(saved.camera.y, current.y, 1e-6); near(saved.camera.zoom, current.zoom, 1e-6);
+      });
+      await test(mode, '无未处理页面错误', () => { assert(errors.length === 0, errors.join('；')); });
+    } catch (error) {
+      await test(mode, '验收初始化', () => { throw error; });
+    } finally {
+      if (unmock) unmock();
+      if (frame) frame.remove();
+    }
+  }
+
+  async function run(modes) {
+    if (running) return;
+    running = true; passed = 0; failed = 0; results.replaceChildren();
+    buttons.forEach(button => button.disabled = true);
+    summary.textContent = '正在加载实际页面…';
+    summary.dataset.testStatus = 'running';
+    const original = localStorage.getItem(storageKey);
+    try {
+      for (const [width, height] of modes) await runMode(width, height);
+    } finally {
+      frameHost.replaceChildren();
+      if (original === null) localStorage.removeItem(storageKey); else localStorage.setItem(storageKey, original);
+      running = false;
+      buttons.forEach(button => button.disabled = false);
+      summary.textContent = `验收完成：${passed} PASS / ${failed} FAIL。合成事件验收结果；原生手势和视觉流畅度需单独实测。`;
+      summary.dataset.testStatus = failed ? 'failed' : 'passed';
+      summary.dataset.passed = String(passed);
+      summary.dataset.failed = String(failed);
+      document.title = `FRAMEOUT 验收 ${passed} PASS / ${failed} FAIL`;
+    }
+  }
+  document.getElementById('desktop').onclick = () => run([[1440,900]]);
+  document.getElementById('mobile').onclick = () => run([[390,844]]);
+  document.getElementById('both').onclick = () => run([[1440,900],[390,844]]);
+  const parameters = new URLSearchParams(location.search);
+  const preview = parameters.get('preview');
+  if (preview === 'mobile' || preview === 'desktop') {
+    const dimensions = preview === 'mobile' ? [390,844] : [1440,900];
+    const original = localStorage.getItem(storageKey);
+    document.body.classList.add('preview-mode');
+    document.title = `FRAMEOUT ${dimensions[0]}×${dimensions[1]} 布局预览`;
+    summary.dataset.testStatus = 'preview';
+    summary.textContent = '仅预览实际页面；没有运行合成事件或捕获 mock。';
+    createFrame(...dimensions).catch(error => {
+      document.body.classList.remove('preview-mode');
+      summary.textContent = '预览加载失败：' + error.message;
+      summary.dataset.testStatus = 'failed';
+    });
+    window.addEventListener('pagehide', () => {
+      frameHost.replaceChildren();
+      if (original === null) localStorage.removeItem(storageKey); else localStorage.setItem(storageKey, original);
+    }, {once:true});
+    return;
+  }
+  const auto = parameters.get('run');
+  if (auto === 'desktop') run([[1440,900]]);
+  else if (auto === 'mobile') run([[390,844]]);
+  else if (auto === 'both') run([[1440,900],[390,844]]);
+})();
+</script>
+</html>

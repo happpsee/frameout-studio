@@ -18,6 +18,12 @@
   let state, activeTool = 'select', spaceHeld = false, drag = null, pendingPosition = null;
   let undoStack = [], redoStack = [], saveTimer, toastTimer, busy = false, mounted = false;
   let preview = null, previewRAF = 0, lastPreviewFrame = 0, timelineDragId = null;
+  let cameraController, zoomLabel, zoomPopover, zoomInput, cardRAF = 0;
+  let layout = null, selectionSize = { width: 0, height: 0 }, suppressClick = false;
+  const pointers = new Map();
+  const pointerCaptures = new Map();
+  let pinch = null;
+  let hasSavedCamera = false;
 
   function initialState() {
     return {
@@ -39,7 +45,11 @@
       const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
       if (saved && saved.version === 1 && Array.isArray(saved.cards) && Array.isArray(saved.sequence)) {
         const cards = saved.cards.filter((card) => card && typeof card.id === 'string' && typeof card.src === 'string' && !card.src.startsWith('blob:') && Number.isFinite(card.x) && Number.isFinite(card.y));
-        return { ...initialState(), ...saved, cards, sequence: saved.sequence.filter((item) => cards.some((card) => card.id === item.cardId)).map((item) => ({ ...item, duration: clamp(Number(item.duration) || 4, 1, 15) })), camera: { ...initialState().camera, ...saved.camera } };
+        const camera = { ...initialState().camera };
+        hasSavedCamera = ['x', 'y', 'zoom'].every((key) => Number.isFinite(saved.camera?.[key]));
+        for (const key of ['x', 'y', 'zoom']) if (Number.isFinite(saved.camera?.[key])) camera[key] = saved.camera[key];
+        camera.zoom = clamp(camera.zoom, 0.15, 4);
+        return { ...initialState(), ...saved, cards, sequence: saved.sequence.filter((item) => cards.some((card) => card.id === item.cardId)).map((item) => ({ ...item, duration: clamp(Number(item.duration) || 4, 1, 15) })), camera };
       }
     } catch (_) { /* A new workspace is a valid recovery path. */ }
     return initialState();
@@ -50,6 +60,7 @@
   }
 
   function remember(before) {
+    if (!before && pointers.size) resetGesture(true);
     undoStack.push(before || snapshot());
     if (undoStack.length > 40) undoStack.shift();
     redoStack = [];
@@ -57,6 +68,7 @@
   }
 
   function applySnapshot(value) {
+    if (pointers.size) resetGesture(true);
     Object.assign(state, clone(value));
     renderScene();
     save();
@@ -64,6 +76,7 @@
 
   function undo() {
     if (!undoStack.length) return;
+    if (pointers.size) resetGesture(true);
     redoStack.push(snapshot());
     applySnapshot(undoStack.pop());
     refreshHistoryButtons();
@@ -71,6 +84,7 @@
 
   function redo() {
     if (!redoStack.length) return;
+    if (pointers.size) resetGesture(true);
     undoStack.push(snapshot());
     applySnapshot(redoStack.pop());
     refreshHistoryButtons();
@@ -88,6 +102,7 @@
     label.textContent = '正在保存';
     saveTimer = setTimeout(() => {
       try {
+        if (cameraController) state.camera = cameraController.get();
         const saved = clone(state);
         saved.cards = saved.cards.filter((card) => !card.sessionOnly);
         saved.sequence = saved.sequence.filter((item) => saved.cards.some((card) => card.id === item.cardId));
@@ -110,45 +125,107 @@
 
   function cameraToWorld(clientX, clientY) {
     const rect = viewport.getBoundingClientRect();
-    return { x: (clientX - rect.left - state.camera.x) / state.camera.zoom, y: (clientY - rect.top - state.camera.y) / state.camera.zoom };
+    const camera = cameraController ? cameraController.get() : state.camera;
+    return { x: (clientX - rect.left - camera.x) / camera.zoom, y: (clientY - rect.top - camera.y) / camera.zoom };
   }
 
-  function applyCamera() {
-    const { x, y, zoom } = state.camera;
-    stage.style.transform = `translate(${x}px, ${y}px) scale(${zoom})`;
+  function refreshViewportLayout() {
+    const rect = viewport.getBoundingClientRect();
+    const composerRect = composer.getBoundingClientRect();
+    const tools = root.querySelector('.fo-canvas-tools').getBoundingClientRect();
+    layout = { width: rect.width, height: rect.height, bottom: Math.max(90, composerRect.top - rect.top - 12), tools: { right: tools.right - rect.left, bottom: tools.bottom - rect.top } };
+    if (!selectedActions.hidden) selectionSize = { width: selectedActions.offsetWidth, height: selectedActions.offsetHeight };
+  }
+
+  function positionSelection(camera) {
+    if (selectedActions.hidden || !layout?.width) return;
+    const card = state.cards.find((item) => item.id === state.selected);
+    if (!card) return;
+    const left = camera.x + card.x * camera.zoom;
+    const top = camera.y + card.y * camera.zoom;
+    const right = left + 270 * camera.zoom;
+    const bottom = top + 219 * camera.zoom;
+    const outside = right < 0 || left > layout.width || bottom < 0 || top > layout.height;
+    selectedActions.classList.toggle('is-outside', outside);
+    selectedActions.setAttribute('aria-hidden', String(outside));
+    if (outside) return;
+    const { width, height } = selectionSize;
+    let x = clamp((left + right - width) / 2, 12, Math.max(12, layout.width - width - 12));
+    let y = top - height - 12;
+    if (y < 48) y = bottom + 12;
+    y = clamp(y, 48, Math.max(48, layout.bottom - height));
+    if (x < layout.tools.right + 10 && y < layout.tools.bottom + 10) {
+      if (layout.tools.right + 10 + width <= layout.width - 12) x = layout.tools.right + 10;
+      else y = clamp(layout.tools.bottom + 10, 48, Math.max(48, layout.bottom - height));
+    }
+    selectedActions.style.left = x + 'px';
+    selectedActions.style.top = y + 'px';
+  }
+
+  function applyCamera(camera = cameraController ? cameraController.get() : state.camera) {
+    const { x, y, zoom } = camera;
+    state.camera = { x, y, zoom };
+    stage.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${zoom})`;
     viewport.style.backgroundSize = `${26 * zoom}px ${26 * zoom}px`;
     viewport.style.backgroundPosition = `${x}px ${y}px`;
-    root.querySelector('.fo-zoom-label').textContent = Math.round(zoom * 100) + '%';
+    const label = Math.round(zoom * 100) + '%';
+    if (zoomLabel.textContent !== label) zoomLabel.textContent = label;
+    if (document.activeElement !== zoomInput) zoomInput.value = String(Math.round(zoom * 100));
+    positionSelection(camera);
   }
 
-  function zoomBy(factor, clientX, clientY) {
+  function viewportPoint(clientX, clientY) {
     const rect = viewport.getBoundingClientRect();
-    const x = clientX === undefined ? rect.left + rect.width / 2 : clientX;
-    const y = clientY === undefined ? rect.top + rect.height / 2 : clientY;
-    const world = cameraToWorld(x, y);
-    state.camera.zoom = clamp(state.camera.zoom * factor, 0.22, 2.5);
-    state.camera.x = x - rect.left - world.x * state.camera.zoom;
-    state.camera.y = y - rect.top - world.y * state.camera.zoom;
-    applyCamera();
-    save();
+    return { x: clientX === undefined ? rect.width / 2 : clientX - rect.left, y: clientY === undefined ? Math.min(rect.height / 2, layout?.bottom || rect.height) : clientY - rect.top };
   }
 
-  function fit() {
+  function zoomBy(factor, clientX, clientY, animate = true) {
+    cameraController.zoomBy(factor, viewportPoint(clientX, clientY), { animate });
+  }
+
+  function setZoom(value) {
+    if (!Number.isFinite(value) || value <= 0) return;
+    cameraController.zoomTo(value / 100, viewportPoint(), { animate: true });
+    closeZoom(true);
+  }
+
+  function closeZoom(returnFocus = false) {
+    zoomPopover.hidden = true;
+    zoomLabel.setAttribute('aria-expanded', 'false');
+    if (returnFocus) zoomLabel.focus({ preventScroll: true });
+  }
+
+  function toggleZoom() {
+    if (!zoomPopover.hidden) { closeZoom(true); return; }
+    zoomPopover.hidden = false;
+    zoomLabel.setAttribute('aria-expanded', 'true');
+    zoomInput.value = String(Math.round(cameraController.getTarget().zoom * 100));
+    zoomInput.focus({ preventScroll: true });
+    zoomInput.select();
+  }
+
+  function fit(animate = true) {
     if (!viewport || !viewport.clientWidth) return;
+    refreshViewportLayout();
     const cards = state.cards;
+    let camera;
     if (!cards.length) {
-      state.camera = { x: 60, y: 10, zoom: 0.8 };
+      camera = { x: 60, y: 10, zoom: 0.8 };
     } else {
-      const left = Math.min(...cards.map((card) => card.x)) - 60;
-      const top = Math.min(...cards.map((card) => card.y)) - 70;
-      const width = Math.max(...cards.map((card) => card.x + 270)) - left + 70;
-      const height = Math.max(...cards.map((card) => card.y + 225)) - top + 70;
-      const availableHeight = Math.max(160, viewport.clientHeight - 150);
-      const zoom = clamp(Math.min((viewport.clientWidth - (viewport.clientWidth < 600 ? 34 : 145)) / width, availableHeight / height), 0.22, 1.12);
-      state.camera = { zoom, x: (viewport.clientWidth - width * zoom) / 2 - left * zoom + (viewport.clientWidth < 600 ? 12 : 25), y: (availableHeight - height * zoom) / 2 - top * zoom + 30 };
+      const left = Math.min(...cards.map((card) => card.x));
+      const top = Math.min(...cards.map((card) => card.y));
+      const width = Math.max(...cards.map((card) => card.x + 270)) - left;
+      const height = Math.max(...cards.map((card) => card.y + 219)) - top;
+      const safeLeft = layout.width < 600 ? 68 : 95;
+      const safeTop = layout.width < 600 ? 78 : 65;
+      const safeRight = 24;
+      const availableWidth = Math.max(100, layout.width - safeLeft - safeRight);
+      const availableHeight = Math.max(100, layout.bottom - safeTop - 20);
+      const zoom = clamp(Math.min(availableWidth / (width + 60), availableHeight / (height + 60)), 0.15, 1.5);
+      camera = { zoom, x: safeLeft + (availableWidth - width * zoom) / 2 - left * zoom, y: safeTop + (availableHeight - height * zoom) / 2 - top * zoom };
     }
-    applyCamera();
-    save();
+    cameraController.set(camera, { animate });
+    closeZoom(!zoomPopover.hidden);
   }
 
   function setTool(tool) {
@@ -185,6 +262,7 @@
   }
 
   function renderScene() {
+    if (pointers.size) resetGesture(true);
     const previousCards = new Set(Array.from(stage.querySelectorAll('.fo-card'), (card) => card.dataset.id));
     stage.replaceChildren();
     const group = document.createElement('div');
@@ -205,6 +283,9 @@
         item.style.setProperty('--fo-entry-delay', `${previousCards.size ? 0 : Math.min(index, 5) * 85}ms`);
       }
       item.dataset.id = card.id;
+      item.addEventListener('animationend', (event) => {
+        if (event.animationName === 'fo-card-arrive') item.classList.remove('is-entering');
+      });
       item.style.left = card.x + 'px';
       item.style.top = card.y + 'px';
       const header = document.createElement('div');
@@ -259,6 +340,8 @@
     const videoButton = selectedActions.querySelector('[data-action="motion"]');
     videoButton.disabled = busy || card.kind === 'video';
     videoButton.title = card.kind === 'video' ? '这个素材已经是视频' : '使用示例画面展示动态预览';
+    refreshViewportLayout();
+    positionSelection(cameraController ? cameraController.get() : state.camera);
   }
 
   function renderSequence() {
@@ -336,6 +419,7 @@
       }
       element.append(number, thumb, details, actions);
       element.addEventListener('dragstart', (event) => {
+        element.classList.remove('is-entering');
         timelineDragId = item.id;
         event.dataTransfer.setData('text/plain', item.id);
         event.dataTransfer.effectAllowed = 'move';
@@ -605,6 +689,7 @@
       case 'redo': redo(); break;
       case 'zoom-in': zoomBy(1.2); break;
       case 'zoom-out': zoomBy(1 / 1.2); break;
+      case 'zoom-options': toggleZoom(); break;
       case 'fit': fit(); break;
       case 'generate': generate(); break;
       case 'motion': generateMotion(); break;
@@ -623,12 +708,102 @@
     return target instanceof Element && Boolean(target.closest('input,textarea,select,[contenteditable="true"]'));
   }
 
+  function renderCardPosition() {
+    cardRAF = 0;
+    if (drag?.kind !== 'card') return;
+    const card = state.cards.find((item) => item.id === drag.id);
+    if (!card) return;
+    drag.element.style.transform = `translate3d(${card.x - drag.x}px, ${card.y - drag.y}px, 0)`;
+    positionSelection(cameraController.get());
+  }
+
+  function finishDrag(cancelled = false, dropY) {
+    if (!drag) return;
+    if (cardRAF) cancelAnimationFrame(cardRAF);
+    cardRAF = 0;
+    if (drag.kind === 'card') {
+      const card = state.cards.find((item) => item.id === drag.id);
+      if (card) {
+        if (cancelled) { card.x = drag.x; card.y = drag.y; }
+        else if (drag.moved) remember(drag.before);
+        drag.element.style.left = card.x + 'px';
+        drag.element.style.top = card.y + 'px';
+        drag.element.style.transform = '';
+      }
+      drag.element.classList.remove('is-dragging');
+      const timeline = root.querySelector('.fo-timeline').getBoundingClientRect();
+      if (!cancelled && drag.moved && dropY >= timeline.top && dropY <= timeline.bottom) addToSequence(drag.id);
+    }
+    if (drag.moved) suppressClick = performance.now() + 300;
+    viewport.classList.remove('is-panning');
+    drag = null;
+    positionSelection(cameraController.get());
+    save();
+  }
+
+  function resetGesture(cancelled = true) {
+    finishDrag(cancelled);
+    pinch = null;
+    const ids = Array.from(pointers.keys());
+    pointers.clear();
+    for (const id of ids) {
+      const element = pointerCaptures.get(id);
+      if (element?.hasPointerCapture(id)) element.releasePointerCapture(id);
+    }
+    pointerCaptures.clear();
+    viewport.classList.remove('is-panning');
+    cameraController.cancel();
+    cameraController.flush();
+    save();
+  }
+
+  function beginPinch() {
+    finishDrag(false);
+    cameraController.cancel();
+    const [a, b] = Array.from(pointers.values());
+    const point = viewportPoint((a.x + b.x) / 2, (a.y + b.y) / 2);
+    const camera = cameraController.get();
+    pinch = { distance: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)), zoom: camera.zoom, world: { x: (point.x - camera.x) / camera.zoom, y: (point.y - camera.y) / camera.zoom } };
+    suppressClick = performance.now() + 300;
+    viewport.classList.add('is-panning');
+  }
+
   function connectEvents() {
     root.addEventListener('click', (event) => {
       const button = event.target.closest('[data-action]');
       if (button && !button.disabled) handleAction(button.dataset.action);
+      const preset = event.target.closest('[data-zoom]');
+      if (preset) setZoom(Number(preset.dataset.zoom));
       const tool = event.target.closest('[data-tool]');
       if (tool) setTool(tool.dataset.tool);
+    });
+    viewport.addEventListener('click', (event) => {
+      if (event.detail && performance.now() < suppressClick && !event.target.closest('.fo-composer, .fo-selection-actions, .fo-canvas-tools, .fo-camera-tools')) {
+        event.stopImmediatePropagation();
+        event.preventDefault();
+      }
+    }, true);
+    document.addEventListener('pointerdown', (event) => {
+      if (!zoomPopover.hidden && !event.target.closest('.fo-camera-tools')) closeZoom();
+    });
+    root.querySelector('.fo-zoom-form').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const value = Number(zoomInput.value.trim().replace(/%$/, ''));
+      if (!Number.isFinite(value) || value <= 0) {
+        zoomInput.setCustomValidity('请输入 15 到 400 之间的比例');
+        zoomInput.reportValidity();
+        return;
+      }
+      zoomInput.setCustomValidity('');
+      setZoom(clamp(value, 15, 400));
+      zoomLabel.focus({ preventScroll: true });
+    });
+    zoomInput.addEventListener('input', () => zoomInput.setCustomValidity(''));
+    zoomPopover.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') { event.stopPropagation(); closeZoom(true); }
+    });
+    zoomPopover.addEventListener('focusout', (event) => {
+      if (event.relatedTarget && !zoomPopover.contains(event.relatedTarget) && event.relatedTarget !== zoomLabel) closeZoom();
     });
     root.querySelector('.fo-file-input').addEventListener('change', (event) => {
       importFiles(event.target.files);
@@ -643,60 +818,89 @@
     viewport.addEventListener('wheel', (event) => {
       if (event.target.closest('.fo-composer, .fo-selection-actions, .fo-canvas-tools, .fo-camera-tools')) return;
       event.preventDefault();
-      zoomBy(Math.exp(-event.deltaY * 0.0015), event.clientX, event.clientY);
+      if (pointers.size) return;
+      const { dx, dy } = window.FrameoutCamera.normalizeWheel(event, viewport.clientHeight);
+      if (event.ctrlKey || event.metaKey) zoomBy(Math.exp(-dy * 0.002), event.clientX, event.clientY, false);
+      else cameraController.pan(-(event.shiftKey && !dx ? dy : dx), event.shiftKey && !dx ? 0 : -dy);
     }, { passive: false });
     viewport.addEventListener('pointerdown', (event) => {
       if (event.button !== 0 && event.button !== 1) return;
       if (event.target.closest('.fo-composer, .fo-selection-actions, .fo-canvas-tools, .fo-camera-tools, .fo-canvas-intro')) return;
+      closeZoom();
+      cameraController.cancel();
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, type: event.pointerType });
+      const captureElement = event.target instanceof Element ? event.target : viewport;
+      captureElement.setPointerCapture(event.pointerId);
+      pointerCaptures.set(event.pointerId, captureElement);
+      event.preventDefault();
+      if (pointers.size >= 2) { beginPinch(); return; }
       const cardElement = event.target.closest('.fo-card');
       const card = cardElement && state.cards.find((item) => item.id === cardElement.dataset.id);
       const hand = spaceHeld || activeTool === 'hand' || event.button === 1;
       if (card && !hand) {
         selectCard(card.id);
-        drag = { kind: 'card', id: card.id, element: cardElement, startX: event.clientX, startY: event.clientY, x: card.x, y: card.y, before: snapshot(), moved: false };
+        drag = { kind: 'card', pointerId: event.pointerId, id: card.id, element: cardElement, startX: event.clientX, startY: event.clientY, x: card.x, y: card.y, before: snapshot(), moved: false };
+        cardElement.classList.remove('is-entering');
+        cardElement.classList.add('is-dragging');
       } else {
         if (!hand) selectCard(null);
-        drag = { kind: 'camera', startX: event.clientX, startY: event.clientY, x: state.camera.x, y: state.camera.y, moved: false };
+        const camera = cameraController.get();
+        drag = { kind: 'camera', pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, x: camera.x, y: camera.y, moved: false };
         viewport.classList.add('is-panning');
       }
-      viewport.setPointerCapture(event.pointerId);
-      event.preventDefault();
     });
     viewport.addEventListener('pointermove', (event) => {
-      if (!drag) return;
+      if (!pointers.has(event.pointerId)) return;
+      pointers.set(event.pointerId, { x: event.clientX, y: event.clientY, type: event.pointerType });
+      if (pinch && pointers.size >= 2) {
+        const [a, b] = Array.from(pointers.values());
+        const point = viewportPoint((a.x + b.x) / 2, (a.y + b.y) / 2);
+        const zoom = clamp(pinch.zoom * Math.hypot(b.x - a.x, b.y - a.y) / pinch.distance, 0.15, 4);
+        cameraController.set({ zoom, x: point.x - pinch.world.x * zoom, y: point.y - pinch.world.y * zoom });
+        return;
+      }
+      if (!drag || drag.pointerId !== event.pointerId) return;
       const dx = event.clientX - drag.startX;
       const dy = event.clientY - drag.startY;
       if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
       if (drag.kind === 'camera') {
-        state.camera.x = drag.x + dx;
-        state.camera.y = drag.y + dy;
-        applyCamera();
+        cameraController.set({ ...cameraController.get(), x: drag.x + dx, y: drag.y + dy });
       } else {
         const card = state.cards.find((item) => item.id === drag.id);
         if (!card) return;
-        card.x = drag.x + dx / state.camera.zoom;
-        card.y = drag.y + dy / state.camera.zoom;
-        drag.element.style.left = card.x + 'px';
-        drag.element.style.top = card.y + 'px';
-        drag.element.classList.toggle('is-dragging', drag.moved);
+        const zoom = cameraController.get().zoom;
+        card.x = drag.x + dx / zoom;
+        card.y = drag.y + dy / zoom;
+        if (!cardRAF) cardRAF = requestAnimationFrame(renderCardPosition);
       }
     });
-    function endDrag(event) {
-      if (!drag) return;
-      if (drag.kind === 'card') {
-        drag.element.classList.remove('is-dragging');
-        if (drag.moved) remember(drag.before);
-        const timeline = root.querySelector('.fo-timeline').getBoundingClientRect();
-        if (drag.moved && event.clientY >= timeline.top && event.clientY <= timeline.bottom) addToSequence(drag.id);
+    function endPointer(event) {
+      if (!pointers.has(event.pointerId)) return;
+      pointers.delete(event.pointerId);
+      const captureElement = pointerCaptures.get(event.pointerId);
+      pointerCaptures.delete(event.pointerId);
+      if (captureElement?.hasPointerCapture(event.pointerId)) captureElement.releasePointerCapture(event.pointerId);
+      const cancelled = event.type !== 'pointerup';
+      if (pinch) {
+        pinch = null;
+        suppressClick = performance.now() + 300;
+        if (pointers.size >= 2) beginPinch();
+        else if (pointers.size === 1) {
+          const [id, point] = pointers.entries().next().value;
+          const camera = cameraController.get();
+          drag = { kind: 'camera', pointerId: id, startX: point.x, startY: point.y, x: camera.x, y: camera.y, moved: false };
+        } else viewport.classList.remove('is-panning');
+      } else if (drag?.pointerId === event.pointerId) {
+        finishDrag(cancelled, cancelled ? undefined : event.clientY);
       }
-      viewport.classList.remove('is-panning');
-      drag = null;
-      save();
+      cameraController.flush();
     }
-    viewport.addEventListener('pointerup', endDrag);
-    viewport.addEventListener('pointercancel', endDrag);
+    viewport.addEventListener('pointerup', endPointer);
+    viewport.addEventListener('pointercancel', endPointer);
+    viewport.addEventListener('lostpointercapture', endPointer);
     viewport.addEventListener('dblclick', (event) => {
-      if (event.target.closest('.fo-card,button,textarea')) return;
+      if (performance.now() < suppressClick) return;
+      if (event.target.closest('.fo-card,.fo-composer,.fo-selection-actions,.fo-canvas-tools,.fo-camera-tools,.fo-canvas-intro')) return;
       pendingPosition = cameraToWorld(event.clientX, event.clientY);
       root.querySelector('.fo-prompt').focus();
     });
@@ -719,22 +923,32 @@
     document.addEventListener('keydown', (event) => {
       if (!root || root.hidden || root.getAttribute('aria-hidden') === 'true' || getComputedStyle(root).display === 'none' || isTyping(event.target)) return;
       if (root.querySelector('dialog[open]')) return;
+      if (pointers.size) {
+        if (event.key === 'Escape') { event.preventDefault(); resetGesture(true); }
+        return;
+      }
       if (event.code === 'Space') {
         spaceHeld = true;
         viewport.classList.add('is-hand');
         event.preventDefault();
       }
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
+      if ((event.metaKey || event.ctrlKey) && (event.key === '+' || event.key === '=' || event.key === '-')) {
+        event.preventDefault(); zoomBy(event.key === '-' ? 1 / 1.2 : 1.2);
+      } else if (event.key === '0') {
+        event.preventDefault(); fit();
+      } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
         event.preventDefault();
         if (event.shiftKey) redo(); else undo();
       } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'y') {
         event.preventDefault(); redo();
       } else if (event.key === 'Delete' || event.key === 'Backspace') {
         if (state.selected) { event.preventDefault(); removeSelected(); }
-      } else if (event.key.toLowerCase() === 'v') setTool('select');
-      else if (event.key.toLowerCase() === 'h') setTool('hand');
-      else if (event.key === 'Escape') selectCard(null);
-      else if (event.key === '0' && !event.metaKey && !event.ctrlKey) fit();
+      } else if (!event.metaKey && !event.ctrlKey && event.key.toLowerCase() === 'v') setTool('select');
+      else if (!event.metaKey && !event.ctrlKey && event.key.toLowerCase() === 'h') setTool('hand');
+      else if (event.key === 'Escape') {
+        if (!zoomPopover.hidden) closeZoom(true);
+        else selectCard(null);
+      }
     });
     document.addEventListener('keyup', (event) => {
       if (event.code === 'Space') {
@@ -744,8 +958,7 @@
     });
     window.addEventListener('blur', () => {
       spaceHeld = false;
-      drag = null;
-      viewport.classList.remove('is-panning');
+      resetGesture(true);
       viewport.classList.toggle('is-hand', activeTool === 'hand');
     });
     root.querySelector('.fo-preview-dialog').addEventListener('cancel', stopPreview);
@@ -799,8 +1012,8 @@
             <div class="fo-composer-bottom"><span class="fo-generation-state">内置示例素材 · 无需账号</span><button type="button" class="fo-generate-button" data-action="generate">${icon('sparkles')}<span>演示生成</span>${icon('arrow-up-right')}</button></div>
             <div class="fo-generation-line"></div>
           </form>
-          <div class="fo-camera-tools" aria-label="缩放控制"><button type="button" class="fo-icon-button" data-action="zoom-out" aria-label="缩小">${icon('minus') || '−'}</button><span class="fo-zoom-label">80%</span><button type="button" class="fo-icon-button" data-action="zoom-in" aria-label="放大">${icon('plus') || '+'}</button><span class="fo-tool-divider"></span><button type="button" class="fo-icon-button" data-action="fit" aria-label="适应全部素材" title="适应全部素材 · 0">${icon('maximize') || '⛶'}</button></div>
-          <div class="fo-canvas-hint"><span>滚轮缩放</span><i>·</i><span>空格拖动画布</span><i>·</i><span>双击画面预览</span></div>
+          <div class="fo-camera-tools" aria-label="缩放控制"><button type="button" class="fo-icon-button" data-action="zoom-out" aria-label="缩小">${icon('minus') || '−'}</button><button type="button" class="fo-zoom-label" data-action="zoom-options" aria-expanded="false" aria-controls="fo-zoom-popover" aria-haspopup="dialog" aria-label="缩放比例选项">80%</button><button type="button" class="fo-icon-button" data-action="zoom-in" aria-label="放大">${icon('plus') || '+'}</button><span class="fo-tool-divider"></span><button type="button" class="fo-icon-button" data-action="fit" aria-label="适应全部素材" title="适应全部素材 · ⌘ / Ctrl 0">${icon('maximize') || '⛶'}</button><div class="fo-zoom-popover" id="fo-zoom-popover" role="dialog" aria-label="画布缩放" hidden><form class="fo-zoom-form"><label for="fo-zoom-input">缩放比例</label><div><input class="fo-zoom-input" id="fo-zoom-input" type="text" inputmode="decimal" autocomplete="off" aria-label="缩放比例"><span>%</span><button type="submit">应用</button></div></form><div class="fo-zoom-presets"><button type="button" data-zoom="50">50%</button><button type="button" data-zoom="100">100%</button><button type="button" data-zoom="200">200%</button></div><button type="button" class="fo-zoom-fit" data-action="fit">适应全部素材<span>⌘ / Ctrl 0</span></button></div></div>
+          <div class="fo-canvas-hint"><span>滚动平移</span><i>·</i><span>⌘ / Ctrl + 滚轮缩放</span><i>·</i><span>空格拖动画布</span></div>
           <div class="fo-file-drop-hint">松开，添加到画布 ${icon('upload')}</div>
         </main>
         <section class="fo-timeline" aria-label="成片镜头序列">
@@ -811,19 +1024,23 @@
         <div class="fo-toast" role="status" aria-live="polite"></div>
       </div>
       <dialog class="fo-preview-dialog" aria-labelledby="fo-preview-heading"><div class="fo-preview-head"><div><span class="fo-eyebrow">SCREENING ROOM</span><h2 class="fo-preview-title" id="fo-preview-heading">森林来信</h2></div><button type="button" class="fo-icon-button" data-action="close-preview" aria-label="关闭预览">${icon('x') || '×'}</button></div><div class="fo-preview-screen"></div><div class="fo-preview-description"><span class="fo-preview-shot"></span><span>浏览器内动态预览</span></div><div class="fo-preview-controls"><button type="button" class="fo-icon-button" data-action="prev-preview" aria-label="上一个镜头">${icon('chevron-left') || '‹'}</button><button type="button" class="fo-preview-play" data-action="toggle-preview" aria-label="暂停预览">${icon('pause') || 'Ⅱ'}</button><button type="button" class="fo-icon-button" data-action="next-preview" aria-label="下一个镜头">${icon('chevron-right') || '›'}</button><input class="fo-preview-progress" type="range" min="0" max="4" value="0" step="0.01" aria-label="预览播放位置"><span class="fo-preview-time">00:00 / 00:04</span></div></dialog>
-      <dialog class="fo-help-dialog" aria-labelledby="fo-help-heading"><button type="button" class="fo-icon-button fo-help-close" data-action="close-help" aria-label="关闭使用指南">${icon('x') || '×'}</button><span class="fo-eyebrow">A LITTLE GUIDE</span><h2 id="fo-help-heading">把想法摊开，<br>再把故事连起来。</h2><p>画布用来探索和比较。只有加入下方成片区的镜头，才会按顺序播放。</p><dl><div><dt>平移画布</dt><dd>拖动空白处，或按住空格拖动</dd></div><div><dt>缩放画布</dt><dd>滚轮，或右下角 ＋ / −</dd></div><div><dt>查看素材</dt><dd>单击选择，双击预览</dd></div><div><dt>撤销 / 重做</dt><dd>⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z</dd></div><div><dt>删除素材</dt><dd>选中后按 Delete / Backspace</dd></div><div><dt>适应画布</dt><dd>按 0，或点击适应按钮</dd></div></dl><div class="fo-help-note"><strong>这是一间可以动手的演示工作室。</strong><span>演示生成使用内置样例；动态预览展示镜头运动效果。真实 AI 生成与视频编码尚未接入。项目保存在当前浏览器，本地导入文件仅本次页面会话可用。</span></div><button type="button" class="fo-primary-button" data-action="close-help">开始探索 ${icon('arrow-up-right')}</button></dialog>
+      <dialog class="fo-help-dialog" aria-labelledby="fo-help-heading"><button type="button" class="fo-icon-button fo-help-close" data-action="close-help" aria-label="关闭使用指南">${icon('x') || '×'}</button><span class="fo-eyebrow">A LITTLE GUIDE</span><h2 id="fo-help-heading">把想法摊开，<br>再把故事连起来。</h2><p>画布用来探索和比较。只有加入下方成片区的镜头，才会按顺序播放。</p><dl><div><dt>平移画布</dt><dd>双指滚动 / 滚轮 · 拖动空白处<br>空格 + 拖动，或鼠标中键</dd></div><div><dt>缩放画布</dt><dd>触控板捏合 · ⌘ / Ctrl + 滚轮<br>⌘ / Ctrl ＋ / −，或点击比例</dd></div><div><dt>触屏操作</dt><dd>单指拖动 · 双指平移与缩放</dd></div><div><dt>查看素材</dt><dd>单击选择，双击预览</dd></div><div><dt>撤销 / 重做</dt><dd>⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z</dd></div><div><dt>删除素材</dt><dd>选中后按 Delete / Backspace</dd></div><div><dt>适应画布</dt><dd>⌘ / Ctrl 0，或点击适应按钮</dd></div></dl><div class="fo-help-note"><strong>这是一间可以动手的演示工作室。</strong><span>演示生成使用内置样例；动态预览展示镜头运动效果。真实 AI 生成与视频编码尚未接入。项目保存在当前浏览器，本地导入文件仅本次页面会话可用。</span></div><button type="button" class="fo-primary-button" data-action="close-help">开始探索 ${icon('arrow-up-right')}</button></dialog>
     `;
     viewport = root.querySelector('.fo-viewport');
     stage = root.querySelector('.fo-stage');
     sequenceList = root.querySelector('.fo-sequence-list');
     composer = root.querySelector('.fo-composer');
     selectedActions = root.querySelector('.fo-selection-actions');
+    zoomLabel = root.querySelector('.fo-zoom-label');
+    zoomPopover = root.querySelector('.fo-zoom-popover');
+    zoomInput = root.querySelector('.fo-zoom-input');
+    cameraController = window.FrameoutCamera.create({ initial: state.camera, onRender: applyCamera, onRest: save, reducedMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches });
+    refreshViewportLayout();
     renderScene();
     connectEvents();
     window.addEventListener('resize', () => {
-      if (viewport.clientWidth) applyCamera();
+      if (viewport.clientWidth) { refreshViewportLayout(); applyCamera(); }
     });
-    requestAnimationFrame(() => { if (viewport.clientWidth) fit(); });
   }
 
   function loadExample(key) {
@@ -850,8 +1067,16 @@
     mount,
     fit,
     loadExample,
+    enter: () => { refreshViewportLayout(); if (hasSavedCamera) applyCamera(); else fit(false); },
     open: () => { if (typeof window.openStudio === 'function') window.openStudio(); },
-    getState: () => state ? clone(state) : null,
-    pause: closePreview,
+    getState: () => state ? { ...clone(state), camera: cameraController.get() } : null,
+    pause: () => {
+      closePreview();
+      closeZoom();
+      resetGesture(true);
+      spaceHeld = false;
+      viewport.classList.toggle('is-hand', activeTool === 'hand');
+      save();
+    },
   };
 })();
