@@ -126,6 +126,12 @@
     const status = q('.fo-api-status');
     const testButton = q('.fo-api-test');
     const revealButton = q('.fo-api-reveal');
+    const customSelects = new Map();
+    if (view.FrameoutSelect) {
+      for (const select of dialog.querySelectorAll('select')) {
+        customSelects.set(select, view.FrameoutSelect.create(select, { host: dialog }));
+      }
+    }
 
     function setStatus(message = '', kind = '') {
       status.textContent = message;
@@ -216,6 +222,7 @@
       resetVisibility();
       updateKeyState();
       setStatus();
+      customSelects.forEach(control => control.refresh());
     }
 
     function validBase() {
@@ -248,6 +255,7 @@
     }
 
     function cleanupDraft() {
+      customSelects.forEach(control => control.close());
       abortTest();
       fields.key.value = '';
       drafts.clear();
@@ -268,7 +276,9 @@
       draftKeys.clear();
       fillForm(draftProvider);
       dialog.showModal();
-      providerSelect.focus({ preventScroll: true });
+      const providerControl = customSelects.get(providerSelect);
+      if (providerControl) providerControl.focus();
+      else providerSelect.focus({ preventScroll: true });
     }
 
     providerSelect.addEventListener('change', () => {
@@ -340,6 +350,7 @@
         destroyed = true;
         close();
         keys.clear();
+        customSelects.forEach(control => control.destroy());
         dialog.remove();
       },
     };

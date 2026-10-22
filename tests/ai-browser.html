@@ -191,6 +191,82 @@
         assert(apiCalls(value => value.path === '/images/generations').length === 0, '连接测试不应发起生成');
         noSecret(localStorage.getItem(PREFERENCE_KEY) || '');
       });
+      await test(mode, '自定义下拉菜单支持键盘、同步配置且保持在视口内', async () => {
+        const visible = element => Boolean(element && element.getClientRects().length && context.w.getComputedStyle(element).visibility !== 'hidden');
+        const triggerFor = select => q(`.fo-select-trigger[data-select-for="${select.id}"]`);
+        const openMenu = () => Array.from(context.d.querySelectorAll('.fo-select-menu[role="listbox"]')).find(visible);
+        const options = () => Array.from(openMenu()?.querySelectorAll('.fo-select-option[role="option"]') || []);
+        const key = (element, value) => element.dispatchEvent(new context.w.KeyboardEvent('keydown', { key:value, bubbles:true, cancelable:true }));
+        const assertMenuBounds = () => {
+          const menu = openMenu();
+          assert(menu, '供应商 trigger 没有打开自定义 listbox');
+          const rect = menu.getBoundingClientRect();
+          assert(rect.left >= -1 && rect.right <= width+1 && rect.top >= -1 && rect.bottom <= height+1, `自定义菜单超出 ${width}×${height} 视口`);
+        };
+        async function showMenu(select) {
+          const trigger = triggerFor(select);
+          trigger.scrollIntoView({ block:'nearest', inline:'nearest' });
+          trigger.focus({ preventScroll:true });
+          await delay(30);
+          trigger.click();
+          await until(openMenu, '自定义菜单未打开');
+          assertMenuBounds();
+        }
+        async function choose(select, value) {
+          await showMenu(select);
+          const native = Array.from(select.options).find(option => option.value === value);
+          const option = options().find(item => item.dataset.value === value || (item.querySelector('.fo-select-option-label')?.textContent || item.textContent).trim() === native?.textContent.trim());
+          assert(option, '自定义菜单缺少选项：'+value);
+          option.click();
+          await until(() => !openMenu(), '点击选项后自定义菜单未关闭');
+          assert(select.value === value, '点击自定义选项未同步原生 select 值');
+        }
+        try {
+          click('[data-action="api-settings"]');
+          const provider = q('.fo-api-provider');
+          const providerTrigger = triggerFor(provider);
+          assert(providerTrigger.getAttribute('role') === 'combobox' && visible(providerTrigger), '供应商替代控件应是可见的 combobox');
+          assert(!visible(provider), '原生供应商 select 应隐藏，避免打开原生选择器');
+          await showMenu(provider);
+          key(context.d.activeElement, 'ArrowDown');
+          key(context.d.activeElement, 'Enter');
+          await until(() => provider.value === 'ark' && !openMenu(), 'ArrowDown / Enter 未将供应商从 OpenAI 切换到火山');
+          assert(q('.fo-api-base').value === 'https://ark.cn-beijing.volces.com/api/v3', '供应商变更未刷新真实表单配置');
+          for (const select of context.d.querySelectorAll('.fo-api-dialog select')) {
+            const trigger = triggerFor(select);
+            assert(!visible(select), 'API 设置仍显示原生 select：'+select.name);
+            assert(trigger.getAttribute('role') === 'combobox' && visible(trigger), 'API 设置缺少可见替代 combobox：'+select.name);
+          }
+          await showMenu(provider);
+          key(context.d.activeElement, 'Escape');
+          await until(() => !openMenu(), 'Escape 未关闭下拉菜单');
+          assert(q('.fo-api-dialog').open, 'Escape 关闭菜单时不应关闭 API 设置窗口');
+          await showMenu(provider);
+          q('.fo-api-head h2').dispatchEvent(new context.w.MouseEvent('pointerdown', { bubbles:true,cancelable:true }));
+          q('.fo-api-head h2').click();
+          await until(() => !openMenu(), '点击菜单外部未关闭下拉菜单');
+          assert(q('.fo-api-dialog').open, '点击菜单外部不应关闭 API 设置窗口');
+          await choose(provider, 'compatible');
+          const ratio = q('.fo-api-ratio');
+          const forbidden = Array.from(ratio.options).find(option => option.value === '1:1');
+          assert(forbidden?.hidden && forbidden.disabled, '兼容供应商应将方形视频比例标记为隐藏且禁用');
+          await showMenu(ratio);
+          assert(!options().some(option => option.dataset.value === '1:1' || option.textContent.includes('方形')), '隐藏或禁用选项不应出现在自定义菜单中');
+          key(context.d.activeElement, 'Escape');
+          await until(() => !openMenu(), '视频比例菜单未关闭');
+          set('.fo-api-base', 'https://mock.example/v1');
+          set('.fo-api-image-model', 'fixture-custom-image-model');
+          event(q('.fo-api-form'), 'submit');
+          await until(() => !q('.fo-api-dialog').open, '自定义选项配置未保存');
+          const saved = JSON.parse(localStorage.getItem(PREFERENCE_KEY) || '{}');
+          assert(saved.active === 'compatible' && saved.profiles?.compatible?.provider === 'compatible', '点击选项后保存的供应商配置未同步');
+          assert(saved.profiles.compatible.baseUrl === 'https://mock.example/v1', '自定义供应商配置未保存');
+          return '原生 select 隐藏；菜单键盘、关闭、选项过滤与配置同步通过';
+        } finally {
+          if (q('.fo-api-dialog').open) click('.fo-api-close');
+          await configure('openai');
+        }
+      });
       await test(mode, '设置窗口与表单不超出当前视口', async () => {
         click('[data-action="api-settings"]');
         const box = q('.fo-api-dialog').getBoundingClientRect();
