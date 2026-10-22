@@ -25,6 +25,8 @@
   let pinch = null;
   let hasSavedCamera = false;
   let apiSettings, generationMode = 'image', activeGeneration = null;
+  let generationModeControl;
+  const timelineSelects = new Map();
   const mediaURLs = new Map();
   const missingMedia = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#252c20"/><text x="320" y="185" fill="#b5c69e" text-anchor="middle" font-family="sans-serif" font-size="22">素材暂不可用</text></svg>');
   const pendingMedia = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#252c20"/><text x="320" y="185" fill="#b5c69e" text-anchor="middle" font-family="sans-serif" font-size="22">视频生成任务</text></svg>');
@@ -392,7 +394,11 @@
   }
 
   function renderSequence() {
+    const focusedSequence = document.activeElement?.matches('.fo-select-trigger')
+      ? document.activeElement.closest('.fo-seq-item')?.dataset.sequenceId : null;
     const previousPositions = new Map(Array.from(sequenceList.children, (item) => [item.dataset.sequenceId, item.offsetLeft]));
+    timelineSelects.forEach(control => control.destroy());
+    timelineSelects.clear();
     sequenceList.replaceChildren();
     const total = state.sequence.reduce((sum, item) => sum + item.duration, 0);
     root.querySelector('.fo-sequence-summary').textContent = `${state.sequence.length} 个镜头 · ${timeLabel(total)}`;
@@ -423,7 +429,7 @@
       details.className = 'fo-seq-detail';
       const name = document.createElement('span');
       name.textContent = card.name;
-      const time = document.createElement('label');
+      const time = document.createElement('div');
       time.className = 'fo-duration-label';
       const duration = document.createElement('select');
       duration.setAttribute('aria-label', card.name + '的播放时长');
@@ -497,6 +503,8 @@
         save();
       });
       sequenceList.append(element);
+      const durationControl = window.FrameoutSelect.create(duration, { host: root.querySelector('.fo-app'), variant: 'duration' });
+      timelineSelects.set(item.id, durationControl);
     }
     if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       for (const element of sequenceList.children) {
@@ -505,6 +513,7 @@
         if (offset) element.animate([{ transform: `translateX(${offset}px)` }, { transform: 'translateX(0)' }], { duration: 340, easing: 'cubic-bezier(.2,.7,.2,1)' });
       }
     }
+    if (focusedSequence) timelineSelects.get(focusedSequence)?.focus();
   }
 
   function addToSequence(cardId) {
@@ -548,6 +557,7 @@
     button.querySelector('span').textContent = busy ? '生成中' : demo ? '演示生成' : generationMode === 'video' ? '生成视频' : '生成图片';
     root.querySelector('.fo-generation-mode').value = generationMode;
     root.querySelector('.fo-generation-mode').disabled = busy;
+    generationModeControl?.refresh();
     root.querySelector('.fo-demo-badge').innerHTML = '<i></i>' + (demo ? '演示模式' : '真实 API');
     root.querySelector('.fo-generation-state').textContent = message || (demo ? '内置示例素材 · 无需账号' : apiSettings?.hasKey() ? `${provider?.label || 'API'} · 按供应商计费` : '先配置 API Key，再开始生成');
     root.querySelector('[data-action="cancel-generation"]').hidden = !activeGeneration;
@@ -989,7 +999,7 @@
   }
 
   function isTyping(target) {
-    return target instanceof Element && Boolean(target.closest('input,textarea,select,[contenteditable="true"]'));
+    return target instanceof Element && Boolean(target.closest('input,textarea,select,[role="combobox"],.fo-select-menu,[contenteditable="true"]'));
   }
 
   function renderCardPosition() {
@@ -1326,6 +1336,7 @@
     zoomPopover = root.querySelector('.fo-zoom-popover');
     zoomInput = root.querySelector('.fo-zoom-input');
     try { const mode = localStorage.getItem('frameout-generation-mode'); if (['image', 'video', 'demo'].includes(mode)) generationMode = mode; } catch (_) { /* Default to real image generation. */ }
+    generationModeControl = window.FrameoutSelect.create(root.querySelector('.fo-generation-mode'), { host: root.querySelector('.fo-app'), variant: 'compact' });
     apiSettings = window.FrameoutAISettings.create({ root, onChange: () => updateGenerationUI(), onClear: stopGeneration });
     cameraController = window.FrameoutCamera.create({ initial: state.camera, onRender: applyCamera, onRest: save, reducedMotion: () => window.matchMedia('(prefers-reduced-motion: reduce)').matches });
     refreshViewportLayout();
@@ -1366,6 +1377,8 @@
     open: () => { if (typeof window.openStudio === 'function') window.openStudio(); },
     getState: () => state ? { ...clone(state), camera: cameraController.get() } : null,
     pause: () => {
+      generationModeControl?.close();
+      timelineSelects.forEach(control => control.close());
       closePreview();
       closeZoom();
       resetGesture(true);

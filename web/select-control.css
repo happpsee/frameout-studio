@@ -1,0 +1,33 @@
+/* Shared controls across API settings, canvas composer and shot sequence. */
+.fo-select{position:relative;min-width:0;width:100%}
+.fo-studio .fo-select-trigger{display:flex;align-items:center;gap:12px;width:100%;min-width:0;min-height:42px;padding:10px 12px;border:1px solid #42483c;border-radius:4px;background:#171c13;color:#eff3e8;font:12px/20px Arial,"PingFang SC",sans-serif;text-align:left;box-shadow:none;transition:border-color .16s,background .16s}
+.fo-studio .fo-select-trigger:hover:not(:disabled){border-color:#66715a;background:#1b2117}
+.fo-studio .fo-select-trigger:focus-visible,.fo-studio .fo-select-trigger[aria-expanded="true"]{border-color:#9ba48e;box-shadow:inset 0 0 0 1px #9ba48e26}
+.fo-select-value{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fo-studio .fo-select-chevron{flex:none;width:14px;height:14px;color:#8b9680;transition:transform .16s}
+.fo-select-trigger[aria-expanded="true"] .fo-select-chevron{transform:rotate(180deg)}
+.fo-studio .fo-select-menu{position:fixed;z-index:30;margin:0;padding:5px;border:1px solid #515b45;border-radius:7px;background:#20261b;color:#e8ecdf;box-shadow:0 12px 32px #0005,0 2px 5px #0003;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#586548 transparent;animation:fo-select-reveal .13s ease-out;box-sizing:border-box}
+.fo-studio .fo-select-option{background:transparent;width:100%;border:0;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:38px;padding:10px 11px;border-radius:3px;font:12px/18px Arial,"PingFang SC",sans-serif;cursor:pointer;color:#bec8b0;overflow-wrap:anywhere;transition:background .1s,color .1s}
+.fo-studio .fo-select-option.is-active,.fo-studio .fo-select-option:hover{background:#333d2a;color:#f0f3e8}
+.fo-studio .fo-select-option[aria-selected="true"]{color:#f0f3e8}
+.fo-studio .fo-select-check{flex:none;width:14px;height:14px;color:#b5d98e}
+.fo-studio .fo-select-option[aria-disabled="true"]{opacity:.4;cursor:not-allowed}
+@keyframes fo-select-reveal{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:540px){.fo-studio .fo-select-trigger{min-height:43px;font-size:16px;padding:10px}.fo-studio .fo-select-option{min-height:44px;font-size:14px;padding:11px 10px}}
+@media(pointer:coarse){.fo-studio .fo-select-trigger,.fo-studio .fo-select-option{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.fo-studio .fo-select-trigger,.fo-studio .fo-select-chevron,.fo-studio .fo-select-option{transition:none}.fo-studio .fo-select-menu{animation:none}}
+
+.fo-studio .fo-select-chevron svg{display:block;width:14px;height:14px}
+.fo-studio .fo-select-empty{padding:12px 11px;color:#95a288;font:12px/18px Arial,sans-serif}
+
+.fo-studio .fo-select[data-variant="compact"]{width:106px;max-width:106px;flex:none;margin-left:auto}
+.fo-studio .fo-select[data-variant="compact"] .fo-select-trigger{min-height:28px;padding:4px 7px;gap:7px;border-color:#59624e;background:#20271a;font-size:10px;line-height:18px;color:#d0d9c3}
+.fo-studio .fo-select[data-variant="compact"] .fo-select-chevron{width:12px;height:12px}
+.fo-studio .fo-select[data-variant="compact"] .fo-select-chevron svg{width:12px;height:12px}
+.fo-studio .fo-select[data-variant="duration"]{width:70px}
+.fo-studio .fo-select[data-variant="duration"] .fo-select-trigger{min-height:26px;padding:3px 6px;gap:6px;font:10px/18px "Courier New",monospace;color:#bbc7ad;background:#22291c;border-color:#46503c}
+.fo-studio .fo-select-menu[data-variant="duration"] .fo-select-option{min-height:32px;padding:7px 9px;font-size:11px;line-height:18px}
+.fo-studio .fo-select-menu[data-variant="compact"] .fo-select-option{min-height:36px;padding:9px 10px;font-size:11px;line-height:18px}
+.fo-studio .fo-select[data-variant] .fo-select-trigger:focus-visible,.fo-studio .fo-select[data-variant] .fo-select-trigger[aria-expanded="true"]{border-color:#9ba48e;box-shadow:inset 0 0 0 1px #9ba48e26}
+@media(max-width:540px){.fo-studio .fo-select[data-variant="compact"]{width:88px;max-width:88px}.fo-studio .fo-select[data-variant="compact"] .fo-select-trigger{min-height:30px;font-size:10px}.fo-studio .fo-select[data-variant="duration"] .fo-select-trigger{min-height:28px}.fo-studio .fo-select-menu[data-variant="duration"] .fo-select-option,.fo-studio .fo-select-menu[data-variant="compact"] .fo-select-option{min-height:40px;font-size:12px}}
+@media(pointer:coarse){.fo-studio .fo-select[data-variant="compact"] .fo-select-trigger{min-height:36px}.fo-studio .fo-select[data-variant="duration"] .fo-select-trigger{min-height:32px}.fo-studio .fo-select-menu[data-variant="duration"] .fo-select-option,.fo-studio .fo-select-menu[data-variant="compact"] .fo-select-option{min-height:44px}}

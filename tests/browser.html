@@ -23,6 +23,7 @@
 (() => {
   'use strict';
   const storageKey = 'frameout-studio-v1';
+  const generationModeKey = 'frameout-generation-mode';
   const summary = document.getElementById('summary');
   const results = document.getElementById('results');
   const frameHost = document.getElementById('frame-host');
@@ -135,6 +136,35 @@
       const cardElement = id => q(`.fo-card[data-id="${id}"]`);
       const select = async id => { cardElement(id).querySelector('.fo-media').click(); await frames(); };
       const firstId = state().cards[0]?.id;
+      const visible = element => Boolean(element && element.getClientRects().length && w.getComputedStyle(element).visibility !== 'hidden');
+      const selectTrigger = control => q(`.fo-select-trigger[data-select-for="${control.id}"]`);
+      const visibleSelectMenus = () => Array.from(d.querySelectorAll('.fo-select-menu[role="listbox"]')).filter(visible);
+      const openSelect = async control => {
+        const trigger = selectTrigger(control);
+        assert(trigger.getAttribute('role') === 'combobox' && visible(trigger), '缺少可见的自定义 combobox');
+        assert(!visible(control), '原生 select 应隐藏，避免打开系统选择器');
+        trigger.scrollIntoView({block:'nearest',inline:'nearest'});
+        trigger.focus({preventScroll:true});
+        await frames();
+        trigger.click();
+        await frames();
+        const menu = d.getElementById(trigger.getAttribute('aria-controls'));
+        assert(menu?.matches('.fo-select-menu[role="listbox"]') && visible(menu), '自定义 listbox 没有打开：'+control.getAttribute('aria-label')+' / trigger '+JSON.stringify(trigger.getBoundingClientRect().toJSON())+' / expanded '+trigger.getAttribute('aria-expanded'));
+        const box = menu.getBoundingClientRect();
+        assert(box.left >= -1 && box.right <= width+1 && box.top >= -1 && box.bottom <= height+1, `自定义菜单越出 ${width}×${height} 视口`);
+        return {trigger,menu};
+      };
+      const chooseSelect = async (control, value) => {
+        const {menu} = await openSelect(control);
+        const native = Array.from(control.options).find(option => option.value === String(value));
+        assert(native, '原生表单缺少测试选项：'+value);
+        const option = Array.from(menu.querySelectorAll('.fo-select-option[role="option"]')).find(element => element.dataset.value === String(value) || (element.querySelector('.fo-select-option-label')?.textContent || element.textContent).trim() === native.textContent.trim());
+        assert(option && !option.disabled, '自定义菜单缺少可点击的选项：'+value);
+        option.click();
+        await frames();
+        assert(control.value === String(value), '自定义选项没有同步原生 select 值');
+        assert(visibleSelectMenus().length === 0, '选择后仍残留打开的自定义菜单');
+      };
 
       await test(mode, '实际画布挂载与尺寸', () => {
         assert(firstId && state().cards.length === 3, '初始示例素材不完整');
@@ -295,6 +325,68 @@
         const current = state().camera;
         near(saved.camera.x, current.x, 1e-6); near(saved.camera.y, current.y, 1e-6); near(saved.camera.zoom, current.zoom, 1e-6);
       });
+      await test(mode, '生成模式自定义菜单同步状态，Escape 保留选择且聚焦无荧光外圈', async () => {
+        await select(firstId);
+        const control = q('.fo-generation-mode');
+        await chooseSelect(control, 'demo');
+        assert(q('.fo-demo-badge').textContent.includes('演示模式') && q('.fo-generation-state').textContent.includes('内置示例'), '演示模式没有同步 badge 或说明');
+        await chooseSelect(q('.fo-generation-mode'), 'image');
+        assert(q('.fo-demo-badge').textContent.includes('真实 API'), '真实图片模式没有同步 badge');
+        const selected = state().selected;
+        const {trigger} = await openSelect(q('.fo-generation-mode'));
+        trigger.dispatchEvent(new w.KeyboardEvent('keydown', {key:'Escape',bubbles:true,cancelable:true}));
+        await frames();
+        assert(visibleSelectMenus().length === 0 && d.activeElement === trigger, 'Escape 没有关闭菜单并保留触发器焦点');
+        assert(state().selected === selected && selected === firstId, '菜单 Escape 传播到画布并取消了素材选择');
+        for (const native of d.querySelectorAll('#studio-root select')) {
+          assert(!visible(native), '全站仍出现原生 select：'+(native.name || native.className));
+          assert(selectTrigger(native).getAttribute('role') === 'combobox', '原生 select 没有对应的 combobox');
+        }
+        const lime = /rgba?\(\s*181\s*,\s*255\s*,\s*42(?:\s*,[^)]*)?\)/i;
+        for (const target of [trigger,q('.fo-prompt')]) {
+          target.focus({preventScroll:true});
+          await settle();
+          const style = w.getComputedStyle(target);
+          assert(!(style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) >= 2 && lime.test(style.outlineColor)), '聚焦控件仍显示 2px 荧光绿色外轮廓');
+        }
+        const composerStyle = w.getComputedStyle(q('.fo-composer'));
+        assert(!lime.test(composerStyle.borderTopColor) && !lime.test(composerStyle.boxShadow), '生成框 focus-within 仍显示荧光绿色边框或光圈');
+        q('.fo-prompt').blur();
+        return '只切换模式，不点击生成或发送 API';
+      });
+      await test(mode, '镜头时长自定义菜单在撤销、重做与重排后仍同步序列', async () => {
+        await select(firstId);
+        const before = state().sequence.length;
+        click('.fo-selection-actions [data-action="add"]'); await frames();
+        assert(state().sequence.length === before+1, '没有添加用于验证时长的镜头');
+        const shotId = state().sequence.at(-1).id;
+        const durationControl = () => q(`.fo-seq-item[data-sequence-id="${shotId}"] select`);
+        const shot = () => state().sequence.find(item => item.id === shotId);
+        await chooseSelect(durationControl(), '5');
+        assert(shot()?.duration === 5 && durationControl().value === '5', '选择 5 秒没有同步 state.sequence 与重建后的表单');
+        click('[data-action="undo"]'); await frames();
+        assert(shot()?.duration === 4 && durationControl().value === '4', '撤销没有恢复原来的 4 秒');
+        const afterUndo = await openSelect(durationControl());
+        afterUndo.trigger.dispatchEvent(new w.KeyboardEvent('keydown', {key:'Escape',bubbles:true,cancelable:true}));
+        await frames();
+        assert(visibleSelectMenus().length === 0, '撤销后重建的时长菜单不能关闭');
+        click('[data-action="redo"]'); await frames();
+        assert(shot()?.duration === 5 && durationControl().value === '5', '重做没有恢复 5 秒');
+        await chooseSelect(durationControl(), '6');
+        assert(shot()?.duration === 6, '重做后重建的自定义控件没有更新时长');
+        const previousIndex = state().sequence.findIndex(item => item.id === shotId);
+        assert(previousIndex > 0, '镜头重排验收需要前一个镜头');
+        q(`.fo-seq-item[data-sequence-id="${shotId}"] [aria-label="镜头前移"]`).click();
+        // Wait for the real FLIP transition before scrolling to and clicking its new position.
+        await Promise.all(q(`.fo-seq-item[data-sequence-id="${shotId}"]`).getAnimations().map(animation => animation.finished.catch(() => {})));
+        await frames();
+        assert(state().sequence.findIndex(item => item.id === shotId) === previousIndex-1, '镜头前移未生效');
+        await chooseSelect(durationControl(), '5');
+        assert(shot()?.duration === 5, '重排后重建的自定义控件没有更新时长');
+        for (const native of d.querySelectorAll('.fo-seq-item select')) assert(!visible(native) && visible(selectTrigger(native)), '镜头时长没有使用可见自定义控件与隐藏原生值载体');
+        assert(visibleSelectMenus().length === 0, '序列重绘后残留打开的旧菜单');
+        return '5 秒生效；动态重绘后使用新控件验收';
+      });
       await test(mode, '无未处理页面错误', () => { assert(errors.length === 0, errors.join('；')); });
     } catch (error) {
       await test(mode, '验收初始化', () => { throw error; });
@@ -311,11 +403,13 @@
     summary.textContent = '正在加载实际页面…';
     summary.dataset.testStatus = 'running';
     const original = localStorage.getItem(storageKey);
+    const originalGenerationMode = localStorage.getItem(generationModeKey);
     try {
       for (const [width, height] of modes) await runMode(width, height);
     } finally {
       frameHost.replaceChildren();
       if (original === null) localStorage.removeItem(storageKey); else localStorage.setItem(storageKey, original);
+      if (originalGenerationMode === null) localStorage.removeItem(generationModeKey); else localStorage.setItem(generationModeKey, originalGenerationMode);
       running = false;
       buttons.forEach(button => button.disabled = false);
       summary.textContent = `验收完成：${passed} PASS / ${failed} FAIL。合成事件验收结果；原生手势和视觉流畅度需单独实测。`;
