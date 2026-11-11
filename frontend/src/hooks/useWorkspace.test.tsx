@@ -2,7 +2,7 @@ import { StrictMode, type ReactNode } from 'react';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useWorkspace } from './useWorkspace';
-import { initialState, STORAGE_KEY } from '../lib/project';
+import { CHECKPOINTS_STORAGE_KEY, initialState, STORAGE_KEY } from '../lib/project';
 import { loadDesktopStorage } from '../lib/desktop-storage';
 
 const { getMedia } = vi.hoisted(() => ({ getMedia: vi.fn() }));
@@ -102,5 +102,27 @@ describe('workspace persistence and asynchronous media loading', () => {
     act(() => result.current.undo());
     expect(result.current.project.cards[0]).toBe(first);
     expect(result.current.project.cards[0].x).toBe(0);
+  });
+  it('moves versions out of the autosaved project and rewrites them only when they change', () => {
+    const legacy = initialState();
+    legacy.checkpoints = [{ id: 'v1', name: '第一稿', createdAt: 1, state: initialState() }];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(legacy));
+    const setItem = vi.spyOn(Storage.prototype, 'setItem');
+    const { result } = renderHook(useWorkspace);
+    act(() => { vi.advanceTimersByTime(300); });
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).not.toHaveProperty('checkpoints');
+    expect(JSON.parse(localStorage.getItem(CHECKPOINTS_STORAGE_KEY)!)).toMatchObject([{ id: 'v1', name: '第一稿' }]);
+    setItem.mockClear();
+    act(() => result.current.update(draft => { draft.title = '改名'; }));
+    act(() => { vi.advanceTimersByTime(300); });
+    expect(setItem.mock.calls.map(([key]) => key)).toEqual([STORAGE_KEY]);
+    setItem.mockClear();
+    act(() => { result.current.createCheckpoint('第二稿'); });
+    act(() => { vi.advanceTimersByTime(300); });
+    expect(setItem.mock.calls.map(([key]) => key)).toEqual([CHECKPOINTS_STORAGE_KEY]);
+    cleanup();
+    const reopened = renderHook(useWorkspace);
+    expect(reopened.result.current.project.title).toBe('改名');
+    expect(reopened.result.current.project.checkpoints!.map(item => item.name)).toEqual(['第一稿', '第二稿']);
   });
 });

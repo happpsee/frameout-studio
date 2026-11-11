@@ -69,9 +69,10 @@ describe(`workspace with ${CARDS} cards, 8 versions and a 160-event plan`, () =>
   });
 
   it('measures one autosave serialization', () => {
+    // An edit autosaves the project; versions are stored separately and only rewritten when they change.
     const project = largeProject();
     let bytes = 0;
-    const ms = time(() => { bytes = JSON.stringify(serializeProject(project)).length; }, 50);
+    const ms = time(() => { bytes = JSON.stringify(serializeProject({ ...project, checkpoints: undefined })).length; }, 50);
     results['autosave serialize ms'] = ms.toFixed(2);
     results['autosave payload KB'] = (bytes / 1024).toFixed(0);
   });

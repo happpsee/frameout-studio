@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { produce } from 'immer';
 import type { ProjectState, UpdateProject } from '../types';
-import { initialState, restoreProject, serializeProject, serializeWorkspace, STORAGE_KEY, uid } from '../lib/project';
+import { CHECKPOINTS_STORAGE_KEY, initialState, restoreProject, serializeCheckpoints, serializeProject, serializeWorkspace, STORAGE_KEY, uid } from '../lib/project';
 import { getMedia } from '../lib/media-store';
 import { flushDesktopStorage, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
 import { recordEvent } from '../lib/workflow';
@@ -9,7 +9,20 @@ import { recordEvent } from '../lib/workflow';
 type Snapshot = Pick<ProjectState, 'cards' | 'sequence' | 'selected' | 'title'>;
 // Project states are immutable (Immer), so undo entries can share them instead of copying.
 const snapshot = (project: ProjectState): Snapshot => ({ cards: project.cards, sequence: project.sequence, selected: project.selected, title: project.title });
-function restore() { try { return restoreProject(JSON.parse(readStoredValue(STORAGE_KEY) || 'null')); } catch { return initialState(); } }
+const UNSAVED = Symbol('unsaved');
+function restore() {
+  try {
+    const saved = JSON.parse(readStoredValue(STORAGE_KEY) || 'null');
+    // Older saves (and a fallback after a failed snapshot write) keep versions inside the project.
+    if (saved && typeof saved === 'object' && !Array.isArray(saved.checkpoints)) {
+      try {
+        const checkpoints = JSON.parse(readStoredValue(CHECKPOINTS_STORAGE_KEY) || 'null');
+        if (Array.isArray(checkpoints)) saved.checkpoints = checkpoints;
+      } catch { /* A damaged version list must not discard the project. */ }
+    }
+    return restoreProject(saved);
+  } catch { return initialState(); }
+}
 
 export function useWorkspace() {
   const [project, setProject] = useState(restore);
@@ -66,7 +79,31 @@ export function useWorkspace() {
       }
     });
   }, [update, createCheckpoint]);
-  const saveProject = useCallback(() => writeStoredValue(STORAGE_KEY, JSON.stringify(serializeProject(projectRef.current))), []);
+  const written = useRef(new Map<string, string>());
+  const savedCheckpoints = useRef<ProjectState['checkpoints'] | typeof UNSAVED>(UNSAVED);
+  const writeChanged = useCallback((key: string, value: string): void | Promise<void> => {
+    if (written.current.get(key) === value) return;
+    const write = writeStoredValue(key, value);
+    written.current.set(key, value);
+    if (write) return write.catch(error => { if (written.current.get(key) === value) written.current.delete(key); throw error; });
+  }, []);
+  const saveProject = useCallback((): void | Promise<void> => {
+    const project = projectRef.current, checkpoints = project.checkpoints;
+    const workspace = serializeProject({ ...project, checkpoints: undefined });
+    const writeMain = (withCheckpoints = false) => writeChanged(STORAGE_KEY, JSON.stringify(withCheckpoints ? { ...workspace, checkpoints: serializeCheckpoints(checkpoints) } : workspace));
+    if (checkpoints === savedCheckpoints.current) return writeMain();
+    // Write versions first; if that fails, keep them inside the project so they are not lost.
+    let write: void | Promise<void>;
+    try { write = writeChanged(CHECKPOINTS_STORAGE_KEY, JSON.stringify(serializeCheckpoints(checkpoints))); }
+    catch (error) { writeMain(true); throw error; }
+    savedCheckpoints.current = checkpoints;
+    if (!write) return writeMain();
+    return write.then(() => writeMain(), async error => {
+      if (savedCheckpoints.current === checkpoints) savedCheckpoints.current = UNSAVED;
+      await writeMain(true);
+      throw error;
+    });
+  }, [writeChanged]);
   const flush = useCallback(async () => {
     await saveProject();
     await flushDesktopStorage();

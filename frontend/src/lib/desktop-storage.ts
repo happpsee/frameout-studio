@@ -16,7 +16,9 @@ export const PROJECT_STORAGE_KEY = 'frameout-studio-v1';
 export const PREFERENCES_KEY = 'frameout-ai-preferences-v1';
 export const GENERATION_MODE_KEY = 'frameout-generation-mode';
 export const DESKTOP_INTRO_KEY = 'frameout-desktop-intro-v1';
-const settings = [PROJECT_STORAGE_KEY, PREFERENCES_KEY, GENERATION_MODE_KEY, DESKTOP_INTRO_KEY];
+// Version snapshots change rarely, so they are stored apart from the frequently autosaved project.
+export const CHECKPOINTS_STORAGE_KEY = 'frameout-studio-checkpoints-v1';
+const settings = [PROJECT_STORAGE_KEY, CHECKPOINTS_STORAGE_KEY, PREFERENCES_KEY, GENERATION_MODE_KEY, DESKTOP_INTRO_KEY];
 const desktopValues = new Map<string, string>();
 const pendingWrites = new Map<string, Promise<void>>();
 

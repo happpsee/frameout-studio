@@ -1,7 +1,7 @@
-import type { AIConfig, Card, ProjectState, WorkspaceSnapshot } from '../types';
+import type { AIConfig, Card, ProjectCheckpoint, ProjectState, WorkspaceSnapshot } from '../types';
 import { restoreWorkflow } from './workflow';
 
-export { PROJECT_STORAGE_KEY as STORAGE_KEY } from './desktop-storage';
+export { PROJECT_STORAGE_KEY as STORAGE_KEY, CHECKPOINTS_STORAGE_KEY } from './desktop-storage';
 const legacySampleSources = new Set(['/assets/forest-astronaut.png', '/assets/still-ocean.webp', '/assets/still-city.webp']);
 export const placeholder = (text: string) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#252c20"/><text x="320" y="185" fill="#b5c69e" text-anchor="middle" font-family="sans-serif" font-size="22">${text}</text></svg>`);
 export const MISSING_MEDIA = placeholder('素材暂不可用');
@@ -41,13 +41,16 @@ export function serializeWorkspace(project: WorkspaceSnapshot): WorkspaceSnapsho
   return { version: 1, title: project.title, camera: { ...project.camera }, selected: project.selected && ids.has(project.selected) ? project.selected : null, cards,
     sequence: project.sequence.filter(shot => ids.has(shot.cardId)).map(({ id, cardId, duration }) => ({ id, cardId, duration })) };
 }
-export function serializeProject(project: ProjectState): ProjectState {
-  const value: ProjectState = serializeWorkspace(project);
-  if (project.workflow) value.workflow = restoreWorkflow(project.workflow, false);
-  if (project.checkpoints?.length) value.checkpoints = project.checkpoints.slice(-8).map(checkpoint => ({
+export function serializeCheckpoints(checkpoints: ProjectCheckpoint[] = []): ProjectCheckpoint[] {
+  return checkpoints.slice(-8).map(checkpoint => ({
     id: checkpoint.id, name: checkpoint.name.slice(0, 80), createdAt: checkpoint.createdAt,
     state: serializeWorkspace(checkpoint.state),
   }));
+}
+export function serializeProject(project: ProjectState): ProjectState {
+  const value: ProjectState = serializeWorkspace(project);
+  if (project.workflow) value.workflow = restoreWorkflow(project.workflow, false);
+  if (project.checkpoints?.length) value.checkpoints = serializeCheckpoints(project.checkpoints);
   return value;
 }
 function restoreWorkspace(input: unknown): WorkspaceSnapshot {
