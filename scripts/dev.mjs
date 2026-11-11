@@ -5,7 +5,7 @@ import path from 'node:path';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const python = path.join(root, 'backend', '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
 if (!existsSync(python)) {
-  console.error('请先安装后端依赖：python3 -m venv backend/.venv，然后 backend/.venv/bin/python -m pip install -e "./backend[dev]"');
+  console.error('请先安装后端依赖：python3 -m venv backend/.venv，然后 backend/.venv/bin/python -m pip install -r backend/requirements.lock');
   process.exit(1);
 }
 const commands = [

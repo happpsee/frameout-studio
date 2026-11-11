@@ -15,7 +15,10 @@
     "build": "npm run build --workspace frontend",
     "typecheck": "npm run typecheck --workspace frontend",
     "test": "npm run test --workspace frontend",
-    "test:backend": "backend/.venv/bin/python -m pytest backend/tests -q"
+    "test:backend": "backend/.venv/bin/python -m pytest backend/tests -q",
+    "test:desktop": "node --test electron/*.test.cjs utils/*.test.cjs",
+    "test:all": "npm test && npm run test:desktop && npm run test:backend",
+    "bench": "npm run bench --workspace frontend"
   },
   "engines": {
     "node": ">=22.12.0"

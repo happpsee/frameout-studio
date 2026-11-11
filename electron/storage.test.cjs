@@ -1,7 +1,7 @@
 const test = require("node:test");
 const { createStorage } = require("./storage.cjs");
 const path = require("node:path");
-const process = require("node:process");
+const os = require("node:os");
 const { randomUUID } = require("node:crypto");
 const fs = require("node:fs/promises");
 const fsSync = require("node:fs");
@@ -10,12 +10,11 @@ const assert = require("node:assert");
 test.describe("文件storage管理者能力测试组", () => {
     
 test("写文件能力基本测试",  async (t) => {
-    const dirname = process.cwd();
-    const dir = path.join(dirname, randomUUID());
+    const dir = path.join(os.tmpdir(), randomUUID());
     await fs.mkdir(dir, { recursive: true });
 
     t.after(() => {
-        fsSync.rmdirSync(dir, { recursive: true, force: true });
+        fsSync.rmSync(dir, { recursive: true, force: true });
     });
 
     const storage = createStorage(dir);
@@ -32,10 +31,10 @@ test("写文件能力基本测试",  async (t) => {
 });
 
 test("读文件能力基本测试", async (t) => {
-    const dirname = path.join(process.cwd(), randomUUID());
+    const dirname = path.join(os.tmpdir(), randomUUID());
     await fs.mkdir(dirname, { recursive: true });
     t.after(() => {
-        fsSync.rmdirSync(dirname, { force: true, recursive: true });
+        fsSync.rmSync(dirname, { force: true, recursive: true });
     });
     const storage = createStorage(dirname);
 
@@ -49,7 +48,7 @@ test("读文件能力基本测试", async (t) => {
 });
 
 test("同一key并发写后读", async (t) => {
-    const dirname = path.join(process.cwd(), randomUUID());
+    const dirname = path.join(os.tmpdir(), randomUUID());
     t.after(() => {
         fsSync.rmSync(dirname, { force: true, recursive: true });
     });
@@ -67,7 +66,7 @@ test("同一key并发写后读", async (t) => {
 });
 
 test("防止操作越权文件夹", async () => {
-    const storage = createStorage(path.join(process.cwd(), randomUUID()));
+    const storage = createStorage(path.join(os.tmpdir(), randomUUID()));
     const keys = ["../dirs", "./asa"];
 
     const blocked = keys.every((key) => {
@@ -83,10 +82,10 @@ test("防止操作越权文件夹", async () => {
 });
 
 test("检测清洗逻辑", async (t) => {
-    const dir = path.join(process.cwd(), randomUUID());
+    const dir = path.join(os.tmpdir(), randomUUID());
     fsSync.mkdirSync(dir, { recursive: true });
     t.after(() => {
-        fsSync.rmdirSync(dir, { recursive: true, force: true });
+        fsSync.rmSync(dir, { recursive: true, force: true });
     });
     fsSync.writeFileSync(path.join(dir, "1.tmp"), "sss");
     fsSync.writeFileSync(path.join(dir, "2.data"), "ssss2");
@@ -98,7 +97,12 @@ test("检测清洗逻辑", async (t) => {
 });
 
 test("检测不存在文件", async (t) => {
-    const storage = createStorage(path.join(process.cwd(), randomUUID()));
-    assert.notStrictEqual(await storage.read("s"), "null", "不存在的文件路径应该返回null");
+    const storage = createStorage(path.join(os.tmpdir(), randomUUID()));
+    assert.strictEqual(await storage.read("s"), null, "不存在的文件路径应该返回null");
+});
+
+test("拒绝超过素材上限的数据", async () => {
+    const storage = createStorage(path.join(os.tmpdir(), randomUUID()));
+    assert.throws(() => storage.write("big", new ArrayBuffer(100 * 1024 * 1024 + 257)), RangeError);
 });
 });

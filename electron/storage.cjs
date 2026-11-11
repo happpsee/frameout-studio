@@ -5,7 +5,9 @@ const path = require('node:path');
 const { types } = require('node:util');
 const { queue } = require("../utils/queue");
  
-const MAX_VALUE_BYTES = 512 * 1024 * 1024;
+// Media is stored as a 1-byte type length, up to 255 bytes of MIME type, then at most
+// 100 MiB of data (MAX_DESKTOP_MEDIA_BYTES in frontend/src/lib/media-store.ts).
+const MAX_VALUE_BYTES = 100 * 1024 * 1024 + 256;
 
 
 function createStorage(directory) {
