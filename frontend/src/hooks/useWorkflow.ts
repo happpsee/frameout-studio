@@ -11,6 +11,7 @@ type Options = {
   flush: () => Promise<void>;
   createCheckpoint: (name: string) => string;
   toast: (message: string) => void;
+  openSettings?: (notice: string) => void;
   enabled: boolean;
 };
 
@@ -54,10 +55,10 @@ export function useWorkflow(options: Options) {
     update(draft => { draft.workflow = workflow; }, false);
   }, []);
   const start = useCallback(async () => {
-    const { generation, projectRef, createCheckpoint, flush, toast } = latest.current;
+    const { generation, projectRef, createCheckpoint, flush, toast, openSettings } = latest.current;
     const workflow = projectRef.current.workflow;
     if (!workflow || workflow.status === 'running' || generation.active || executing.current || starting.current) return;
-    if (!generation.config.key) { toast('请先在 API 设置中填写密钥'); return; }
+    if (!generation.config.key) { const notice = '镜头计划需要先连接生成服务。'; if (openSettings) openSettings(notice); else toast(notice); return; }
     if (workflow.config.provider !== generation.config.provider || workflow.config.baseUrl.replace(/\/+$/, '') !== generation.config.baseUrl.replace(/\/+$/, '')) {
       toast('请切回计划使用的供应商和 API 地址'); return;
     }

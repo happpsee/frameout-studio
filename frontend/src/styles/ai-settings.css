@@ -50,3 +50,9 @@
 .fo-studio .fo-api-dialog[open]{animation:fo-api-arrive .16s ease-out}
 @keyframes fo-api-arrive{from{opacity:0}to{opacity:1}}
 @media(prefers-reduced-motion:reduce){.fo-studio .fo-api-dialog[open]{animation:none}}
+/* First-run: why the dialog opened, and where to get a key. */
+.fo-api-head .fo-api-notice{margin-top:12px;padding:9px 12px;border-left:2px solid var(--fo-lime);background:#2a3320;color:#e3f3c9;font-size:11px}
+.fo-api-field small a{display:inline-flex;align-items:center;gap:3px;margin:0 6px 0 2px;color:var(--fo-lime);text-decoration:underline;text-underline-offset:2px}
+.fo-api-field small a svg{width:11px;height:11px}
+.fo-api-remember{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:11px;color:#c4ceb7;cursor:pointer}
+.fo-api-remember input{accent-color:var(--fo-lime);width:14px;height:14px;margin:0}

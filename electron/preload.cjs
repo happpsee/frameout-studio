@@ -14,6 +14,12 @@ contextBridge.exposeInMainWorld('frameoutDesktop', {
     write: (key, data) => ipcRenderer.invoke('frameout:storage:write', key, data),
   },
   openTemporaryDownload: url => ipcRenderer.invoke('frameout:open-temporary-download', url),
+  openProviderConsole: url => ipcRenderer.invoke('frameout:open-provider-console', url),
+  secrets: {
+    available: () => ipcRenderer.invoke('frameout:secrets:available'),
+    read: () => ipcRenderer.invoke('frameout:secrets:read'),
+    write: (provider, key) => ipcRenderer.invoke('frameout:secrets:write', provider, key),
+  },
   onBeforeClose(handler) {
     closeHandlers.add(handler);
     return () => closeHandlers.delete(handler);

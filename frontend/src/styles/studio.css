@@ -265,3 +265,6 @@
 .fo-studio .fo-prompt:focus-visible{box-shadow:none}
 .fo-studio :is(input,textarea):focus-visible{border-color:#89947b}
 .fo-studio :is(.fo-primary-button,.fo-generate-button,.fo-icon-button.is-active,.fo-selection-actions button):focus-visible{box-shadow:inset 0 0 0 1px #35402b}
+/* Shown in the composer until a generation service is connected. */
+.fo-connect-service{display:inline-flex;align-items:center;gap:5px;min-width:0;padding:4px 0;background:none;color:var(--fo-lime);font-size:11px;font-weight:600;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+.fo-connect-service svg{width:13px!important;height:13px!important}

@@ -6,6 +6,13 @@ interface DesktopBridge {
   };
   onBeforeClose(callback: () => Promise<void>): () => void;
   openTemporaryDownload(url: string): Promise<void>;
+  openProviderConsole(url: string): Promise<void>;
+  /** Keys the user chose to remember, encrypted by the OS keychain in the main process. */
+  secrets: {
+    available(): Promise<boolean>;
+    read(): Promise<Partial<Record<string, string>>>;
+    write(provider: string, key: string | null): Promise<void>;
+  };
 }
 
 declare global {

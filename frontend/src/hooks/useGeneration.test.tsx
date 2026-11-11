@@ -246,4 +246,14 @@ describe('generation cancellation and retained video tasks', () => {
     expect(JSON.stringify(serializeProject(hook.getProject()))).not.toContain(KEY);
     expect(hook.getProject().cards[0].job?.error).toContain('[已隐藏]');
   });
+  it('opens the settings instead of a toast when the key is missing', async () => {
+    const openSettings = vi.fn(), toast = vi.fn();
+    const hook = renderHook(() => useGeneration({ getProject: initialState, update: vi.fn(), toast, openSettings }));
+    act(() => { hook.result.current.setConfig({ ...originalConfig, key: '' }); hook.result.current.setPrompt('森林'); });
+    await act(() => hook.result.current.generate());
+    expect(openSettings).toHaveBeenCalledWith(expect.stringContaining('提示词已保留'));
+    expect(toast).not.toHaveBeenCalled();
+    expect(createClient).not.toHaveBeenCalled();
+    expect(hook.result.current.prompt).toBe('森林');
+  });
 });

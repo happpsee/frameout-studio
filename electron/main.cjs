@@ -1,10 +1,11 @@
-const { app, BrowserWindow, dialog, ipcMain, Menu, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, Menu, safeStorage, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const { randomUUID } = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createInterface } = require('node:readline');
 const { createStorage } = require('./storage.cjs');
+const { createSecrets } = require('./secrets.cjs');
 
 app.setName('帧外');
 
@@ -13,6 +14,9 @@ fs.mkdirSync(userData, { recursive: true, mode: 0o700 });
 app.setPath('userData', userData);
 
 const storage = createStorage(path.join(userData, 'storage'));
+// Kept apart from storage/ so the generic storage IPC cannot read or overwrite it.
+const secrets = createSecrets(path.join(userData, 'secrets'), safeStorage);
+const PROVIDER_CONSOLES = new Set(['platform.openai.com', 'console.volcengine.com']);
 const CLOSE_TIMEOUT = 30_000;
 const STARTUP_TIMEOUT = 30_000;
 
@@ -195,6 +199,24 @@ if (!app.requestSingleInstanceLock()) {
     if (!isTrusted(event) || typeof value !== 'string' || !URL.canParse(value)) throw new Error('Invalid download request');
     const url = new URL(value);
     if (url.protocol !== 'https:' || url.username || url.password) throw new Error('Download link must use HTTPS');
+    return shell.openExternal(url.href);
+  });
+  ipcMain.handle('frameout:secrets:available', event => {
+    if (!isTrusted(event)) throw new Error('Untrusted secrets request');
+    return secrets.available();
+  });
+  ipcMain.handle('frameout:secrets:read', event => {
+    if (!isTrusted(event)) throw new Error('Untrusted secrets request');
+    return secrets.read();
+  });
+  ipcMain.handle('frameout:secrets:write', (event, provider, key) => {
+    if (!isTrusted(event)) throw new Error('Untrusted secrets request');
+    return secrets.write(provider, key);
+  });
+  ipcMain.handle('frameout:open-provider-console', (event, value) => {
+    if (!isTrusted(event) || typeof value !== 'string' || !URL.canParse(value)) throw new Error('Invalid console link');
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || url.username || url.password || !PROVIDER_CONSOLES.has(url.hostname)) throw new Error('Unknown provider console');
     return shell.openExternal(url.href);
   });
   ipcMain.on('frameout:close-ready', (event, token, saved) => {

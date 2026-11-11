@@ -37,7 +37,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
   const viewportRef = useRef<HTMLElement>(null), composerRef = useRef<HTMLFormElement>(null), selectionRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null), promptRef = useRef<HTMLTextAreaElement>(null), helpRef = useRef<HTMLDialogElement>(null), zoomRef = useRef<HTMLDivElement>(null), zoomButtonRef = useRef<HTMLButtonElement>(null);
   const [toastText, setToastText] = useState(''), toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [settingsOpen, setSettingsOpen] = useState(false), [helpOpen, setHelpOpen] = useState(false), [zoomOpen, setZoomOpen] = useState(false), [zoomText, setZoomText] = useState('80');
+  const [settingsOpen, setSettingsOpen] = useState(false), [settingsNotice, setSettingsNotice] = useState(''), [helpOpen, setHelpOpen] = useState(false), [zoomOpen, setZoomOpen] = useState(false), [zoomText, setZoomText] = useState('80');
   const [panelTab, setPanelTab] = useState<'workflow' | 'versions' | null>(null);
   const [assetsOpen, setAssetsOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(() => project.sequence.length > 0);
@@ -51,8 +51,9 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
   const pendingImports = useRef(new Set<Promise<void>>());
   const toast = useCallback((message: string) => { setToastText(message); clearTimeout(toastTimer.current); toastTimer.current = setTimeout(() => setToastText(''), 3300); }, []);
   const getProject = useCallback(() => projectRef.current, [projectRef]);
-  const generation = useGeneration({ getProject, update, toast });
-  const workflow = useWorkflow({ project, projectRef, update, generation, flush, createCheckpoint, toast, enabled: isActive });
+  const openSettings = useCallback((notice = '') => { setSettingsNotice(notice); setSettingsOpen(true); }, []);
+  const generation = useGeneration({ getProject, update, toast, openSettings });
+  const workflow = useWorkflow({ project, projectRef, update, generation, flush, createCheckpoint, toast, openSettings, enabled: isActive });
   const active = generation.active || workflow.running || workflow.settling;
   const generationActive = useRef(active); generationActive.current = active;
   const addToSequence = useCallback((id: string) => {
@@ -221,9 +222,9 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
   const composer = <form ref={composerRef} className={`fo-composer${active ? ' is-busy' : ''}`} onSubmit={event => { event.preventDefault(); if (!active) void generation.generate(); }}>
         <div className="fo-composer-top"><label htmlFor="fo-prompt">{desktop ? '提示词' : '让想法，先有一个画面。'}</label><Select className="fo-generation-mode" value={generation.mode} onChange={value => generation.setMode(value as GenerationMode)} options={modeOptions} label="生成模式" disabled={active} /></div>
         <textarea ref={promptRef} className="fo-prompt" id="fo-prompt" rows={2} placeholder="描述你想生成的画面或镜头…" maxLength={4000} value={generation.prompt} onChange={event => generation.setPrompt(event.target.value)} onKeyDown={event => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); void generation.generate(); } }} />
-        {desktop && <DesktopGenerationSettings config={generation.config} video={generation.mode === 'video'} disabled={active} onChange={generation.setConfig} onSettings={() => setSettingsOpen(true)} />}
+        {desktop && <DesktopGenerationSettings config={generation.config} video={generation.mode === 'video'} disabled={active} onChange={generation.setConfig} onSettings={() => openSettings()} />}
         {taskNote && <p className="fo-task-note" role="status">{taskNote}</p>}
-        <div className="fo-composer-bottom"><span className="fo-generation-state">{active ? '正在等待供应商结果…' : generation.config.key ? `${generation.config.provider.toUpperCase()} · ${generation.mode === 'video' ? generation.config.videoModel : generation.config.imageModel}` : '先配置 API Key，再开始生成'}</span>{active && <button type="button" className="fo-cancel-generation" onClick={workflow.running ? workflow.pause : generation.stop}>停止等待</button>}<button type="submit" className="fo-generate-button" disabled={active}><Icon name="sparkles" /><span>{generation.mode === 'video' ? '生成视频' : '生成图片'}</span><Icon name="arrow-up-right" /></button></div><div className="fo-generation-line" />
+        <div className="fo-composer-bottom">{!active && !generation.config.key ? <button type="button" className="fo-connect-service" onClick={() => openSettings()}>连接生成服务<Icon name="arrow-up-right" /></button> : <span className="fo-generation-state">{active ? '正在等待供应商结果…' : `${generation.config.provider.toUpperCase()} · ${generation.mode === 'video' ? generation.config.videoModel : generation.config.imageModel}`}</span>}{active && <button type="button" className="fo-cancel-generation" onClick={workflow.running ? workflow.pause : generation.stop}>停止等待</button>}<button type="submit" className="fo-generate-button" disabled={active}><Icon name="sparkles" /><span>{generation.mode === 'video' ? '生成视频' : '生成图片'}</span><Icon name="arrow-up-right" /></button></div><div className="fo-generation-line" />
       </form>;
   const canvasTools = <aside className="fo-canvas-tools" aria-label="画布工具">
         <button type="button" className={`fo-icon-button${canvas.tool === 'select' ? ' is-active' : ''}`} aria-label="选择工具" aria-pressed={canvas.tool === 'select'} title="选择素材 · V" onClick={() => canvas.setTool('select')}><Icon name="cursor" /></button>
@@ -244,7 +245,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
       <div className="fo-brand-slot">{desktop ? <div className="fo-brand" aria-label="帧外 FRAMEOUT">{brand}</div> : <button type="button" className="fo-brand" aria-label="返回 FRAMEOUT 首页" onClick={() => { canvas.cancelGesture(); onClose(); }}>{brand}</button>}</div>
       <div className="fo-project"><span className="fo-project-divider">/</span><div><span className="fo-project-title">{project.title}</span><span className="fo-save"><i /><span className="fo-save-label">{saveStatus}</span></span></div></div>
       {!desktop && <nav className="fo-workspace-tabs" aria-label="工作区"><button type="button" className="is-active" aria-current="page">画布</button><button type="button" onClick={() => setHelpOpen(true)}>使用指南 <Icon name="arrow-up-right" /></button></nav>}
-      <div className="fo-header-actions">{!desktop && <button type="button" className="fo-text-button fo-flow-button" aria-expanded={panelTab !== null} onClick={() => setPanelTab(value => value ? null : 'workflow')}>镜头计划</button>}{!desktop && <button type="button" className="fo-text-button fo-api-button" aria-label="API 设置" onClick={() => setSettingsOpen(true)}><Icon name="settings" /><span>API 设置</span></button>}<button type="button" className="fo-text-button fo-export-button" aria-label="导出项目" onClick={exportProject}><Icon name="download" /><span>导出项目</span></button><button type="button" className="fo-primary-button" disabled={!project.sequence.length} onClick={() => openPreview()}><Icon name="play" /><span>预览成片</span></button></div>
+      <div className="fo-header-actions">{!desktop && <button type="button" className="fo-text-button fo-flow-button" aria-expanded={panelTab !== null} onClick={() => setPanelTab(value => value ? null : 'workflow')}>镜头计划</button>}{!desktop && <button type="button" className="fo-text-button fo-api-button" aria-label="API 设置" onClick={() => openSettings()}><Icon name="settings" /><span>API 设置</span></button>}<button type="button" className="fo-text-button fo-export-button" aria-label="导出项目" onClick={exportProject}><Icon name="download" /><span>导出项目</span></button><button type="button" className="fo-primary-button" disabled={!project.sequence.length} onClick={() => openPreview()}><Icon name="play" /><span>预览成片</span></button></div>
     </header>
     <div className="fo-workspace-body">
       {desktop && <nav className="fo-desktop-rail" aria-label="工作台工具">{canvasTools}</nav>}
@@ -285,7 +286,12 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
 
   {!desktop && workflowPanel}
   {isActive && preview && <PreviewDialog items={preview.items} title={preview.title} onClose={() => setPreview(null)} />}
-  <APISettings open={isActive && settingsOpen} onClose={() => setSettingsOpen(false)} config={generation.config} onChange={generation.setConfig} />
+  <APISettings open={isActive && settingsOpen} notice={settingsNotice} onClose={() => { setSettingsOpen(false); setSettingsNotice(''); }} config={generation.config} onChange={value => {
+    const connected = !generation.config.key && Boolean(value.key);
+    generation.setConfig(value);
+    // Never start a paid request on save; return to the kept prompt instead.
+    if (connected) { toast(generation.prompt.trim() ? '已连接，提示词还在，点生成即可' : '已连接，写下想法就能生成'); requestAnimationFrame(() => promptRef.current?.focus()); }
+  }} />
   <dialog ref={helpRef} className="fo-help-dialog" aria-labelledby="fo-help-heading" onCancel={() => setHelpOpen(false)} onClose={() => setHelpOpen(false)} onClick={event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) setHelpOpen(false); } }}><button type="button" className="fo-icon-button fo-help-close" aria-label="关闭使用指南" onClick={() => setHelpOpen(false)}><Icon name="x" /></button><span className="fo-eyebrow">A LITTLE GUIDE</span><h2 id="fo-help-heading">把想法摊开，<br />再把故事连起来。</h2><p>画布用来探索和比较。只有加入下方成片区的镜头，才会按顺序播放。</p><dl><div><dt>平移画布</dt><dd>滚轮 / 触控板滚动 · 拖动空白处<br />空格 + 拖动，或鼠标中键</dd></div><div><dt>缩放画布</dt><dd>触控板捏合 · ⌘ / Ctrl + 滚轮<br />⌘ / Ctrl ＋ / −，或点击比例</dd></div><div><dt>触屏操作</dt><dd>单指拖动 · 双指平移与缩放</dd></div><div><dt>查看素材</dt><dd>单击选择，双击预览</dd></div><div><dt>撤销 / 重做</dt><dd>⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z</dd></div><div><dt>删除素材</dt><dd>选中后按 Delete / Backspace</dd></div><div><dt>适应画布</dt><dd>按 0，或点击适应按钮</dd></div></dl><div className="fo-help-note"><strong>从参考图到镜头，再到你的故事。</strong><span>生成图片和视频前，请在 API 设置中填写供应商密钥。{window.frameoutDesktop ? '项目和本地素材自动保存到本机。供应商临时链接请及时下载。' : '素材保存在本浏览器或供应商临时链接，请及时下载。'}成片区支持顺序预览，尚不导出编码后的 MP4。</span></div>{desktop && <button type="button" className="fo-help-intro" onClick={() => { setHelpOpen(false); onClose(); }}>查看产品介绍 <Icon name="arrow-up-right" /></button>}<button type="button" className="fo-primary-button" onClick={() => setHelpOpen(false)}>开始探索 <Icon name="arrow-up-right" /></button></dialog>
   </div>;
 }

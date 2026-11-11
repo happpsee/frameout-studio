@@ -157,4 +157,18 @@ describe('React studio integration', () => {
     expect((screen.getByRole('textbox', { name: '让想法，先有一个画面。' }) as HTMLTextAreaElement).value).toBe('等回来再继续');
     expect((screen.getByRole('button', { name: '生成图片' }) as HTMLButtonElement).disabled).toBe(false);
   });
+  it('sends a first generation without a key to the API settings and keeps the prompt', () => {
+    render(<Studio onClose={vi.fn()} />); frame(); frame();
+    expect(screen.getByRole('button', { name: '连接生成服务' })).toBeTruthy();
+    fireEvent.change(screen.getByRole('textbox', { name: '让想法，先有一个画面。' }), { target: { value: '雨夜街头回头的女孩' } });
+    fireEvent.click(screen.getByRole('button', { name: '生成图片' }));
+    expect(screen.getByRole('dialog', { name: '连接你的生成服务' })).toBeTruthy();
+    expect(screen.getByText(/先连接一个生成服务。提示词已保留/)).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByLabelText('API Key'));
+    fireEvent.change(screen.getByLabelText('API Key'), { target: { value: 'fixture-in-memory-only' } });
+    fireEvent.click(screen.getByRole('button', { name: /^保存配置/ }));
+    expect(screen.queryByRole('button', { name: '连接生成服务' })).toBeNull();
+    expect(screen.getByText('已连接，提示词还在，点生成即可')).toBeTruthy();
+    expect((screen.getByRole('textbox', { name: '让想法，先有一个画面。' }) as HTMLTextAreaElement).value).toBe('雨夜街头回头的女孩');
+  });
 });

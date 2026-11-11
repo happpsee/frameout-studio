@@ -3,7 +3,8 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import APISettings from './APISettings';
-import { defaults, initialConfig, loadProfiles, PREFERENCES_KEY } from '../lib/preferences';
+import { defaults, initialConfig, loadProfiles, PREFERENCES_KEY, startingProfile } from '../lib/preferences';
+import { loadRememberedKeys } from '../lib/secrets';
 import type { AIConfig } from '../types';
 
 const mocked = vi.hoisted(() => ({ createClient: vi.fn(), connect: vi.fn() }));
@@ -144,5 +145,47 @@ describe('API settings provider profiles and cancellation', () => {
     await user.click(screen.getByRole('button', { name: '清除本页所有密钥' }));
     expect(keyInput().value).toBe('');
     expect(initial.key).toBe('parent-owned-memory-key');
+  });
+  it('shows only the fields the provider supports and where to get a key', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    expect(screen.queryByLabelText('视频模型')).toBeNull();
+    expect(screen.getByRole('link', { name: /到OpenAI控制台创建/ }).getAttribute('href')).toBe('https://platform.openai.com/api-keys');
+    await provider(user, '火山方舟');
+    expect(screen.getByLabelText('视频模型')).toBeTruthy();
+    await provider(user, 'OpenAI 兼容接口');
+    expect(screen.queryByRole('link', { name: /控制台创建/ })).toBeNull();
+    expect(screen.queryByRole('checkbox')).toBeNull();
+  });
+  it('remembers a key in the desktop keychain only when asked', async () => {
+    const write = vi.fn(async () => {});
+    window.frameoutDesktop = {
+      platform: 'darwin', storage: { read: vi.fn(async () => null), write: vi.fn(async () => {}) },
+      onBeforeClose: () => () => true, openTemporaryDownload: vi.fn(), openProviderConsole: vi.fn(async () => {}),
+      secrets: { available: async () => true, read: async () => ({ ark: 'ark-remembered' }), write },
+    };
+    try {
+      await loadRememberedKeys();
+      expect(startingProfile('ark').key).toBe('ark-remembered');
+      const user = userEvent.setup(), onConfig = vi.fn();
+      render(<Harness initial={{ ...defaults(), key: '' }} onConfig={onConfig} />);
+      const remember = () => screen.getByRole<HTMLInputElement>('checkbox', { name: '在本机钥匙串中记住此 Key' });
+      expect(remember().checked).toBe(false);
+      await user.type(keyInput(), 'sk-openai-new');
+      await user.click(remember());
+      await user.click(screen.getByRole('button', { name: /保存配置/ }));
+      expect(write).toHaveBeenCalledWith('openai', 'sk-openai-new');
+      expect(onConfig).toHaveBeenLastCalledWith(expect.objectContaining({ provider: 'openai', key: 'sk-openai-new' }));
+      await user.click(screen.getByRole('button', { name: '重新打开设置' }));
+      await provider(user, '火山方舟');
+      expect(keyInput().value).toBe('ark-remembered');
+      expect(remember().checked).toBe(true);
+      await user.click(remember());
+      await user.click(screen.getByRole('button', { name: /保存配置/ }));
+      expect(write).toHaveBeenLastCalledWith('ark', null);
+    } finally {
+      delete window.frameoutDesktop;
+      await loadRememberedKeys();
+    }
   });
 });

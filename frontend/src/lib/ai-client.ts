@@ -4,6 +4,8 @@ import type { AIConfig, Provider } from '../types';
 type ProviderPreset = {
   label: string; baseUrl: string; defaultImageModel: string; defaultVideoModel: string;
   imageSizes: readonly string[]; videoDurations: readonly string[]; canVideo: boolean; note: string;
+  /** Where a user creates an API key; empty for self-hosted services. */
+  keyUrl: string;
 };
 type Transport = AIConfig['transport'];
 type ClientOptions = { fetchImpl?: typeof fetch; proxyPath?: string; timeoutMs?: number };
@@ -22,6 +24,7 @@ export type ImageResult = { src: string; kind: 'image'; provider: Provider; mode
       imageSizes: ['1536x1024', '1024x1024', '1024x1536'],
       videoDurations: [], canVideo: false,
       note: '此配置用于图片生成；视频请使用火山方舟或支持视频协议的兼容服务。',
+      keyUrl: 'https://platform.openai.com/api-keys',
     }),
     ark: Object.freeze({
       label: '火山方舟', baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
@@ -29,6 +32,7 @@ export type ImageResult = { src: string; kind: 'image'; provider: Provider; mode
       imageSizes: ['2K', '1.5K', '1K', '2816x1584', '1584x2816'],
       videoDurations: ['5', '8', '10', '12'], canVideo: true,
       note: '模型需在方舟账号中开通；图生视频会保持首帧比例。',
+      keyUrl: 'https://console.volcengine.com/ark',
     }),
     compatible: Object.freeze({
       label: 'OpenAI 兼容接口', baseUrl: '',
@@ -36,6 +40,7 @@ export type ImageResult = { src: string; kind: 'image'; provider: Provider; mode
       imageSizes: ['1536x1024', '1024x1024', '1024x1536'],
       videoDurations: ['4', '8', '12'], canVideo: true,
       note: '浏览器直连；服务需支持跨域和所选图片／视频协议，模型名由服务商提供。',
+      keyUrl: '',
     }),
   });
 

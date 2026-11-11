@@ -6,7 +6,8 @@ import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { GENERATION_MODE_KEY, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
 import { initialConfig, redact, saveProfile } from '../lib/preferences';
 
-type Options = { getProject: () => ProjectState; update: UpdateProject; toast: (message: string) => void };
+// openSettings shows the API settings with a reason; without it, missing settings fall back to a toast.
+type Options = { getProject: () => ProjectState; update: UpdateProject; toast: (message: string) => void; openSettings?: (notice: string) => void };
 type ActiveTask = { controller: AbortController; cardId?: string };
 type VideoResult = { id: string; status: string; src?: string; error?: string; progress?: number };
 type VideoClient = { getVideo: (options: { id: string; signal: AbortSignal }) => Promise<VideoResult> };
@@ -21,11 +22,12 @@ function wait(ms: number, signal: AbortSignal): Promise<void> {
 }
 function initialMode(): GenerationMode { try { return readStoredValue(GENERATION_MODE_KEY) === 'video' ? 'video' : 'image'; } catch { return 'image'; } }
 
-export function useGeneration({ getProject, update, toast }: Options) {
+export function useGeneration({ getProject, update, toast, openSettings }: Options) {
   const [mode, setModeState] = useState<GenerationMode>(initialMode), [prompt, setPrompt] = useState('');
   const [config, setConfigState] = useState<AIConfig>(initialConfig), [active, setActive] = useState(false);
   const taskRef = useRef<ActiveTask | null>(null), mounted = useRef(true), urls = useRef(new Set<string>());
-  const latest = useRef({ getProject, update, toast }); latest.current = { getProject, update, toast };
+  const latest = useRef({ getProject, update, toast, openSettings }); latest.current = { getProject, update, toast, openSettings };
+  const needSettings = (notice: string) => { if (latest.current.openSettings) latest.current.openSettings(notice); else toast(notice); };
   function patchJob(id: string, patch: Partial<VideoJob>) {
     latest.current.update(draft => { const card = draft.cards.find(c => c.id === id); if (card?.job) Object.assign(card.job, patch); }, false);
   }
@@ -122,8 +124,8 @@ export function useGeneration({ getProject, update, toast }: Options) {
     const text = (request?.prompt ?? prompt).trim();
     if (!text) { toast(source ? '先写下运镜或动作描述，再生成视频' : '先写下一点想法，再开始生成'); return; }
     const video = Boolean(source) || (request?.mode ?? mode) === 'video';
-    if (!generationConfig.key) { toast('请先打开「API 设置」，填写自己的密钥'); return; }
-    if (video && generationConfig.provider === 'openai') { toast('生成视频请在 API 设置里选择火山方舟或兼容视频服务'); return; }
+    if (!generationConfig.key) { needSettings('先连接一个生成服务。提示词已保留，保存后再点生成即可。'); return; }
+    if (video && generationConfig.provider === 'openai') { needSettings('生成视频需要火山方舟或支持视频的兼容服务，请切换供应商。'); return; }
     const task = start(); if (!task) return;
     try {
       const client = createClient(generationConfig);
@@ -154,7 +156,7 @@ export function useGeneration({ getProject, update, toast }: Options) {
   async function resume(card: Card) {
     if (taskRef.current || !card.job) return;
     if (!card.job.id) { toast('没有取得任务号，请先在供应商后台核对，避免重复提交'); return; }
-    if (!config.key) { toast('请先在 API 设置里补填该供应商的密钥'); return; }
+    if (!config.key) { needSettings('补填该供应商的密钥后，再继续查询原任务。'); return; }
     const previous = card.job.config;
     if (config.provider !== previous.provider || config.baseUrl.replace(/\/+$/, '') !== previous.baseUrl.replace(/\/+$/, '')) { toast('请切回此任务原来的供应商和 API 地址'); return; }
     const task = start(); if (!task) return; task.cardId = card.id;
