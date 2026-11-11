@@ -112,7 +112,10 @@ Key 仅保留在页面内存并用于当次请求，不写入 localStorage、Ind
 npm test
 npm run build
 npm run test:backend
+npm run test:desktop
 ```
+
+`npm run test:all` 依次运行前端、桌面存储和后端测试。`npm run bench` 用 200 个素材、8 个版本和 160 条计划记录的项目测量编辑、自动保存和画布渲染耗时，不包含在 `npm test` 中。
 
 前端测试覆盖相机计算、手势取消与提交、双指转单指、历史操作、镜头排序与时长、浏览器媒体恢复、生成停止及续查、配置密钥隔离、下拉框键盘导航。后端测试覆盖协议校验、大小限制、错误脱敏、超时、断连取消、Cookie 隔离和静态文件。
 
