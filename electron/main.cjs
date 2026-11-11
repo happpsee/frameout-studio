@@ -1,0 +1,229 @@
+const { app, BrowserWindow, dialog, ipcMain, Menu, shell } = require('electron');
+const { spawn } = require('node:child_process');
+const { randomUUID } = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const { createInterface } = require('node:readline');
+const { createStorage } = require('./storage.cjs');
+
+app.setName('帧外');
+
+const userData = path.resolve(process.env.FRAMEOUT_USER_DATA_DIR || path.join(app.getPath('appData'), 'FRAMEOUT'));
+fs.mkdirSync(userData, { recursive: true, mode: 0o700 });
+app.setPath('userData', userData);
+
+const storage = createStorage(path.join(userData, 'storage'));
+const CLOSE_TIMEOUT = 30_000;
+const STARTUP_TIMEOUT = 30_000;
+
+let mainWindow;
+let backend;
+let origin;
+let pendingClose;
+let closingWindow = false;
+let quitApproved = false;
+
+function localOrigin(value) {
+  const url = new URL(value);
+  if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1' || !url.port || url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
+    throw new Error('帧外服务必须使用本机回环地址');
+  }
+  return url.origin;
+}
+
+function isTrusted(event) {
+  if (!mainWindow || event.sender !== mainWindow.webContents || !event.senderFrame || event.senderFrame.parent) return false;
+  const value = event.senderFrame.url;
+  if (!URL.canParse(value)) return false;
+  const url = new URL(value);
+  return url.origin === origin && url.pathname === '/';
+}
+
+function startBackend() {
+  const repo = path.resolve(__dirname, '..');
+  const executable = app.isPackaged
+    ? path.join(process.resourcesPath, 'frameout-api', process.platform === 'win32' ? 'frameout-api.exe' : 'frameout-api')
+    : path.join(repo, 'backend', '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
+  const args = app.isPackaged ? [] : [path.join(repo, 'backend', 'desktop.py')];
+  const frontend = app.isPackaged ? path.join(process.resourcesPath, 'frontend') : path.join(repo, 'frontend', 'dist');
+  if (!fs.existsSync(path.join(frontend, 'index.html'))) throw new Error('缺少已构建的前端文件');
+
+  return new Promise((resolve, reject) => {
+    const child = spawn(executable, args, {
+      cwd: userData,
+      env: { ...process.env, FRAMEOUT_FRONTEND_DIST: frontend, FRAMEOUT_PARENT_PID: String(process.pid), PYTHONUNBUFFERED: '1' },
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+    });
+    backend = child;
+    let ready = false;
+    let failed = false;
+    let errors = '';
+    const timeout = setTimeout(() => fail(new Error('等待帧外服务启动超时')), STARTUP_TIMEOUT);
+    function fail(error) {
+      if (ready || failed) return;
+      failed = true;
+      clearTimeout(timeout);
+      if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM');
+      if (errors) console.error(errors.trim());
+      reject(error);
+    }
+    child.stderr.setEncoding('utf8');
+    child.stderr.on('data', text => { errors = (errors + text).slice(-16_384); });
+    child.once('error', fail);
+    child.once('close', (code, signal) => {
+      if (backend === child) backend = undefined;
+      if (!ready) {
+        fail(new Error(`帧外服务启动失败（${signal || code}）`));
+      } else if (!quitApproved) {
+        if (errors) console.error(errors.trim());
+        dialog.showErrorBox('帧外服务已停止', '请关闭并重新打开帧外。');
+      }
+    });
+    createInterface({ input: child.stdout }).on('line', line => {
+      if (ready || failed || !line.startsWith('FRAMEOUT_READY ')) return;
+      try {
+        const url = localOrigin(line.slice('FRAMEOUT_READY '.length));
+        ready = true;
+        clearTimeout(timeout);
+        resolve(url);
+      } catch (error) {
+        fail(error);
+      }
+    });
+  });
+}
+
+async function requestClose(window, quitting) {
+  if (pendingClose) {
+    pendingClose.quitting ||= quitting;
+    return;
+  }
+  const state = { token: randomUUID(), quitting };
+  pendingClose = state;
+  const saved = await new Promise(resolve => {
+    const timeout = setTimeout(() => state.finish(false), CLOSE_TIMEOUT);
+    state.finish = value => { clearTimeout(timeout); resolve(value); };
+    if (window.webContents.isDestroyed() || window.webContents.isLoadingMainFrame() || window.webContents.isCrashed()) {
+      state.finish(false);
+    } else {
+      window.webContents.send('frameout:prepare-close', state.token);
+    }
+  });
+  if (!saved && !window.isDestroyed()) {
+    const result = await dialog.showMessageBox(window, {
+      type: 'warning', title: '项目还未保存', message: '帧外未能保存最新更改。',
+      buttons: ['返回帧外', '仍然关闭'], defaultId: 0, cancelId: 0,
+    });
+    if (result.response !== 1) {
+      pendingClose = undefined;
+      return;
+    }
+  }
+  pendingClose = undefined;
+  if (state.quitting) {
+    quitApproved = true;
+    app.quit();
+  } else if (!window.isDestroyed()) {
+    closingWindow = true;
+    window.close();
+  }
+}
+
+function createWindow() {
+  const window = new BrowserWindow({
+    width: 1440, height: 920, minWidth: 980, minHeight: 640,
+    title: '帧外 FRAMEOUT', backgroundColor: '#151613', show: false,
+    ...(process.platform === 'darwin' ? {
+      titleBarStyle: 'hidden',
+      trafficLightPosition: { x: 16, y: 21 },
+    } : {}),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true, sandbox: true, nodeIntegration: false,
+    },
+  });
+  mainWindow = window;
+  window.once('ready-to-show', () => window.show());
+  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  const preventExternalNavigation = event => {
+    if (!URL.canParse(event.url) || new URL(event.url).origin !== origin) event.preventDefault();
+  };
+  window.webContents.on('will-navigate', preventExternalNavigation);
+  window.webContents.on('will-redirect', preventExternalNavigation);
+  window.on('close', event => {
+    if (quitApproved || closingWindow) return;
+    event.preventDefault();
+    void requestClose(window, false);
+  });
+  window.on('closed', () => { mainWindow = undefined; closingWindow = false; });
+  window.loadURL(`${origin}/`).catch(error => {
+    if (window.isDestroyed()) return;
+    quitApproved = true;
+    dialog.showErrorBox('无法打开帧外', error.message);
+    app.quit();
+  });
+}
+
+function installMenu() {
+  const openData = {
+    label: '打开数据文件夹',
+    async click() {
+      const error = await shell.openPath(userData);
+      if (error) dialog.showErrorBox('无法打开数据文件夹', error);
+    },
+  };
+  const appMenu = process.platform === 'darwin'
+    ? { label: app.name, submenu: [
+      { role: 'about' }, openData, { type: 'separator' }, { role: 'services' }, { type: 'separator' },
+      { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' },
+    ] }
+    : { label: '文件', submenu: [openData, { type: 'separator' }, { role: 'quit' }] };
+  Menu.setApplicationMenu(Menu.buildFromTemplate([appMenu, { role: 'editMenu' }, { role: 'viewMenu' }, { role: 'windowMenu' }]));
+}
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  for (const operation of ['read', 'write']) {
+    ipcMain.handle(`frameout:storage:${operation}`, (event, ...args) => {
+      if (!isTrusted(event)) throw new Error('Untrusted storage request');
+      return storage[operation](...args);
+    });
+  }
+  ipcMain.handle('frameout:open-temporary-download', (event, value) => {
+    if (!isTrusted(event) || typeof value !== 'string' || !URL.canParse(value)) throw new Error('Invalid download request');
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || url.username || url.password) throw new Error('Download link must use HTTPS');
+    return shell.openExternal(url.href);
+  });
+  ipcMain.on('frameout:close-ready', (event, token, saved) => {
+    if (isTrusted(event) && pendingClose?.token === token) pendingClose.finish(saved === true);
+  });
+
+  app.on('second-instance', () => {
+    if (!mainWindow && origin) createWindow();
+    if (mainWindow?.isMinimized()) mainWindow.restore();
+    mainWindow?.focus();
+  });
+  app.on('activate', () => { if (!mainWindow && origin) createWindow(); });
+  app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+  app.on('before-quit', event => {
+    if (quitApproved || !mainWindow) return;
+    event.preventDefault();
+    void requestClose(mainWindow, true);
+  });
+  app.on('will-quit', () => {
+    quitApproved = true;
+    backend?.kill('SIGTERM');
+  });
+  app.whenReady().then(async () => {
+    installMenu();
+    origin = !app.isPackaged && process.env.FRAMEOUT_DEV_URL ? localOrigin(process.env.FRAMEOUT_DEV_URL) : await startBackend();
+    if (!quitApproved) createWindow();
+  }).catch(error => {
+    quitApproved = true;
+    dialog.showErrorBox('无法启动帧外', error.message);
+    app.quit();
+  });
+}

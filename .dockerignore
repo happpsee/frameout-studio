@@ -1,0 +1,16 @@
+.git
+.DS_Store
+**/node_modules
+**/.venv
+**/.desktop-venv
+**/__pycache__
+**/.pytest_cache
+**/*.egg-info
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+docs
+**/*.tar
+**/*.tar.gz
+**/*.zip

@@ -1,0 +1,12 @@
+{$FRAMEOUT_DOMAIN} {
+    encode zstd gzip
+
+    # Match the backend's 16 MiB request limit, including JSON/base64 bytes.
+    request_body {
+        max_size 16777216
+    }
+
+    # Default upstream read/header timeouts are not shortened: image generation
+    # may take up to 300 seconds before FastAPI returns a response.
+    reverse_proxy app:8000
+}

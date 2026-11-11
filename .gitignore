@@ -5,3 +5,18 @@ __pycache__/
 .site-local/
 
 dist/
+node_modules/
+backend/.venv/
+backend/.desktop-venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+.env
+.env.*
+!.env.example
+coverage/
+playwright-report/
+test-results/
+
+# Generated media and local run output
+output/
