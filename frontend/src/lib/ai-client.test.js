@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { test } from 'vitest';
 import assert from 'node:assert/strict';
-import { PROVIDERS, AIError, createClient, validateBaseUrl } from './ai-client.js';
+import { PROVIDERS, AIError, createClient, validateBaseUrl } from './ai-client';
 
 const key = 'fixture-secret-key-123456';
 const image = { data: [{ b64_json: 'iVBORw0KGgoAAAANSUhEUg==' }] };

@@ -1,5 +1,21 @@
 // Pure provider adapters; request credentials are never persisted.
-  const PROVIDERS = Object.freeze({
+import type { AIConfig, Provider } from '../types';
+
+type ProviderPreset = {
+  label: string; baseUrl: string; defaultImageModel: string; defaultVideoModel: string;
+  imageSizes: readonly string[]; videoDurations: readonly string[]; canVideo: boolean; note: string;
+};
+type Transport = AIConfig['transport'];
+type ClientOptions = { fetchImpl?: typeof fetch; proxyPath?: string; timeoutMs?: number };
+type RequestOptions = { signal?: AbortSignal; raw?: boolean; timeout?: number };
+// Untrusted provider JSON; every field is checked where it is read.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ProviderJson = any;
+export type VideoStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+export type VideoResult = { id: string; status: VideoStatus; provider: Provider; model: string; src?: string; progress?: number; error?: string; requestId?: string };
+export type ImageResult = { src: string; kind: 'image'; provider: Provider; model: string; requestId?: string };
+
+  const PROVIDERS: Readonly<Record<Provider, Readonly<ProviderPreset>>> = Object.freeze({
     openai: Object.freeze({
       label: 'OpenAI', baseUrl: 'https://api.openai.com/v1',
       defaultImageModel: 'gpt-image-1.5', defaultVideoModel: '',
@@ -24,7 +40,10 @@
   });
 
   class AIError extends Error {
-    constructor(message, { code = 'AI_ERROR', status = 0, requestId = '' } = {}) {
+    code: string;
+    status: number;
+    requestId?: string;
+    constructor(message: string, { code = 'AI_ERROR', status = 0, requestId = '' }: { code?: string; status?: number; requestId?: string } = {}) {
       super(message);
       this.name = 'AIError';
       this.code = code;
@@ -33,15 +52,15 @@
     }
   }
 
-  function publicHostname(hostname) {
+  function publicHostname(hostname: string) {
     const host = hostname.toLowerCase().replace(/\.$/, '');
     return host.includes('.') && !host.includes(':') && !host.startsWith('[')
       && !/^(?:\d{1,3}\.){3}\d{1,3}$/.test(host)
       && !/(^|\.)(?:localhost|local|internal|localdomain|lan|home|arpa)$/.test(host);
   }
 
-  function validateBaseUrl(value) {
-    let url;
+  function validateBaseUrl(value: unknown): string {
+    let url: URL;
     try { url = new URL(String(value || '').trim()); } catch (_) { throw new AIError('请输入完整的 HTTPS Base URL', { code: 'CONFIG_URL' }); }
     if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash
       || (url.port && url.port !== '443') || !publicHostname(url.hostname)) {
@@ -56,28 +75,30 @@
     return error;
   }
 
-  function required(value, label, limit = 1000) {
+  function required(value: unknown, label: string, limit = 1000): string {
     const text = typeof value === 'string' ? value.trim() : '';
     if (!text || text.length > limit) throw new AIError(`请填写有效的${label}`, { code: 'CONFIG_VALUE' });
     return text;
   }
 
-  function safeMediaUrl(value, imageOnly = false) {
+  function safeMediaUrl(value: unknown, imageOnly = false): string {
     if (typeof value !== 'string') return '';
     const text = value.trim();
     if (/^data:image\/(?:png|jpeg|webp|gif);base64,[A-Za-z0-9+/=\s]+$/.test(text)) return text;
     if (!imageOnly && /^data:video\/(?:mp4|webm);base64,[A-Za-z0-9+/=\s]+$/.test(text)) return text;
-    let url;
+    let url: URL;
     try { url = new URL(text); } catch (_) { return ''; }
     return url.protocol === 'https:' && !url.username && !url.password && publicHostname(url.hostname) ? url.href : '';
   }
 
-  function createClient(config = {}, options = {}) {
-    const provider = config.provider || 'openai';
-    const preset = PROVIDERS[provider];
-    if (!preset) throw new AIError('不支持的供应商', { code: 'CONFIG_PROVIDER' });
+  function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {}) {
+    const provider: Provider = config.provider || 'openai';
+    // Saved settings are untrusted, so the provider can still be unknown at run time.
+    const found: Readonly<ProviderPreset> | undefined = PROVIDERS[provider];
+    if (!found) throw new AIError('不支持的供应商', { code: 'CONFIG_PROVIDER' });
+    const preset = found;
     const baseUrl = validateBaseUrl(config.baseUrl || preset.baseUrl);
-    const transport = config.transport || (provider === 'compatible' ? 'direct' : 'proxy');
+    const transport: Transport = config.transport || (provider === 'compatible' ? 'direct' : 'proxy');
     if (transport !== 'direct' && transport !== 'proxy') throw new AIError('不支持的请求方式', { code: 'CONFIG_TRANSPORT' });
     if (transport === 'proxy' && (provider === 'compatible' || baseUrl !== preset.baseUrl)) {
       throw new AIError('后端转发仅支持 OpenAI 和火山方舟官方地址；自定义接口请使用浏览器直连', { code: 'CONFIG_TRANSPORT' });
@@ -95,31 +116,31 @@
     const duration = Number(config.duration || preset.videoDurations[0] || 5);
     const resolution = config.resolution || '720p';
 
-    function redact(value) {
+    function redact(value: unknown): string {
       return String(value || '').split(key).join('[已隐藏]')
         .replace(/Bearer\s+[^\s,;"<>]+/gi, 'Bearer [已隐藏]')
         .replace(/sk-[A-Za-z0-9_-]{8,}/g, '[已隐藏]')
         .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '').slice(0, 350);
     }
 
-    function upstreamError(status, body, requestId) {
+    function upstreamError(status: number, body: ProviderJson, requestId: string) {
       const detail = typeof body?.error === 'string' ? body.error : body?.error?.message || body?.message || '';
-      const labels = { 400: '请求参数不被模型接受', 401: 'API Key 无效或已过期', 403: '此 Key 没有调用权限', 404: '接口或模型不存在', 429: '请求频率或账户额度受限' };
+      const labels: Record<number, string> = { 400: '请求参数不被模型接受', 401: 'API Key 无效或已过期', 403: '此 Key 没有调用权限', 404: '接口或模型不存在', 429: '请求频率或账户额度受限' };
       const message = labels[status] || (status >= 500 ? '供应商暂时不可用' : 'AI 请求失败');
       return new AIError(message + (detail ? '：' + redact(detail) : ''), { code: 'UPSTREAM_ERROR', status, requestId: redact(requestId) });
     }
 
-    async function request(path, method = 'GET', body, { signal, raw = false, timeout = 30000 } = {}) {
+    async function request(path: string, method: 'GET' | 'POST' = 'GET', body?: unknown, { signal, raw = false, timeout = 30000 }: RequestOptions = {}): Promise<{ json?: ProviderJson; blob?: Blob; requestId: string }> {
       if (signal?.aborted) throw abortError();
       const controller = new AbortController();
       const abort = () => controller.abort();
       if (signal) signal.addEventListener('abort', abort, { once: true });
       let timedOut = false;
-      const timeoutMs = Number.isFinite(options.timeoutMs) && options.timeoutMs > 0 ? options.timeoutMs : timeout;
+      const timeoutMs = options.timeoutMs !== undefined && Number.isFinite(options.timeoutMs) && options.timeoutMs > 0 ? options.timeoutMs : timeout;
       const timer = setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs);
       try {
-        const init = { signal: controller.signal, credentials: 'omit', redirect: 'error', cache: 'no-store' };
-        let url;
+        const init: RequestInit = { signal: controller.signal, credentials: 'omit', redirect: 'error', cache: 'no-store' };
+        let url: string;
         if (transport === 'proxy') {
           url = proxyPath;
           init.method = 'POST';
@@ -134,7 +155,7 @@
         const response = await fetchImpl(url, init);
         const requestId = redact(response.headers?.get('x-request-id') || response.headers?.get('x-tt-logid') || '');
         if (raw && response.ok) return { blob: await response.blob(), requestId };
-        let json;
+        let json: ProviderJson;
         try { json = await response.json(); } catch (_) {
           if (!response.ok) throw upstreamError(response.status, {}, requestId);
           throw new AIError('供应商未返回有效的 JSON 数据', { code: 'INVALID_RESPONSE', requestId });
@@ -146,7 +167,7 @@
         if (signal?.aborted) throw abortError();
         if (timedOut) throw new AIError('请求超时。供应商可能仍在执行，请先检查供应商控制台，避免重复提交。', { code: 'TIMEOUT' });
         if (error instanceof AIError) throw error;
-        if (error?.name === 'AbortError') throw abortError();
+        if (error instanceof Error && error.name === 'AbortError') throw abortError();
         throw new AIError(transport === 'direct' ? '连接失败。请检查网络、Base URL 和服务的跨域配置。' : '后端转发连接失败，请稍后重试。', { code: 'NETWORK_ERROR' });
       } finally {
         clearTimeout(timer);
@@ -154,19 +175,19 @@
       }
     }
 
-    async function testConnection({ signal } = {}) {
+    async function testConnection({ signal }: { signal?: AbortSignal } = {}) {
       const { json } = await request(provider === 'ark' ? '/contents/generations/tasks?page_size=1' : '/models', 'GET', undefined, { signal });
       const validList = provider === 'ark'
         ? Array.isArray(json?.items) || (json?.items === null && Number.isFinite(json?.total))
         : Array.isArray(json?.data);
       if (!validList) throw new AIError('连接返回的数据不符合供应商接口格式，请检查 Base URL', { code: 'INVALID_RESPONSE' });
       // Do not return the Ark task list: it may contain the visitor's private work.
-      const models = provider === 'ark' ? undefined : Array.isArray(json?.data) ? json.data.map(item => redact(item?.id)).filter(Boolean).slice(0, 200) : undefined;
+      const models = provider === 'ark' ? undefined : Array.isArray(json?.data) ? json.data.map((item: ProviderJson) => redact(item?.id)).filter(Boolean).slice(0, 200) : undefined;
       return { ok: true, message: '鉴权连接成功；所选模型的生成权限以实际请求为准。', ...(models ? { models } : {}) };
     }
 
-    async function generateImage({ prompt, signal } = {}) {
-      prompt = required(prompt, '图片提示词', 32000);
+    async function generateImage({ prompt: text, signal }: { prompt?: string; signal?: AbortSignal } = {}): Promise<ImageResult> {
+      const prompt = required(text, '图片提示词', 32000);
       const model = required(imageModel, '图片模型名', 200);
       const size = required(imageSize, '图片尺寸', 40);
       const body = provider === 'ark'
@@ -174,12 +195,12 @@
         : { model, prompt, n: 1, size };
       // Seedream 5 pro/flash do not accept sequential_image_generation; omit it.
       const { json, requestId } = await request('/images/generations', 'POST', body, { signal, timeout: 300000 });
-      const image = Array.isArray(json?.data) ? json.data.find(item => item?.b64_json || item?.url) : null;
+      const image = Array.isArray(json?.data) ? json.data.find((item: ProviderJson) => item?.b64_json || item?.url) : null;
       if (!image) throw new AIError('生成请求未返回图片，请检查模型能力与响应格式', { code: 'INVALID_RESPONSE', requestId });
       let src = safeMediaUrl(image.url, true);
       if (typeof image.b64_json === 'string' && /^[A-Za-z0-9+/=\s]+$/.test(image.b64_json) && image.b64_json.trim()) {
         const b64 = image.b64_json.replace(/\s/g, '');
-        let format = image.output_format || json.output_format || (provider === 'ark' ? 'jpeg' : 'png');
+        let format: string = image.output_format || json.output_format || (provider === 'ark' ? 'jpeg' : 'png');
         if (b64.startsWith('iVBORw0KGgo')) format = 'png';
         else if (b64.startsWith('/9j/')) format = 'jpeg';
         else if (b64.startsWith('UklGR')) format = 'webp';
@@ -201,11 +222,11 @@
       }
     }
 
-    function normalizeVideo(value, fallbackId, requestId) {
+    function normalizeVideo(value: ProviderJson, fallbackId: string, requestId: string): VideoResult {
       const json = value?.data && !Array.isArray(value.data) && typeof value.data === 'object' ? value.data : value;
       const id = String(json?.id || json?.task_id || fallbackId || '');
       if (!id || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,255}$/.test(id)) throw new AIError('供应商未返回有效的视频任务 ID', { code: 'INVALID_RESPONSE', requestId });
-      const statusMap = { queued: 'queued', pending: 'queued', submitted: 'queued', running: 'running', processing: 'running', in_progress: 'running', succeeded: 'succeeded', completed: 'succeeded', success: 'succeeded', failed: 'failed', error: 'failed', cancelled: 'failed', canceled: 'failed', expired: 'failed' };
+      const statusMap: Record<string, VideoStatus> = { queued: 'queued', pending: 'queued', submitted: 'queued', running: 'running', processing: 'running', in_progress: 'running', succeeded: 'succeeded', completed: 'succeeded', success: 'succeeded', failed: 'failed', error: 'failed', cancelled: 'failed', canceled: 'failed', expired: 'failed' };
       const rawStatus = json?.status || 'queued';
       const status = statusMap[rawStatus];
       if (!status) throw new AIError('供应商返回了未知的视频任务状态：' + redact(rawStatus), { code: 'INVALID_RESPONSE', requestId });
@@ -215,11 +236,11 @@
       return { id, status, provider, model: json?.model || videoModel, ...(src ? { src } : {}), ...(Number.isFinite(progress) ? { progress: Math.min(100, Math.max(0, progress)) } : {}), ...(error ? { error } : {}), ...(requestId ? { requestId } : {}) };
     }
 
-    async function submitVideo({ prompt, reference, signal } = {}) {
+    async function submitVideo({ prompt: text, reference, signal }: { prompt?: string; reference?: string; signal?: AbortSignal } = {}): Promise<VideoResult> {
       requireVideo();
-      prompt = required(prompt, '视频提示词', 32000);
+      const prompt = required(text, '视频提示词', 32000);
       if (reference && !safeMediaUrl(reference, true)) throw new AIError('首帧需为公开 HTTPS 图片或 Base64 图片', { code: 'CONFIG_REFERENCE' });
-      let body;
+      let body: ProviderJson;
       if (provider === 'ark') {
         body = { model: videoModel, content: [{ type: 'text', text: prompt }], duration, ratio: reference ? 'adaptive' : videoRatio, resolution, watermark: false };
         if (reference) body.content.push({ type: 'image_url', image_url: { url: reference }, role: 'first_frame' });
@@ -233,7 +254,7 @@
       return normalizeVideo(json, '', requestId);
     }
 
-    async function getVideo({ id, signal } = {}) {
+    async function getVideo({ id, signal }: { id?: string; signal?: AbortSignal } = {}): Promise<VideoResult> {
       requireVideo();
       if (typeof id !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,255}$/.test(id)) throw new AIError('视频任务 ID 无效', { code: 'CONFIG_VALUE' });
       const path = provider === 'ark' ? '/contents/generations/tasks/' + id : '/videos/' + id;
@@ -242,7 +263,7 @@
       if (result.status === 'succeeded' && !result.src) {
         if (provider === 'ark') throw new AIError('已完成的视频任务没有返回视频地址', { code: 'INVALID_RESPONSE', requestId });
         const { blob } = await request(path + '/content', 'GET', undefined, { signal, raw: true, timeout: 90000 });
-        if (!blob.size || (blob.type && !/^video\//.test(blob.type))) throw new AIError('视频下载接口未返回有效的视频文件', { code: 'INVALID_RESPONSE', requestId });
+        if (!blob || !blob.size || (blob.type && !/^video\//.test(blob.type))) throw new AIError('视频下载接口未返回有效的视频文件', { code: 'INVALID_RESPONSE', requestId });
         result.src = URL.createObjectURL(blob);
       }
       return result;
