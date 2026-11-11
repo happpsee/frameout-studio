@@ -82,14 +82,21 @@ describe(`workspace with ${CARDS} cards, 8 versions and a 160-event plan`, () =>
     const view = render(<StrictMode><Profiler id="studio" onRender={(_id, _phase, duration) => { committed += duration; }}><Studio onClose={() => {}} /></Profiler></StrictMode>);
     frame(); frame();
     results['cards in DOM'] = String(view.container.querySelectorAll('.fo-card').length);
-    const card = view.container.querySelector('.fo-card[data-id="card-0"] .fo-media')!;
+    const media = (id: number) => view.container.querySelector(`.fo-card[data-id="card-${id}"] .fo-media`)!;
+    const select = (id: number) => { pointer(media(id), 'pointerdown', 100, 100); pointer(media(id), 'pointerup', 100, 100); frame(); };
+    // Warm up once, then average repeated interactions so JIT start-up does not dominate.
+    [0, 1, 2].forEach(select);
     committed = 0;
+    const selections = [3, 4, 5, 20, 21, 22, 23, 24, 25, 26];
+    selections.forEach(select);
+    results['select render ms'] = (committed / selections.length).toFixed(2);
+    const card = media(0);
     pointer(card, 'pointerdown', 100, 100);
-    results['select render ms'] = committed.toFixed(2);
+    for (let step = 1; step <= 10; step++) { pointer(card, 'pointermove', 100 + step * 5, 100 + step * 3); frame(); }
     committed = 0;
-    const moves = 20;
-    for (let step = 1; step <= moves; step++) { pointer(card, 'pointermove', 100 + step * 5, 100 + step * 3); frame(); }
+    const moves = 30;
+    for (let step = 11; step <= 10 + moves; step++) { pointer(card, 'pointermove', 100 + step * 5, 100 + step * 3); frame(); }
     results['drag frame render ms'] = (committed / moves).toFixed(2);
-    pointer(card, 'pointerup', 200, 160);
+    pointer(card, 'pointerup', 300, 220);
   });
 });

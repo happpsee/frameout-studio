@@ -11,7 +11,7 @@ import { serializeProject, STORAGE_KEY } from '../lib/project';
 import APISettings from './APISettings';
 import Icon from './Icon';
 import Select from './Select';
-import { CardMedia } from './CardMedia';
+import { CanvasCard, pending, videoStatus, visibleCards } from './CanvasCard';
 import Sequence from './Sequence';
 import PreviewDialog, { type PreviewItem } from './PreviewDialog';
 import WorkflowPanel from './WorkflowPanel';
@@ -20,9 +20,6 @@ import DesktopGenerationSettings from './DesktopGenerationSettings';
 
 const uid = () => 'f-' + crypto.randomUUID();
 const modeOptions = [{ value: 'image', label: '图片' }, { value: 'video', label: '视频' }];
-const pending = (card?: Card) => Boolean(card?.job && card.job.status !== 'succeeded');
-const statuses: Record<string, string> = { submitting: '正在提交', queued: '等待生成', running: '正在生成', paused: '已停止本页等待', failed: '生成失败', cancelled: '任务已取消' };
-const videoStatus = (card: Card) => statuses[card.job?.status ?? ''] ?? '等待查询';
 function clipDuration(card: Card) {
   const duration = card.duration;
   return card.kind === 'video' && typeof duration === 'number' && Number.isFinite(duration) && duration > 0 ? duration : 4;
@@ -109,6 +106,13 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
     canvas.cancelGesture();
     update(draft => { draft.cards = draft.cards.filter(c => c.id !== id); draft.sequence = draft.sequence.filter(s => s.cardId !== id); draft.selected = null; });
   }, [projectRef, active, canvas.cancelGesture, update, toast]);
+  // Stable callbacks let memoized cards and the sequence skip renders; they call the latest handlers.
+  const cardActions = useRef<{ openPreview: (card?: Card) => void; updateDuration: (card: Card, duration: number) => void }>(null!);
+  const selectCard = useCallback((id: string) => update(draft => { draft.selected = id; }, false), [update]);
+  const openCard = useCallback((id: string) => { const card = projectRef.current.cards.find(c => c.id === id); if (card) cardActions.current.openPreview(card); }, [projectRef]);
+  const cardDuration = useCallback((card: Card, duration: number) => cardActions.current.updateDuration(card, duration), []);
+  const toggleTimeline = useCallback(() => setTimelineOpen(value => !value), []);
+  const previewShot = useCallback((card: Card) => { update(draft => { draft.selected = card.id; }, false); cardActions.current.openPreview(card); }, [update]);
   const guardedUndo = () => { canvas.cancelGesture(); if (!active) undo(); };
   const guardedRedo = () => { canvas.cancelGesture(); if (!active) redo(); };
 
@@ -178,6 +182,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
       if (target) target.duration = duration;
     }, false);
   }
+  cardActions.current = { openPreview, updateDuration };
   function exportProject() {
     const exported = { ...serializeProject(projectRef.current), exportedAt: new Date().toISOString() };
     const data = JSON.stringify(exported, (key, value) => /^(?:key|apiKey|authorization)$/i.test(key) ? undefined : value, 2);
@@ -249,13 +254,9 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
     <main ref={viewportRef} className={`fo-viewport${canvas.tool === 'hand' || canvas.space ? ' is-hand' : ''}${canvas.panning ? ' is-panning' : ''}${canvas.fileDrop ? ' is-file-drop' : ''}`} aria-label="无限创作画布" style={{ backgroundSize: `${26 * canvas.camera.zoom}px ${26 * canvas.camera.zoom}px`, backgroundPosition: `${canvas.camera.x}px ${canvas.camera.y}px` }}>
       <div className="fo-canvas-intro"><span className="fo-eyebrow">{desktop ? '画布' : 'YOUR CREATIVE SPACE'}</span><span className="fo-canvas-count">{project.cards.length} 个素材</span></div>
       <div className="fo-stage" style={sceneStyle}>
-        {project.cards.map(card => {
-          const position = canvas.dragPosition?.id === card.id ? canvas.dragPosition : card;
-          return <article key={card.id} data-id={card.id} className={`fo-card${selected?.id === card.id ? ' is-selected' : ''}${canvas.dragPosition?.id === card.id ? ' is-dragging' : ''}`} style={{ left: position.x, top: position.y }}>
-            <div className="fo-card-top"><span><Icon name={card.kind === 'video' ? 'film' : 'image'} />{pending(card) ? '视频任务' : card.missingMedia ? '素材需重新导入' : card.label ?? (card.kind === 'video' ? '本地视频' : '画面')}</span><span>{pending(card) ? videoStatus(card) : card.kind === 'video' ? (card.duration ? `${Math.round(card.duration * 100) / 100} SEC` : '视频') : card.size ?? card.ratio ?? '16:9'}</span></div>
-            <button type="button" className={`fo-media tone-${card.tone ?? 'normal'}`} aria-label={`选择素材：${card.name}`} onClick={() => update(draft => { draft.selected = card.id; }, false)} onDoubleClick={() => openPreview(card)}><CardMedia card={card} onDuration={duration => updateDuration(card, duration)} /><span className="fo-media-marker">{card.kind === 'video' ? '▶' : '+'}</span>{pending(card) && <span className="fo-job-status">{videoStatus(card)}</span>}</button>
-            <div className="fo-card-bottom"><span>{card.name}</span><span>{card.provider?.toUpperCase() ?? (card.mediaId || card.sessionOnly ? 'LOCAL' : 'EXPLORATION')}</span></div>
-          </article>;
+        {visibleCards(project.cards, canvas.camera, layout.width, layout.height, [project.selected, canvas.dragPosition?.id]).map(card => {
+          const dragging = canvas.dragPosition?.id === card.id, position = dragging ? canvas.dragPosition! : card;
+          return <CanvasCard key={card.id} card={card} x={position.x} y={position.y} selected={selected?.id === card.id} dragging={dragging} onSelect={selectCard} onOpen={openCard} onDuration={cardDuration} />;
         })}
       </div>
       {!project.cards.length && <div className="fo-canvas-empty">{desktop ? <><div className="fo-empty-symbol"><Icon name="grid" /></div><h2>从第一个画面开始</h2></> : <span>MAKE A SCENE.</span>}<p>上传图片或视频，也可以输入提示词生成素材。</p><button type="button" className="fo-primary-button" onClick={() => fileInput.current?.click()}>添加素材 <Icon name="plus" /></button></div>}
@@ -274,7 +275,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
       </div>
       <div className="fo-canvas-hint"><span>滚动平移</span><i>·</i><span>⌘ / Ctrl + 滚轮缩放</span><i>·</i><span>空格拖动画布</span></div><div className="fo-file-drop-hint">松开，添加到画布 <Icon name="upload" /></div>
     </main>
-    <Sequence collapsed={desktop && !timelineOpen} onToggle={desktop ? () => setTimelineOpen(value => !value) : undefined} project={project} update={update} onPreview={card => { update(draft => { draft.selected = card.id; }, false); openPreview(card); }} />
+    <Sequence collapsed={desktop && !timelineOpen} onToggle={desktop ? toggleTimeline : undefined} project={project} update={update} onPreview={previewShot} />
       </div>
       {desktop && <aside className="fo-generation-sidebar" aria-label="生成面板"><header><span><Icon name="sparkles" />生成</span><span>⌘ ↵</span></header>{composer}</aside>}
     </div>

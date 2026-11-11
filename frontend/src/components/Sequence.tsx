@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import type { Card, ProjectState, UpdateProject } from '../types';
 import { CardMedia } from './CardMedia';
 import Icon from './Icon';
@@ -6,7 +6,7 @@ import Select from './Select';
 
 export const timeLabel = (seconds: number) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${Math.floor(seconds % 60).toString().padStart(2, '0')}`;
 const durations = Array.from({ length: 15 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} 秒` }));
-export default function Sequence({ project, update, onPreview, collapsed = false, onToggle }: { project: ProjectState; update: UpdateProject; onPreview: (card: Card) => void; collapsed?: boolean; onToggle?: () => void }) {
+export default memo(function Sequence({ project, update, onPreview, collapsed = false, onToggle }: { project: ProjectState; update: UpdateProject; onPreview: (card: Card) => void; collapsed?: boolean; onToggle?: () => void }) {
   const [dragged, setDragged] = useState<string | null>(null), [target, setTarget] = useState<string | null>(null);
   function reorder(fromId: string, toId: string) {
     if (fromId === toId) return;
@@ -45,4 +45,4 @@ export default function Sequence({ project, update, onPreview, collapsed = false
       </div>
     </div>
   </section>;
-}
+});
