@@ -5,7 +5,7 @@ import { useLandingMotion } from '../hooks/useLandingMotion';
 interface LandingProps { onOpenStudio: () => void }
 const ASSETS = '/assets/';
 const INSPIRATION_FRAMES = [
-  { id: 'forest', image: 'forest-astronaut.png', alt: '森林中的橙色头盔探索者', name: '森林来信', english: 'FOREST LETTERS', tag: '科幻 / 自然' },
+  { id: 'forest', image: 'forest-astronaut-960.webp', alt: '森林中的橙色头盔探索者', name: '森林来信', english: 'FOREST LETTERS', tag: '科幻 / 自然' },
   { id: 'ocean', image: 'still-ocean.webp', alt: '涌动的蓝绿色海浪', name: '潮汐之后', english: 'AFTER THE TIDE', tag: '情绪 / 纪录' },
   { id: 'city', image: 'still-city.webp', alt: '夜色城市的光影', name: '夜游计划', english: 'NIGHT WANDERER', tag: '城市 / 漫游' },
 ];
@@ -39,10 +39,10 @@ function CanvasPreview({ onOpenStudio, phase }: LandingProps & { phase: number }
           <div className="preview-group"><span>森林来信 / 视觉探索</span></div>
           <div className="preview-note">不急着定稿。<br /><span>先看看还有什么可能。</span><i aria-hidden="true">↘</i></div>
           <div className="preview-image preview-image-main">
-            <img src={`${ASSETS}forest-astronaut.png`} alt="探索者穿行森林的电影画面" loading="lazy" /><span><i className="status-dot" /> 森林来信 <small>构图参考</small></span>
+            <img src={`${ASSETS}forest-astronaut-960.webp`} alt="探索者穿行森林的电影画面" loading="lazy" /><span><i className="status-dot" /> 森林来信 <small>构图参考</small></span>
           </div>
           <div className="preview-image preview-image-detail">
-            <img src={`${ASSETS}forest-astronaut.png`} alt="森林薄雾与探索者的局部取景" loading="lazy" /><span>换个角度</span>
+            <img src={`${ASSETS}forest-astronaut-960.webp`} alt="森林薄雾与探索者的局部取景" loading="lazy" /><span>换个角度</span>
           </div>
           <div className="preview-image preview-image-ocean">
             <img src={`${ASSETS}still-ocean.webp`} alt="海面与浪花的灵感素材" loading="lazy" /><span>也许，去海边。</span>
@@ -50,7 +50,7 @@ function CanvasPreview({ onOpenStudio, phase }: LandingProps & { phase: number }
           <div className="preview-cursor" aria-hidden="true"><svg viewBox="0 0 24 28"><path d="m2 2 18 15-9 1-5 8Z" fill="currentColor" stroke="#151613" strokeWidth="1.5" /></svg><span>你的下一个想法</span></div>
           <button className="preview-entry button button-lime" onClick={() => onOpenStudio()}>打开创作画布 <Icon name="maximize" /></button>
           <div className="motion-timeline" aria-hidden="true">
-            {['forest-astronaut.png', 'forest-astronaut.png', 'still-ocean.webp'].map((image, index) => <div className="motion-timeline-shot" key={index}>
+            {['forest-astronaut-960.webp', 'forest-astronaut-960.webp', 'still-ocean.webp'].map((image, index) => <div className="motion-timeline-shot" key={index}>
               <img src={`${ASSETS}${image}`} alt="" loading="lazy" /><span>镜头 0{index + 1}</span>
             </div>)}
             <i className="motion-playhead" />
@@ -98,7 +98,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
             <div className="hero-photo-frame">
               <div className="film-top"><span><i /> FRAME STUDY / 001</span><span>16:9</span></div>
               <div className="hero-photo">
-                <img src={`${ASSETS}forest-astronaut.png`} alt="戴橙色头盔的探索者站在薄雾森林中，原创科幻电影感画面" width="1536" height="1024" fetchPriority="high" />
+                <img src={`${ASSETS}forest-astronaut.webp`} srcSet={`${ASSETS}forest-astronaut-960.webp 960w, ${ASSETS}forest-astronaut.webp 1672w`} sizes="(max-width: 900px) 100vw, 60vw" alt="戴橙色头盔的探索者站在薄雾森林中，原创科幻电影感画面" width="1672" height="941" fetchPriority="high" />
                 {['tl', 'tr', 'bl', 'br'].map(position => <div className={`viewfinder-corner ${position}`} key={position} />)}
                 <span className="image-caption">森林来信<span>FOREST LETTERS</span></span>
               </div>
