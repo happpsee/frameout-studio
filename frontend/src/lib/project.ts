@@ -6,7 +6,6 @@ const legacySampleSources = new Set(['/assets/forest-astronaut.png', '/assets/st
 export const placeholder = (text: string) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360"><rect width="640" height="360" fill="#252c20"/><text x="320" y="185" fill="#b5c69e" text-anchor="middle" font-family="sans-serif" font-size="22">${text}</text></svg>`);
 export const MISSING_MEDIA = placeholder('素材暂不可用');
 export const PENDING_MEDIA = placeholder('视频生成任务');
-export const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value));
 export const uid = () => 'f-' + crypto.randomUUID();
 export const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 export function initialState(): ProjectState {

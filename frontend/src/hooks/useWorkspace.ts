@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { produce } from 'immer';
 import type { ProjectState, UpdateProject } from '../types';
-import { clone, initialState, restoreProject, serializeProject, serializeWorkspace, STORAGE_KEY, uid } from '../lib/project';
+import { initialState, restoreProject, serializeProject, serializeWorkspace, STORAGE_KEY, uid } from '../lib/project';
 import { getMedia } from '../lib/media-store';
 import { flushDesktopStorage, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
 import { recordEvent } from '../lib/workflow';
 
 type Snapshot = Pick<ProjectState, 'cards' | 'sequence' | 'selected' | 'title'>;
-const snapshot = (project: ProjectState): Snapshot => clone({ cards: project.cards, sequence: project.sequence, selected: project.selected, title: project.title });
+// Project states are immutable (Immer), so undo entries can share them instead of copying.
+const snapshot = (project: ProjectState): Snapshot => ({ cards: project.cards, sequence: project.sequence, selected: project.selected, title: project.title });
 function restore() { try { return restoreProject(JSON.parse(readStoredValue(STORAGE_KEY) || 'null')); } catch { return initialState(); } }
 
 export function useWorkspace() {
@@ -18,8 +20,8 @@ export function useWorkspace() {
   const hydratedMedia = useRef(new Map<string, string>());
   const [, renderHistory] = useState(0);
   const update: UpdateProject = useCallback((recipe, record = true) => {
-    const next = clone(projectRef.current);
-    recipe(next);
+    const next = produce(projectRef.current, recipe);
+    if (next === projectRef.current) return;
     if (record) {
       undoStack.current.push(snapshot(projectRef.current));
       if (undoStack.current.length > 40) undoStack.current.shift();
@@ -33,11 +35,11 @@ export function useWorkspace() {
     const next = from.pop();
     if (!next) return;
     to.push(snapshot(projectRef.current));
-    const value = { ...projectRef.current, ...clone(next) };
-    for (const card of value.cards) {
+    const cards = next.cards.map(card => {
       const src = card.mediaId && hydratedMedia.current.get(card.mediaId);
-      if (src) { card.src = src; card.missingMedia = false; }
-    }
+      return src && (card.src !== src || card.missingMedia) ? { ...card, src, missingMedia: false } : card;
+    });
+    const value = { ...projectRef.current, ...next, cards };
     projectRef.current = value; setProject(value); renderHistory(n => n + 1);
   }, []);
   const createCheckpoint = useCallback((name: string) => {

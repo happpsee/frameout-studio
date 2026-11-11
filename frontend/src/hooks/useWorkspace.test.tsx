@@ -90,5 +90,17 @@ describe('workspace persistence and asynchronous media loading', () => {
     expect(saved).toMatchObject({ title: '桌面项目', camera: { x: 512 } });
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull();
   });
-
+  it('shares unchanged cards between edits and restores them on undo', () => {
+    const project = initialState();
+    project.cards = ['a', 'b'].map((id, index) => ({ id, x: index * 300, y: 0, name: id, kind: 'image' as const, src: `https://media.example/${id}.png` }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
+    const { result } = renderHook(useWorkspace);
+    const [first, second] = result.current.project.cards;
+    act(() => result.current.update(draft => { draft.cards[0].x = 50; }));
+    expect(result.current.project.cards[0]).not.toBe(first);
+    expect(result.current.project.cards[1]).toBe(second);
+    act(() => result.current.undo());
+    expect(result.current.project.cards[0]).toBe(first);
+    expect(result.current.project.cards[0].x).toBe(0);
+  });
 });
