@@ -7,7 +7,7 @@ import type { Settings } from './config.ts';
 import { failure, handleAi, type FetchImpl, type Reply } from './relay.ts';
 
 const ALLOWED_METHODS = ['GET', 'POST'];
-// Starlette's CORS safelist (kept from the FastAPI version) plus the one header the frontend sends.
+// CORS-safelisted request headers plus Content-Type, the one header the frontend sends.
 const ALLOWED_HEADERS = ['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'];
 const ALLOWED_HEADER_SET = new Set(ALLOWED_HEADERS.map(value => value.toLowerCase()));
 const MIME: Record<string, string> = {

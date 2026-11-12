@@ -9,5 +9,8 @@ catalog:
   typescript: ^5.9.3
   vitest: ^3.2.4
 
+# Install only versions published at least a day ago (pnpm 11's default, written out).
+minimumReleaseAge: 1440
+
 allowBuilds:
   esbuild: true

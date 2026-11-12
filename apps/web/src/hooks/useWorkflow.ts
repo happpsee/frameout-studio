@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, type MutableRefObject } from 'react';
 import type { ProjectState, UpdateProject, Workflow } from '../types';
 import type { useGeneration } from './useGeneration';
 import { createWorkflow, nextStep, recordEvent } from '../lib/workflow';
+import { PROVIDER_CAPABILITIES } from '@frameout/shared';
 
 type Options = {
   project: ProjectState;
@@ -47,7 +48,7 @@ export function useWorkflow(options: Options) {
   const plan = useCallback((text: string, withVideo: boolean) => {
     const { generation, projectRef, update } = latest.current;
     if (generation.active || executing.current || projectRef.current.workflow?.status === 'running') throw new Error('请先停止当前生成');
-    if (withVideo && generation.config.provider === 'openai') throw new Error('图生视频计划需要选择支持视频的供应商');
+    if (withVideo && !PROVIDER_CAPABILITIES[generation.config.provider].video) throw new Error('图生视频计划需要选择支持视频的供应商');
     const workflow = createWorkflow(text, withVideo, generation.config);
     const camera = projectRef.current.camera;
     workflow.origin = { x: (120 - camera.x) / camera.zoom, y: (100 - camera.y) / camera.zoom };

@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import { loadDesktopStorage } from './lib/desktop-storage';
 import { loadRememberedKeys } from './lib/secrets';
+import { desktopBridge } from './lib/platform';
 import './styles/app.css';
 import './styles/studio.css';
 import './styles/select-control.css';
@@ -12,16 +13,13 @@ import './styles/react.css';
 import './styles/workflow.css';
 import './styles/desktop.css';
 
-
-
-if (window.frameoutDesktop?.platform === 'darwin') 
-  document.documentElement.dataset.desktopPlatform = 'darwin';
-
+const desktop = desktopBridge();
+if (desktop?.platform === 'darwin') document.documentElement.dataset.desktopPlatform = 'darwin';
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 const render = () => root.render(<React.StrictMode><App /></React.StrictMode>);
 
-if (window.frameoutDesktop) {
+if (desktop) {
   void Promise.all([loadDesktopStorage(), loadRememberedKeys()]).then(render, () => {
     root.render(<main style={{ padding: 32 }}>
       <h1>项目读取失败</h1>

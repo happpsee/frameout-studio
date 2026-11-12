@@ -1,4 +1,5 @@
-const MAX_DESKTOP_MEDIA_BYTES = 100 * 1024 * 1024;
+import { MAX_MEDIA_BYTES } from '@frameout/shared';
+import { desktopBridge } from './platform';
 
 export class DesktopMediaTooLargeError extends Error {
   constructor() { super('桌面版单个素材最大支持 100 MB'); }
@@ -17,9 +18,9 @@ function open(): Promise<IDBDatabase> {
 export async function putMedia(blob: Blob): Promise<string> {
   if (!/^(image|video)\//.test(blob.type)) throw new Error('素材不是图片或视频');
   const id = 'media-' + crypto.randomUUID();
-  const desktop = window.frameoutDesktop;
+  const desktop = desktopBridge();
   if (desktop) {
-    if (blob.size > MAX_DESKTOP_MEDIA_BYTES) throw new DesktopMediaTooLargeError();
+    if (blob.size > MAX_MEDIA_BYTES) throw new DesktopMediaTooLargeError();
     const type = new TextEncoder().encode(blob.type);
     if (type.length > 255) throw new Error('素材类型不可用');
     const data = await new Blob([Uint8Array.of(type.length), type, blob]).arrayBuffer();
@@ -36,7 +37,7 @@ export async function putMedia(blob: Blob): Promise<string> {
   return id;
 }
 export async function getMedia(id: string): Promise<Blob | null> {
-  const desktop = window.frameoutDesktop;
+  const desktop = desktopBridge();
   if (desktop) {
     const data = await desktop.storage.read(id);
     if (!data) return null;

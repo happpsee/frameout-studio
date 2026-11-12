@@ -11,7 +11,8 @@ export type ExportSize = { width: number; height: number };
 export type ExportOptions = ExportSize & { fps?: number; signal?: AbortSignal; onProgress?: (fraction: number) => void };
 
 export class ExportError extends Error {
-  constructor(message: string, readonly shots: string[] = []) { super(message); this.name = 'ExportError'; }
+  readonly shots: string[];
+  constructor(message: string, shots: string[] = []) { super(message); this.name = 'ExportError'; this.shots = shots; }
 }
 
 const TONES: Record<string, string> = {

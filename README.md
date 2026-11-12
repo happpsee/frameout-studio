@@ -135,10 +135,6 @@ pnpm build
 
 迁移验收使用模拟供应商响应。未使用真实 API Key 发起付费出图或出片，未实测大规模素材性能和真实触屏多指手感。浏览器人工检查了首页进入、供应商切换、加入镜头、预览、缩放输入及 390px 画布布局。
 
-## 迁移说明
-
-本次只修改桌面项目，保留 Git 历史和原目录备份；没有提交、推送或替换线上 Sites 版本。后端最初是 FastAPI 服务，现已改为同一套接口与安全规则的 TypeScript + Express 实现（桌面版与 Web 部署共用）；旧 Worker 的发布脚本和托管清单已移除。
-
 参考：[Vite 官方文档](https://vite.dev/guide/)、[React 官方文档](https://react.dev/learn/creating-a-react-app)、[Electron utilityProcess](https://www.electronjs.org/docs/latest/api/utility-process)、[OpenAI 图片接口](https://developers.openai.com/api/reference/resources/images/methods/generate)。素材来源说明保留在 `apps/web/public/assets/`。
 
 ## 公网部署

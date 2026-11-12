@@ -3,7 +3,7 @@
 // Do not log envelopes or upstream errors: they may contain the caller's key.
 // No redirects, retries, cookies, incoming authorization headers, or response cache.
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { OFFICIAL_BASE_URLS, type ApiErrorBody, type RelayProvider } from '@frameout/shared';
+import { OFFICIAL_BASE_URLS, type ApiErrorBody, type OfficialProvider } from '@frameout/shared';
 import type { Settings } from './config.ts';
 
 export const SAFE_HEADERS = Object.freeze({
@@ -57,7 +57,7 @@ export function failure(status: number, code: string, message: string): Reply {
 export function redactMessage(value: unknown, apiKey = ''): string {
   let message = typeof value === 'string' ? value : '';
   if (apiKey) {
-    // encodeURIComponent keeps exactly the characters Python's quote(safe="~()*!.'-") kept.
+    // Providers may echo the key URL-encoded, so hide that form too.
     for (const secret of new Set([apiKey, encodeURIComponent(apiKey)])) message = message.split(secret).join('[已隐藏]');
   }
   // Count code points, not UTF-16 units, so a cut never splits a character.
@@ -67,7 +67,7 @@ export function redactMessage(value: unknown, apiKey = ''): string {
 const isObject = (value: unknown): value is Record<string, unknown> =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
-const isProvider = (value: unknown): value is RelayProvider =>
+const isProvider = (value: unknown): value is OfficialProvider =>
   typeof value === 'string' && Object.hasOwn(OFFICIAL_BASE_URLS, value);
 
 export function validateTarget(envelope: unknown): Target {

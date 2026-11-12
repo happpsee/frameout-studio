@@ -1,4 +1,6 @@
-export type Provider = 'openai' | 'ark' | 'compatible';
+import type { ProviderId } from '@frameout/shared';
+
+export type Provider = ProviderId;
 export interface AIConfig {
   provider: Provider; baseUrl: string; key: string; imageModel: string; videoModel: string;
   imageSize: string; duration: number; videoRatio: string; resolution: string; transport: 'proxy' | 'direct';

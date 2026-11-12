@@ -1,3 +1,4 @@
+import { PROVIDER_CAPABILITIES } from '@frameout/shared';
 import type { Card, Consistency, ProjectState, Provider } from '../types';
 
 export const MAX_REFERENCES = 4;
@@ -26,7 +27,7 @@ export function withNotes(prompt: string, notes = ''): string {
 }
 
 /** Official OpenAI and Volcano Ark accept reference images; other services only get the notes. */
-export const supportsReferences = (provider: Provider) => provider === 'openai' || provider === 'ark';
+export const supportsReferences = (provider: Provider) => PROVIDER_CAPABILITIES[provider].references;
 
 /** Reads a card's image and re-encodes it as a JPEG data URL no larger than REFERENCE_EDGE. */
 export async function encodeReference(card: Card, signal?: AbortSignal): Promise<string> {

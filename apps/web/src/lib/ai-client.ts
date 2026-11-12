@@ -1,5 +1,5 @@
 // Pure provider adapters; request credentials are never persisted.
-import { OFFICIAL_BASE_URLS, RELAY_PATH, type RelayEnvelope } from '@frameout/shared';
+import { OFFICIAL_BASE_URLS, PROVIDER_CAPABILITIES, PROVIDER_KEY_PAGES, RELAY_PATH, type RelayEnvelope } from '@frameout/shared';
 import type { AIConfig, Provider } from '../types';
 
 type ProviderPreset = {
@@ -23,23 +23,23 @@ export type ImageResult = { src: string; kind: 'image'; provider: Provider; mode
       label: 'OpenAI', baseUrl: OFFICIAL_BASE_URLS.openai,
       defaultImageModel: 'gpt-image-1.5', defaultVideoModel: '',
       imageSizes: ['1536x1024', '1024x1024', '1024x1536'],
-      videoDurations: [], canVideo: false,
+      videoDurations: [], canVideo: PROVIDER_CAPABILITIES.openai.video,
       note: '此配置用于图片生成；视频请使用火山方舟或支持视频协议的兼容服务。',
-      keyUrl: 'https://platform.openai.com/api-keys',
+      keyUrl: PROVIDER_KEY_PAGES.openai,
     }),
     ark: Object.freeze({
       label: '火山方舟', baseUrl: OFFICIAL_BASE_URLS.ark,
       defaultImageModel: 'doubao-seedream-5-0-pro-260628', defaultVideoModel: 'doubao-seedance-2-5-260628',
       imageSizes: ['2K', '1.5K', '1K', '2816x1584', '1584x2816'],
-      videoDurations: ['5', '8', '10', '12'], canVideo: true,
+      videoDurations: ['5', '8', '10', '12'], canVideo: PROVIDER_CAPABILITIES.ark.video,
       note: '模型需在方舟账号中开通；图生视频会保持首帧比例。',
-      keyUrl: 'https://console.volcengine.com/ark',
+      keyUrl: PROVIDER_KEY_PAGES.ark,
     }),
     compatible: Object.freeze({
       label: 'OpenAI 兼容接口', baseUrl: '',
       defaultImageModel: 'gpt-image-1.5', defaultVideoModel: '',
       imageSizes: ['1536x1024', '1024x1024', '1024x1536'],
-      videoDurations: ['4', '8', '12'], canVideo: true,
+      videoDurations: ['4', '8', '12'], canVideo: PROVIDER_CAPABILITIES.compatible.video,
       note: '浏览器直连；服务需支持跨域和所选图片／视频协议，模型名由服务商提供。',
       keyUrl: '',
     }),

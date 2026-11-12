@@ -2,9 +2,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Landing from './components/Landing';
 import Studio from './components/Studio';
 import { DESKTOP_INTRO_KEY, flushDesktopStorage, readStoredValue, writeStoredValue } from './lib/desktop-storage';
+import { desktopBridge, isDesktop } from './lib/platform';
 
 export default function App() {
-  const desktop = Boolean(window.frameoutDesktop);
+  const desktop = isDesktop();
   const initialStudio = desktop ? readStoredValue(DESKTOP_INTRO_KEY) === 'seen' : location.hash === '#studio';
   const [studio, setStudio] = useState(initialStudio);
   const [studioVisited, setStudioVisited] = useState(initialStudio);
@@ -32,7 +33,7 @@ export default function App() {
       void writeStoredValue(DESKTOP_INTRO_KEY, 'seen')?.catch(() => {});
     }
   }, [desktop, studio]);
-  useEffect(() => window.frameoutDesktop?.onBeforeClose(flushDesktopStorage), []);
+  useEffect(() => desktopBridge()?.onBeforeClose(flushDesktopStorage), []);
   useEffect(() => {
     if (studio) document.body.dataset.studio = 'true'; else delete document.body.dataset.studio;
     document.title = studio ? '创作画布 — 帧外 FRAMEOUT' : '帧外 FRAMEOUT — 让灵感，发生。';

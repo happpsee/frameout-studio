@@ -1,13 +1,11 @@
 import type { SafeStorage } from 'electron';
-import { queue } from '@frameout/shared';
+import { isProviderId, PROVIDER_IDS, queue, type ProviderId } from '@frameout/shared';
 import { createStorage } from './storage.ts';
 
-const PROVIDERS = ['openai', 'ark', 'compatible'] as const;
-type Provider = (typeof PROVIDERS)[number];
 const FILE = 'api-keys';
 
 export type KeyStore = Pick<SafeStorage, 'isEncryptionAvailable' | 'encryptString' | 'decryptString'>;
-export type SavedKeys = Partial<Record<Provider, string>>;
+export type SavedKeys = Partial<Record<ProviderId, string>>;
 
 export interface Secrets {
   available(): boolean;
@@ -16,7 +14,6 @@ export interface Secrets {
   write(provider: unknown, key: unknown): Promise<void>;
 }
 
-const isProvider = (value: unknown): value is Provider => PROVIDERS.includes(value as Provider);
 const validKey = (value: string) => value.length > 0 && value.length <= 4096 && /^[\x21-\x7e]+$/.test(value);
 
 /**
@@ -37,7 +34,7 @@ export function createSecrets(directory: string, safeStorage: KeyStore): Secrets
       return {};
     }
     const keys: SavedKeys = {};
-    for (const provider of PROVIDERS) {
+    for (const provider of PROVIDER_IDS) {
       const value = saved?.[provider];
       if (typeof value === 'string' && validKey(value)) keys[provider] = value;
     }
@@ -48,7 +45,7 @@ export function createSecrets(directory: string, safeStorage: KeyStore): Secrets
     available: () => safeStorage.isEncryptionAvailable(),
     read,
     write(provider, key) {
-      if (!isProvider(provider)) throw new TypeError('Unknown provider');
+      if (!isProviderId(provider)) throw new TypeError('Unknown provider');
       if (key !== null && (typeof key !== 'string' || !validKey(key))) throw new TypeError('Invalid API key');
       if (!safeStorage.isEncryptionAvailable()) throw new Error('本机钥匙串不可用');
       // Serialize read-modify-write so two providers saved together do not drop one another.

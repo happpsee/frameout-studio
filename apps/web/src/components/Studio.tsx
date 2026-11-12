@@ -7,6 +7,7 @@ import { useWorkflow } from '../hooks/useWorkflow';
 import { clamp } from '../lib/canvas-camera';
 import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { readStoredValue } from '../lib/desktop-storage';
+import { desktopBridge, isDesktop } from '../lib/platform';
 import { serializeProject, STORAGE_KEY } from '../lib/project';
 import APISettings from './APISettings';
 import Icon from './Icon';
@@ -35,7 +36,7 @@ function needsInitialFit() {
 }
 
 export default function Studio({ onClose, active: isActive = true }: { onClose: () => void; active?: boolean }) {
-  const desktop = Boolean(window.frameoutDesktop);
+  const desktop = isDesktop();
   const { project, projectRef, update, undo, redo, canUndo, canRedo, saveStatus, flush, createCheckpoint, restoreCheckpoint } = useWorkspace();
   const viewportRef = useRef<HTMLElement>(null), composerRef = useRef<HTMLFormElement>(null), selectionRef = useRef<HTMLDivElement>(null);
   const fileInput = useRef<HTMLInputElement>(null), promptRef = useRef<HTMLTextAreaElement>(null), helpRef = useRef<HTMLDialogElement>(null), zoomRef = useRef<HTMLDivElement>(null), zoomButtonRef = useRef<HTMLButtonElement>(null);
@@ -82,7 +83,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
       catch (error) {
         card.sessionOnly = true;
         if (error instanceof DesktopMediaTooLargeError) toast(`${error.message}，请压缩后重新导入`);
-        else toast(window.frameoutDesktop ? '素材未能保存到本机，请保留原文件' : '浏览器未能保存此文件，刷新前请保留原文件');
+        else toast(isDesktop() ? '素材未能保存到本机，请保留原文件' : '浏览器未能保存此文件，刷新前请保留原文件');
       }
       cards.push(card);
     }
@@ -96,7 +97,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
     void operation.then(clear, clear);
     return operation;
   }, [readFiles]);
-  useEffect(() => window.frameoutDesktop?.onBeforeClose(async () => {
+  useEffect(() => desktopBridge()?.onBeforeClose(async () => {
     workflow.pause();
     generation.stop();
     await Promise.all(pendingImports.current);
@@ -324,6 +325,6 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
     // Never start a paid request on save; return to the kept prompt instead.
     if (connected) { toast(generation.prompt.trim() ? '已连接，提示词还在，点生成即可' : '已连接，写下想法就能生成'); requestAnimationFrame(() => promptRef.current?.focus()); }
   }} />
-  <dialog ref={helpRef} className="fo-help-dialog" aria-labelledby="fo-help-heading" onCancel={() => setHelpOpen(false)} onClose={() => setHelpOpen(false)} onClick={event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) setHelpOpen(false); } }}><button type="button" className="fo-icon-button fo-help-close" aria-label="关闭使用指南" onClick={() => setHelpOpen(false)}><Icon name="x" /></button><span className="fo-eyebrow">A LITTLE GUIDE</span><h2 id="fo-help-heading">把想法摊开，<br />再把故事连起来。</h2><p>画布用来探索和比较。只有加入下方成片区的镜头，才会按顺序播放。</p><dl><div><dt>平移画布</dt><dd>滚轮 / 触控板滚动 · 拖动空白处<br />空格 + 拖动，或鼠标中键</dd></div><div><dt>缩放画布</dt><dd>触控板捏合 · ⌘ / Ctrl + 滚轮<br />⌘ / Ctrl ＋ / −，或点击比例</dd></div><div><dt>触屏操作</dt><dd>单指拖动 · 双指平移与缩放</dd></div><div><dt>查看素材</dt><dd>单击选择，双击预览</dd></div><div><dt>撤销 / 重做</dt><dd>⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z</dd></div><div><dt>删除素材</dt><dd>选中后按 Delete / Backspace</dd></div><div><dt>适应画布</dt><dd>按 0，或点击适应按钮</dd></div></dl><div className="fo-help-note"><strong>从参考图到镜头，再到你的故事。</strong><span>生成图片和视频前，请在 API 设置中填写供应商密钥。{window.frameoutDesktop ? '项目和本地素材自动保存到本机。供应商临时链接请及时下载。' : '素材保存在本浏览器或供应商临时链接，请及时下载。'}成片区支持顺序预览，也可以导出为 MP4（暂不含声音）。</span></div>{desktop && <button type="button" className="fo-help-intro" onClick={() => { setHelpOpen(false); onClose(); }}>查看产品介绍 <Icon name="arrow-up-right" /></button>}<button type="button" className="fo-primary-button" onClick={() => setHelpOpen(false)}>开始探索 <Icon name="arrow-up-right" /></button></dialog>
+  <dialog ref={helpRef} className="fo-help-dialog" aria-labelledby="fo-help-heading" onCancel={() => setHelpOpen(false)} onClose={() => setHelpOpen(false)} onClick={event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) setHelpOpen(false); } }}><button type="button" className="fo-icon-button fo-help-close" aria-label="关闭使用指南" onClick={() => setHelpOpen(false)}><Icon name="x" /></button><span className="fo-eyebrow">A LITTLE GUIDE</span><h2 id="fo-help-heading">把想法摊开，<br />再把故事连起来。</h2><p>画布用来探索和比较。只有加入下方成片区的镜头，才会按顺序播放。</p><dl><div><dt>平移画布</dt><dd>滚轮 / 触控板滚动 · 拖动空白处<br />空格 + 拖动，或鼠标中键</dd></div><div><dt>缩放画布</dt><dd>触控板捏合 · ⌘ / Ctrl + 滚轮<br />⌘ / Ctrl ＋ / −，或点击比例</dd></div><div><dt>触屏操作</dt><dd>单指拖动 · 双指平移与缩放</dd></div><div><dt>查看素材</dt><dd>单击选择，双击预览</dd></div><div><dt>撤销 / 重做</dt><dd>⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z</dd></div><div><dt>删除素材</dt><dd>选中后按 Delete / Backspace</dd></div><div><dt>适应画布</dt><dd>按 0，或点击适应按钮</dd></div></dl><div className="fo-help-note"><strong>从参考图到镜头，再到你的故事。</strong><span>生成图片和视频前，请在 API 设置中填写供应商密钥。{desktop ? '项目和本地素材自动保存到本机。供应商临时链接请及时下载。' : '素材保存在本浏览器或供应商临时链接，请及时下载。'}成片区支持顺序预览，也可以导出为 MP4（暂不含声音）。</span></div>{desktop && <button type="button" className="fo-help-intro" onClick={() => { setHelpOpen(false); onClose(); }}>查看产品介绍 <Icon name="arrow-up-right" /></button>}<button type="button" className="fo-primary-button" onClick={() => setHelpOpen(false)}>开始探索 <Icon name="arrow-up-right" /></button></dialog>
   </div>;
 }

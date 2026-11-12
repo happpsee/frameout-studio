@@ -1,3 +1,5 @@
+import type { ProviderId } from './providers.ts';
+
 /** The API the Electron preload exposes to the page as `window.frameoutDesktop`. */
 export interface DesktopBridge {
   platform: string;
@@ -11,8 +13,8 @@ export interface DesktopBridge {
   /** Keys the user chose to remember, encrypted by the OS keychain in the main process. */
   secrets: {
     available(): Promise<boolean>;
-    read(): Promise<Partial<Record<string, string>>>;
-    write(provider: string, key: string | null): Promise<void>;
+    read(): Promise<Partial<Record<ProviderId, string>>>;
+    write(provider: ProviderId, key: string | null): Promise<void>;
   };
 }
 

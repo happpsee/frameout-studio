@@ -1,8 +1,4 @@
-import type { DesktopBridge } from '@frameout/shared';
-
-declare global {
-  interface Window { frameoutDesktop?: DesktopBridge }
-}
+import { desktopBridge, isDesktop } from './platform';
 
 export const PROJECT_STORAGE_KEY = 'frameout-studio-v1';
 export const PREFERENCES_KEY = 'frameout-ai-preferences-v1';
@@ -15,7 +11,7 @@ const desktopValues = new Map<string, string>();
 const pendingWrites = new Map<string, Promise<void>>();
 
 export async function loadDesktopStorage(): Promise<void> {
-  const desktop = window.frameoutDesktop;
+  const desktop = desktopBridge();
   if (!desktop) return;
   const values = await Promise.all(settings.map(async key => {
     const bytes = await desktop.storage.read(key);
@@ -32,11 +28,11 @@ export async function loadDesktopStorage(): Promise<void> {
 }
 
 export function readStoredValue(key: string): string | null {
-  return window.frameoutDesktop ? desktopValues.get(key) ?? null : localStorage.getItem(key);
+  return isDesktop() ? desktopValues.get(key) ?? null : localStorage.getItem(key);
 }
 
 export function writeStoredValue(key: string, value: string): void | Promise<void> {
-  const desktop = window.frameoutDesktop;
+  const desktop = desktopBridge();
   if (!desktop) { localStorage.setItem(key, value); return; }
   desktopValues.set(key, value);
   const previous = pendingWrites.get(key);

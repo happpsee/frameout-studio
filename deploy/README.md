@@ -71,6 +71,6 @@ API Key 仍只保留在访问者页面内存，并由后端用于当次转发。
 docker compose --env-file deploy/.env down
 ```
 
-部署配置将 `FRAMEOUT_DOMAIN` 对应的 HTTPS Origin 加入应用允许列表。更换主机名后需同时修改 DNS 和 `deploy/.env`，并重新执行 `up -d`，使 Caddy 和 FastAPI 一起采用新域名。
+部署配置将 `FRAMEOUT_DOMAIN` 对应的 HTTPS Origin 加入应用允许列表。更换主机名后需同时修改 DNS 和 `deploy/.env`，并重新执行 `up -d`，使 Caddy 和后端一起采用新域名。
 
 参考：[Docker 多阶段构建](https://docs.docker.com/build/building/multi-stage/)、[Caddy 自动 HTTPS](https://caddyserver.com/docs/automatic-https)、[Caddy reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy)。

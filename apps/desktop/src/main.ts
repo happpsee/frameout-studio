@@ -5,7 +5,7 @@ import {
   app, BrowserWindow, dialog, ipcMain, Menu, safeStorage, shell, utilityProcess,
   type IpcMainEvent, type IpcMainInvokeEvent, type MenuItemConstructorOptions, type UtilityProcess,
 } from 'electron';
-import { DESKTOP_CHANNELS as CHANNELS } from '@frameout/shared';
+import { DESKTOP_CHANNELS as CHANNELS, PROVIDER_KEY_PAGES } from '@frameout/shared';
 import { createSecrets } from './secrets.ts';
 import { createStorage } from './storage.ts';
 import type { ServerMessage } from './server-process.ts';
@@ -19,7 +19,7 @@ app.setPath('userData', userData);
 const storage = createStorage(path.join(userData, 'storage'));
 // Kept apart from storage/ so the generic storage IPC cannot read or overwrite it.
 const secrets = createSecrets(path.join(userData, 'secrets'), safeStorage);
-const PROVIDER_CONSOLES = new Set(['platform.openai.com', 'console.volcengine.com']);
+const PROVIDER_CONSOLES = new Set(Object.values(PROVIDER_KEY_PAGES).map(page => new URL(page).hostname));
 const CLOSE_TIMEOUT = 30_000;
 const STARTUP_TIMEOUT = 30_000;
 

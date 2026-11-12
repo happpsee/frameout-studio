@@ -1,10 +1,11 @@
+import { PROVIDER_IDS } from '@frameout/shared';
 import { PROVIDERS } from './ai-client';
 import type { AIConfig, Provider } from '../types';
 import { preferenceOnly } from './project';
 import { rememberedKey } from './secrets';
 import { PREFERENCES_KEY, readStoredValue, writeStoredValue } from './desktop-storage';
 export { PREFERENCES_KEY } from './desktop-storage';
-export const providerIds: Provider[] = ['openai', 'ark', 'compatible'];
+export const providerIds: readonly Provider[] = PROVIDER_IDS;
 export function defaults(provider: Provider = 'openai'): AIConfig {
   const preset = PROVIDERS[provider];
   return { provider, baseUrl: preset.baseUrl, key: '', imageModel: preset.defaultImageModel, videoModel: preset.defaultVideoModel, imageSize: preset.imageSizes[0], duration: Number(preset.videoDurations[0]) || 5, videoRatio: '16:9', resolution: '720p', transport: provider === 'compatible' ? 'direct' : 'proxy' };

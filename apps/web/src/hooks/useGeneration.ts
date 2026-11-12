@@ -6,6 +6,8 @@ import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { GENERATION_MODE_KEY, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
 import { encodeReference, referenceCards, supportsReferences, withNotes } from '../lib/consistency';
 import { initialConfig, redact, saveProfile } from '../lib/preferences';
+import { desktopBridge } from '../lib/platform';
+import { PROVIDER_CAPABILITIES } from '@frameout/shared';
 
 // openSettings shows the API settings with a reason; without it, missing settings fall back to a toast.
 type Options = { getProject: () => ProjectState; update: UpdateProject; toast: (message: string) => void; openSettings?: (notice: string) => void };
@@ -58,7 +60,7 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
   }
   async function storeMedia(src: string, signal: AbortSignal): Promise<{ media: Partial<Card>; warning?: string }> {
     const remote = src.startsWith('https://');
-    const desktop = window.frameoutDesktop;
+    const desktop = desktopBridge();
     if (remote && !desktop) return { media: { src, remoteTemporary: true } };
     if (!remote && !/^(data:(image|video)\/|blob:)/i.test(src)) throw new Error('接口未返回可用的图片或视频');
     try {
@@ -138,7 +140,7 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
     if (!text) { toast(source ? '先写下运镜或动作描述，再生成视频' : '先写下一点想法，再开始生成'); return; }
     const video = Boolean(source) || (request?.mode ?? mode) === 'video';
     if (!generationConfig.key) { needSettings('先连接一个生成服务。提示词已保留，保存后再点生成即可。'); return; }
-    if (video && generationConfig.provider === 'openai') { needSettings('生成视频需要火山方舟或支持视频的兼容服务，请切换供应商。'); return; }
+    if (video && !PROVIDER_CAPABILITIES[generationConfig.provider].video) { needSettings('生成视频需要火山方舟或支持视频的兼容服务，请切换供应商。'); return; }
     const task = start(); if (!task) return;
     try {
       const client = createClient(generationConfig);
@@ -185,7 +187,7 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
   }
   async function download(card: Card) {
     if (card.missingMedia || (card.job && card.job.status !== 'succeeded')) return;
-    const desktop = window.frameoutDesktop;
+    const desktop = desktopBridge();
     if (card.remoteTemporary && desktop) {
       try { await desktop.openTemporaryDownload(card.src); }
       catch { toast('无法在浏览器打开临时素材链接'); }

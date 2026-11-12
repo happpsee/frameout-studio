@@ -5,6 +5,7 @@ import { CHECKPOINTS_STORAGE_KEY, initialState, restoreProject, serializeCheckpo
 import { getMedia } from '../lib/media-store';
 import { flushDesktopStorage, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
 import { recordEvent } from '../lib/workflow';
+import { isDesktop } from '../lib/platform';
 
 type Snapshot = Pick<ProjectState, 'cards' | 'sequence' | 'selected' | 'title'>;
 // Project states are immutable (Immer), so undo entries can share them instead of copying.
@@ -27,7 +28,7 @@ function restore() {
 export function useWorkspace() {
   const [project, setProject] = useState(restore);
   const projectRef = useRef(project);
-  const savedLabel = window.frameoutDesktop ? '已保存到本机' : '已保存到此浏览器';
+  const savedLabel = isDesktop() ? '已保存到本机' : '已保存到此浏览器';
   const [saveStatus, setSaveStatus] = useState(savedLabel);
   const undoStack = useRef<Snapshot[]>([]), redoStack = useRef<Snapshot[]>([]);
   const hydratedMedia = useRef(new Map<string, string>());
@@ -107,7 +108,7 @@ export function useWorkspace() {
   const flush = useCallback(async () => {
     await saveProject();
     await flushDesktopStorage();
-    if (window.frameoutDesktop && projectRef.current.cards.some(card => card.sessionOnly)) throw new Error('部分素材未保存到本机');
+    if (isDesktop() && projectRef.current.cards.some(card => card.sessionOnly)) throw new Error('部分素材未保存到本机');
   }, [saveProject]);
   const persist = useCallback((report = true) => {
     const snapshot = projectRef.current;

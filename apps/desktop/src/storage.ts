@@ -3,11 +3,10 @@ import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { types } from 'node:util';
-import { queue } from '@frameout/shared';
+import { MAX_MEDIA_BYTES, MEDIA_HEADER_MAX_BYTES, queue } from '@frameout/shared';
 
-// Media is stored as a 1-byte type length, up to 255 bytes of MIME type, then at most
-// 100 MiB of data (MAX_DESKTOP_MEDIA_BYTES in apps/web/src/lib/media-store.ts).
-const MAX_VALUE_BYTES = 100 * 1024 * 1024 + 256;
+// A stored media file is its type header plus at most MAX_MEDIA_BYTES of data.
+const MAX_VALUE_BYTES = MAX_MEDIA_BYTES + MEDIA_HEADER_MAX_BYTES;
 const KEY = /^[a-zA-Z0-9_-]{1,128}$/;
 
 export interface Storage {
