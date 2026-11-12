@@ -240,3 +240,29 @@ test('无媒体、未知任务状态和无效任务 ID 明确失败，不会退�
   const client = createClient(configuration('ark'), { fetchImpl: async () => assert.fail('不应发送非法 ID') });
   await assert.rejects(client.getVideo({ id: '../models' }), error => error.code === 'CONFIG_VALUE');
 });
+
+test('参考图：方舟放在同一生成接口的 image 字段，OpenAI 改用 JSON 图片编辑接口', async () => {
+  const ref = 'data:image/jpeg;base64,/9j/AA==';
+  const ark = captureFetch(reply(image), reply(image));
+  await createClient(configuration('ark'), ark).generateImage({ prompt: '同一个角色', references: [ref] });
+  await createClient(configuration('ark'), ark).generateImage({ prompt: '同一个角色', references: [ref, ref] });
+  assert.equal(ark.calls[0].body.path, '/images/generations');
+  assert.equal(ark.calls[0].body.body.image, ref);
+  assert.deepEqual(ark.calls[1].body.body.image, [ref, ref]);
+
+  const openai = captureFetch(reply(image), reply(image), reply(image));
+  await createClient(configuration(), openai).generateImage({ prompt: '同一个角色', references: [ref] });
+  await createClient(configuration('openai', { imageModel: 'gpt-image-2' }), openai).generateImage({ prompt: '同一个角色', references: [ref] });
+  await createClient(configuration(), openai).generateImage({ prompt: '没有参考' });
+  assert.equal(openai.calls[0].body.path, '/images/edits');
+  assert.deepEqual(openai.calls[0].body.body.images, [{ image_url: ref }]);
+  assert.equal(openai.calls[0].body.body.input_fidelity, 'high');
+  assert.equal(openai.calls[1].body.body.input_fidelity, undefined, 'gpt-image-2 不接受 input_fidelity');
+  assert.equal(openai.calls[2].body.path, '/images/generations');
+  assert.equal(openai.calls[2].body.body.images, undefined);
+
+  const compatible = captureFetch();
+  await assert.rejects(createClient(configuration('compatible'), compatible).generateImage({ prompt: '树', references: [ref] }), error => error.code === 'CONFIG_REFERENCE');
+  await assert.rejects(createClient(configuration('ark'), compatible).generateImage({ prompt: '树', references: ['http://127.0.0.1/a.png'] }), error => error.code === 'CONFIG_REFERENCE');
+  assert.equal(compatible.calls.length, 0);
+});

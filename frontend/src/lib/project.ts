@@ -1,5 +1,6 @@
 import type { AIConfig, Card, ProjectCheckpoint, ProjectState, WorkspaceSnapshot } from '../types';
 import { restoreWorkflow } from './workflow';
+import { normalizeConsistency } from './consistency';
 
 export { PROJECT_STORAGE_KEY as STORAGE_KEY, CHECKPOINTS_STORAGE_KEY } from './desktop-storage';
 const legacySampleSources = new Set(['/assets/forest-astronaut.png', '/assets/still-ocean.webp', '/assets/still-city.webp']);
@@ -51,6 +52,8 @@ export function serializeProject(project: ProjectState): ProjectState {
   const value: ProjectState = serializeWorkspace(project);
   if (project.workflow) value.workflow = restoreWorkflow(project.workflow, false);
   if (project.checkpoints?.length) value.checkpoints = serializeCheckpoints(project.checkpoints);
+  const consistency = normalizeConsistency(project.consistency, value.cards);
+  if (consistency) value.consistency = consistency;
   return value;
 }
 function restoreWorkspace(input: unknown): WorkspaceSnapshot {
@@ -83,6 +86,7 @@ export function restoreProject(input: unknown): ProjectState {
   if (!input || typeof input !== 'object' || (input as ProjectState).version !== 1) return value;
   const saved = input as ProjectState;
   value.workflow = restoreWorkflow(saved.workflow);
+  value.consistency = normalizeConsistency(saved.consistency, value.cards);
   if (Array.isArray(saved.checkpoints)) value.checkpoints = saved.checkpoints.slice(-8)
     .filter(checkpoint => checkpoint && typeof checkpoint.id === 'string' && typeof checkpoint.name === 'string' && checkpoint.state?.version === 1)
     .map(checkpoint => ({ id: checkpoint.id, name: checkpoint.name.slice(0, 80), createdAt: Number(checkpoint.createdAt) || 0, state: restoreWorkspace(checkpoint.state) }));

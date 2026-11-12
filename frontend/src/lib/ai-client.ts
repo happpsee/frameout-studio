@@ -191,15 +191,25 @@ export type ImageResult = { src: string; kind: 'image'; provider: Provider; mode
       return { ok: true, message: '鉴权连接成功；所选模型的生成权限以实际请求为准。', ...(models ? { models } : {}) };
     }
 
-    async function generateImage({ prompt: text, signal }: { prompt?: string; signal?: AbortSignal } = {}): Promise<ImageResult> {
+    async function generateImage({ prompt: text, references = [], signal }: { prompt?: string; references?: string[]; signal?: AbortSignal } = {}): Promise<ImageResult> {
       const prompt = required(text, '图片提示词', 32000);
       const model = required(imageModel, '图片模型名', 200);
       const size = required(imageSize, '图片尺寸', 40);
-      const body = provider === 'ark'
-        ? { model, prompt, size, response_format: 'b64_json', watermark: false }
-        : { model, prompt, n: 1, size };
-      // Seedream 5 pro/flash do not accept sequential_image_generation; omit it.
-      const { json, requestId } = await request('/images/generations', 'POST', body, { signal, timeout: 300000 });
+      if (references.length > 10) throw new AIError('参考图最多 10 张', { code: 'CONFIG_REFERENCE' });
+      if (references.some(value => !safeMediaUrl(value, true))) throw new AIError('参考图需为公开 HTTPS 图片或 Base64 图片', { code: 'CONFIG_REFERENCE' });
+      if (references.length && provider === 'compatible') throw new AIError('参考图仅支持 OpenAI 与火山方舟官方接口', { code: 'CONFIG_REFERENCE' });
+      let path = '/images/generations', body: ProviderJson;
+      if (provider === 'ark') {
+        // Seedream takes references on the same endpoint. 5.0 pro/flash do not accept sequential_image_generation; omit it.
+        body = { model, prompt, size, response_format: 'b64_json', watermark: false, ...(references.length ? { image: references.length === 1 ? references[0] : references } : {}) };
+      } else if (references.length) {
+        // GPT Image models take references through the JSON image edit endpoint.
+        path = '/images/edits';
+        body = { model, prompt, n: 1, size, images: references.map(image_url => ({ image_url })), ...(/^gpt-image-1\.5\b/.test(model) ? { input_fidelity: 'high' } : {}) };
+      } else {
+        body = { model, prompt, n: 1, size };
+      }
+      const { json, requestId } = await request(path, 'POST', body, { signal, timeout: 300000 });
       const image = Array.isArray(json?.data) ? json.data.find((item: ProviderJson) => item?.b64_json || item?.url) : null;
       if (!image) throw new AIError('生成请求未返回图片，请检查模型能力与响应格式', { code: 'INVALID_RESPONSE', requestId });
       let src = safeMediaUrl(image.url, true);

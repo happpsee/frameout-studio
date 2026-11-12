@@ -16,6 +16,10 @@ vi.mock('../lib/media-store', async importOriginal => ({
   putMedia: vi.fn(),
 }));
 
+vi.mock('../lib/consistency', async importOriginal => ({
+  ...await importOriginal<typeof import('../lib/consistency')>(),
+  encodeReference: vi.fn(async (card: Card) => `data:image/jpeg;base64,${card.id}`),
+}));
 const client = { generateImage: vi.fn(), submitVideo: vi.fn(), getVideo: vi.fn() };
 const KEY = 'fixture-only-secret-never-save';
 const originalConfig: AIConfig = {
@@ -255,5 +259,21 @@ describe('generation cancellation and retained video tasks', () => {
     expect(toast).not.toHaveBeenCalled();
     expect(createClient).not.toHaveBeenCalled();
     expect(hook.result.current.prompt).toBe('森林');
+  });
+  it('sends shared notes with every prompt and reference images with image generation', async () => {
+    const hero: Card = { id: 'hero', x: 0, y: 0, name: '主角', kind: 'image', src: 'https://media.example/hero.png' };
+    let project: ProjectState = { ...initialState(), cards: [hero], consistency: { notes: '红色雨衣', references: ['hero'] } };
+    const update = vi.fn<UpdateProject>(recipe => { const next = structuredClone(project); recipe(next); project = next; });
+    client.generateImage.mockResolvedValue({ src: 'data:image/png;base64,aA==', provider: 'ark', model: 'image-model' });
+    client.submitVideo.mockRejectedValue(new Error('stop here'));
+    vi.mocked(putMedia).mockResolvedValue('media-1');
+    const hook = renderHook(() => useGeneration({ getProject: () => project, update, toast: vi.fn() }));
+    act(() => { hook.result.current.setConfig({ ...originalConfig }); hook.result.current.setPrompt('雨夜回头'); });
+    await act(() => hook.result.current.generate());
+    expect(client.generateImage).toHaveBeenCalledWith(expect.objectContaining({ prompt: '雨夜回头\n\n统一设定（所有镜头保持一致）：红色雨衣', references: ['data:image/jpeg;base64,hero'] }));
+    expect(project.cards.at(-1)).toMatchObject({ prompt: '雨夜回头', label: 'AI 生成图片 · 参考 1' });
+    act(() => hook.result.current.setPrompt('慢慢推近'));
+    await act(() => hook.result.current.generate(hero));
+    expect(client.submitVideo).toHaveBeenCalledWith(expect.objectContaining({ prompt: expect.stringContaining('统一设定（所有镜头保持一致）：红色雨衣'), reference: hero.src }));
   });
 });

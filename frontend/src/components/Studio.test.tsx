@@ -189,4 +189,23 @@ describe('React studio integration', () => {
     fireEvent.click(within(dialog).getByRole('button', { name: '关闭导出' }));
     expect(screen.queryByRole('dialog', { name: '导出成片' })).toBeNull();
   });
+  it('marks an image as a reference, keeps shared notes, and forgets a deleted reference', () => {
+    const project = initialState();
+    project.cards = [{ id: 'hero', x: 170, y: 165, name: '主角', kind: 'image', src: 'https://media.example/hero.png', provider: 'ark' }];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
+    render(<Studio onClose={vi.fn()} />); frame(); frame();
+    expect(screen.getByRole('button', { name: '镜头一致性：未设定' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '选择素材：主角' }));
+    fireEvent.click(screen.getByRole('button', { name: '设为参考' }));
+    expect(screen.getByText('参考')).toBeTruthy();
+    expect(screen.getByRole('button', { name: '取消参考' }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(screen.getByRole('button', { name: '镜头一致性：未设定 · 参考 1' }));
+    const dialog = screen.getByRole('dialog', { name: '镜头一致性' });
+    expect(within(dialog).getByText('主角')).toBeTruthy();
+    fireEvent.change(within(dialog).getByLabelText('统一设定'), { target: { value: '红色雨衣，黑色短发' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: /完成/ }));
+    expect(screen.getByRole('button', { name: '镜头一致性：已设定 · 参考 1' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '删除选中素材' }));
+    expect(screen.getByRole('button', { name: '镜头一致性：已设定' })).toBeTruthy();
+  });
 });

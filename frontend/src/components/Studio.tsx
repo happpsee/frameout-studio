@@ -15,6 +15,8 @@ import { CanvasCard, pending, videoStatus, visibleCards } from './CanvasCard';
 import Sequence from './Sequence';
 import PreviewDialog, { type PreviewItem } from './PreviewDialog';
 import ExportDialog from './ExportDialog';
+import ConsistencyDialog, { ConsistencyBar } from './ConsistencyDialog';
+import { MAX_REFERENCES, referenceCards, supportsReferences, usableReference } from '../lib/consistency';
 import WorkflowPanel from './WorkflowPanel';
 import AssetLibrary from './AssetLibrary';
 import DesktopGenerationSettings from './DesktopGenerationSettings';
@@ -44,6 +46,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
   const [timelineOpen, setTimelineOpen] = useState(() => project.sequence.length > 0);
   const [preview, setPreview] = useState<{ items: PreviewItem[]; title: string } | null>(null);
   const [exporting, setExporting] = useState<{ items: PreviewItem[]; skipped: number } | null>(null);
+  const [consistencyOpen, setConsistencyOpen] = useState(false);
   // Capture before effects: StrictMode cleanup may save a default camera before
   // the second effect setup. That save should not suppress the first fit.
   const [fitOnOpen] = useState(needsInitialFit);
@@ -107,7 +110,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
     if (!id) return;
     if (active) { toast('先停止本页等待，再删除素材'); return; }
     canvas.cancelGesture();
-    update(draft => { draft.cards = draft.cards.filter(c => c.id !== id); draft.sequence = draft.sequence.filter(s => s.cardId !== id); draft.selected = null; });
+    update(draft => { draft.cards = draft.cards.filter(c => c.id !== id); draft.sequence = draft.sequence.filter(s => s.cardId !== id); draft.selected = null; if (draft.consistency) draft.consistency.references = draft.consistency.references.filter(ref => ref !== id); });
   }, [projectRef, active, canvas.cancelGesture, update, toast]);
   // Stable callbacks let memoized cards and the sequence skip renders; they call the latest handlers.
   const cardActions = useRef<{ openPreview: (card?: Card) => void; updateDuration: (card: Card, duration: number) => void }>(null!);
@@ -116,6 +119,16 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
   const cardDuration = useCallback((card: Card, duration: number) => cardActions.current.updateDuration(card, duration), []);
   const toggleTimeline = useCallback(() => setTimelineOpen(value => !value), []);
   const previewShot = useCallback((card: Card) => { update(draft => { draft.selected = card.id; }, false); cardActions.current.openPreview(card); }, [update]);
+  const toggleReference = useCallback((id: string) => {
+    const references = projectRef.current.consistency?.references ?? [];
+    const adding = !references.includes(id);
+    if (adding && referenceCards(projectRef.current).length >= MAX_REFERENCES) { toast(`最多 ${MAX_REFERENCES} 张参考图，请先移除一张`); return; }
+    update(draft => {
+      const consistency = draft.consistency ??= { notes: '', references: [] };
+      consistency.references = adding ? [...consistency.references.filter(ref => draft.cards.some(card => card.id === ref)), id] : consistency.references.filter(ref => ref !== id);
+    });
+    toast(adding ? supportsReferences(generation.config.provider) ? '已设为参考 · 之后生成的图片会参照它' : '已设为参考 · 当前服务只使用统一设定' : '已取消参考');
+  }, [projectRef, update, toast, generation.config.provider]);
   const guardedUndo = () => { canvas.cancelGesture(); if (!active) undo(); };
   const guardedRedo = () => { canvas.cancelGesture(); if (!active) redo(); };
 
@@ -132,7 +145,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
     if (isActive) return;
     if (generationActive.current) generation.stop();
     canvas.cancelGesture();
-    setSettingsOpen(false); setHelpOpen(false); setZoomOpen(false); setPreview(null); setExporting(null);
+    setSettingsOpen(false); setHelpOpen(false); setZoomOpen(false); setPreview(null); setExporting(null); setConsistencyOpen(false);
     if (document.activeElement instanceof HTMLElement && studioRef.current?.contains(document.activeElement)) document.activeElement.blur();
   }, [isActive, generation.stop, canvas.cancelGesture]);
   useEffect(() => { if (isActive && helpOpen) helpRef.current?.showModal(); else helpRef.current?.close(); }, [isActive, helpOpen]);
@@ -230,8 +243,10 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
     if (rect) canvas.restoreCamera({ zoom: canvas.camera.zoom, x: rect.width / 2 - (card.x + 135) * canvas.camera.zoom, y: rect.height / 2 - (card.y + 110) * canvas.camera.zoom });
   };
   const brand = <><span className="fo-brand-mark">F<span>↗</span></span><span>FRAMEOUT<span className="fo-brand-zh">帧外</span></span></>;
+  const references = referenceCards(project), referenceIds = new Set(references.map(card => card.id));
   const composer = <form ref={composerRef} className={`fo-composer${active ? ' is-busy' : ''}`} onSubmit={event => { event.preventDefault(); if (!active) void generation.generate(); }}>
         <div className="fo-composer-top"><label htmlFor="fo-prompt">{desktop ? '提示词' : '让想法，先有一个画面。'}</label><Select className="fo-generation-mode" value={generation.mode} onChange={value => generation.setMode(value as GenerationMode)} options={modeOptions} label="生成模式" disabled={active} /></div>
+        <ConsistencyBar notes={project.consistency?.notes ?? ''} references={references} onOpen={() => setConsistencyOpen(true)} />
         <textarea ref={promptRef} className="fo-prompt" id="fo-prompt" rows={2} placeholder="描述你想生成的画面或镜头…" maxLength={4000} value={generation.prompt} onChange={event => generation.setPrompt(event.target.value)} onKeyDown={event => { if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') { event.preventDefault(); void generation.generate(); } }} />
         {desktop && <DesktopGenerationSettings config={generation.config} video={generation.mode === 'video'} disabled={active} onChange={generation.setConfig} onSettings={() => openSettings()} />}
         {taskNote && <p className="fo-task-note" role="status">{taskNote}</p>}
@@ -268,7 +283,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
       <div className="fo-stage" style={sceneStyle}>
         {visibleCards(project.cards, canvas.camera, layout.width, layout.height, [project.selected, canvas.dragPosition?.id]).map(card => {
           const dragging = canvas.dragPosition?.id === card.id, position = dragging ? canvas.dragPosition! : card;
-          return <CanvasCard key={card.id} card={card} x={position.x} y={position.y} selected={selected?.id === card.id} dragging={dragging} onSelect={selectCard} onOpen={openCard} onDuration={cardDuration} />;
+          return <CanvasCard key={card.id} card={card} x={position.x} y={position.y} selected={selected?.id === card.id} dragging={dragging} reference={referenceIds.has(card.id)} onSelect={selectCard} onOpen={openCard} onDuration={cardDuration} />;
         })}
       </div>
       {!project.cards.length && <div className="fo-canvas-empty">{desktop ? <><div className="fo-empty-symbol"><Icon name="grid" /></div><h2>从第一个画面开始</h2></> : <span>MAKE A SCENE.</span>}<p>上传图片或视频，也可以输入提示词生成素材。</p><button type="button" className="fo-primary-button" onClick={() => fileInput.current?.click()}>添加素材 <Icon name="plus" /></button></div>}
@@ -277,6 +292,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
       {selected && <div ref={selectionRef} className={`fo-selection-actions${outside ? ' is-outside' : ''}`} style={selectionStyle} aria-hidden={outside}>
         <span className="fo-selected-name">{selected.name}</span><button type="button" className="fo-small-button" disabled={active || selected.kind === 'video' || selected.missingMedia || pending(selected)} onClick={() => { void generation.generate(selected); }}><Icon name="film" /><span>图生视频</span></button>
         {pending(selected) && <button type="button" className="fo-small-button" disabled={active} onClick={() => { void generation.resume(selected); }}><Icon name="clock" /><span>继续查询</span></button>}
+        {selected.kind === 'image' && <button type="button" className={`fo-small-button fo-reference-toggle${referenceIds.has(selected.id) ? ' is-active' : ''}`} aria-pressed={referenceIds.has(selected.id)} disabled={!usableReference(selected)} onClick={() => toggleReference(selected.id)}><Icon name="copy" /><span>{referenceIds.has(selected.id) ? '取消参考' : '设为参考'}</span></button>}
         <button type="button" className="fo-small-button fo-add-shot" disabled={pending(selected) || selected.missingMedia} onClick={() => addToSequence(selected.id)}><Icon name="plus" /><span>加入成片</span></button>
         {selected.provider && <button type="button" className="fo-icon-button" aria-label="下载生成素材" disabled={pending(selected) || selected.missingMedia} onClick={() => { void generation.download(selected); }}><Icon name="download" /></button>}<button type="button" className="fo-icon-button" aria-label="删除选中素材" disabled={active} onClick={removeSelected}><Icon name="trash" /></button>
       </div>}
@@ -297,6 +313,10 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
 
   {!desktop && workflowPanel}
   {isActive && preview && <PreviewDialog items={preview.items} title={preview.title} onClose={() => setPreview(null)} />}
+  {isActive && consistencyOpen && <ConsistencyDialog notes={project.consistency?.notes ?? ''} references={references} provider={generation.config.provider}
+    onSave={notes => update(draft => { const consistency = draft.consistency ??= { notes: '', references: [] }; consistency.notes = notes; })}
+    onRemove={id => update(draft => { if (draft.consistency) draft.consistency.references = draft.consistency.references.filter(ref => ref !== id); })}
+    onClose={() => setConsistencyOpen(false)} />}
   {isActive && exporting && <ExportDialog shots={exporting.items} skipped={exporting.skipped} title={project.title} onClose={() => setExporting(null)} />}
   <APISettings open={isActive && settingsOpen} notice={settingsNotice} onClose={() => { setSettingsOpen(false); setSettingsNotice(''); }} config={generation.config} onChange={value => {
     const connected = !generation.config.key && Boolean(value.key);

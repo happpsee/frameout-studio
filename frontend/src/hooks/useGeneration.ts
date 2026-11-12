@@ -4,6 +4,7 @@ import { createClient } from '../lib/ai-client';
 import { PENDING_MEDIA, preferenceOnly, uid } from '../lib/project';
 import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { GENERATION_MODE_KEY, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
+import { encodeReference, referenceCards, supportsReferences, withNotes } from '../lib/consistency';
 import { initialConfig, redact, saveProfile } from '../lib/preferences';
 
 // openSettings shows the API settings with a reason; without it, missing settings fall back to a toast.
@@ -26,6 +27,8 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
   const [mode, setModeState] = useState<GenerationMode>(initialMode), [prompt, setPrompt] = useState('');
   const [config, setConfigState] = useState<AIConfig>(initialConfig), [active, setActive] = useState(false);
   const taskRef = useRef<ActiveTask | null>(null), mounted = useRef(true), urls = useRef(new Set<string>());
+  // Encoded reference images by card and source, so a plan does not re-encode them for every shot.
+  const encoded = useRef(new Map<string, Promise<string>>());
   const latest = useRef({ getProject, update, toast, openSettings }); latest.current = { getProject, update, toast, openSettings };
   const needSettings = (notice: string) => { if (latest.current.openSettings) latest.current.openSettings(notice); else toast(notice); };
   function patchJob(id: string, patch: Partial<VideoJob>) {
@@ -80,6 +83,16 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
       return { media: { src, remoteTemporary: true }, warning };
     }
   }
+  function referenceData(card: Card, signal: AbortSignal): Promise<string> {
+    const key = `${card.id}\n${card.src}`;
+    let value = encoded.current.get(key);
+    if (!value) {
+      value = encodeReference(card, signal);
+      encoded.current.set(key, value);
+      value.catch(() => { if (encoded.current.get(key) === value) encoded.current.delete(key); });
+    }
+    return value;
+  }
   async function reference(source: Card | undefined, signal: AbortSignal): Promise<string | undefined> {
     if (!source) return;
     if (source.missingMedia || source.kind !== 'image') throw new Error('首帧必须是可读取的图片');
@@ -129,10 +142,14 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
     const task = start(); if (!task) return;
     try {
       const client = createClient(generationConfig);
+      // Shot consistency: shared notes go with every prompt; reference images with images where supported.
+      const project = getProject(), prompted = withNotes(text, project.consistency?.notes);
       if (!video) {
-        const result = await client.generateImage({ prompt: text, signal: task.controller.signal }); if (!current(task)) return;
+        const sources = supportsReferences(generationConfig.provider) ? referenceCards(project) : [];
+        const references = sources.length ? await Promise.all(sources.map(card => referenceData(card, task.controller.signal))) : []; if (!current(task)) return;
+        const result = await client.generateImage({ prompt: prompted, references, signal: task.controller.signal }); if (!current(task)) return;
         const { media, warning } = await storeMedia(result.src, task.controller.signal); if (!current(task)) return;
-        const card: Card = { id: uid(), ...(request?.position ?? position()), ...media, src: media.src!, name: text.slice(0, 18), prompt: text, kind: 'image', provider: result.provider, model: result.model, size: generationConfig.imageSize, label: 'AI 生成图片', generatedAt: new Date().toISOString() };
+        const card: Card = { id: uid(), ...(request?.position ?? position()), ...media, src: media.src!, name: text.slice(0, 18), prompt: text, kind: 'image', provider: result.provider, model: result.model, size: generationConfig.imageSize, label: sources.length ? `AI 生成图片 · 参考 ${sources.length}` : 'AI 生成图片', generatedAt: new Date().toISOString() };
         update(draft => { draft.cards.push(card); draft.selected = card.id; }); request?.onCard?.(card.id); setPrompt(''); toast(warning ?? '图片已加入画布'); return;
       }
       const firstFrame = await reference(source, task.controller.signal); if (!current(task)) return;
@@ -140,7 +157,7 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
       const card: Card = { id, ...position(source), name: text.slice(0, 18) + ' · 视频', prompt: text, src: source?.src || PENDING_MEDIA, kind: 'image', provider: generationConfig.provider, label: '视频任务', job: { id: '', status: 'submitting', provider: generationConfig.provider, prompt: text, config: preferenceOnly(generationConfig) } };
       update(draft => { draft.cards.push(card); draft.selected = id; });
       request?.onCard?.(id);
-      const result = await client.submitVideo({ prompt: text, reference: firstFrame, signal: task.controller.signal });
+      const result = await client.submitVideo({ prompt: prompted, reference: firstFrame, signal: task.controller.signal });
       if (mounted.current) patchJob(id, { id: result.id, status: current(task) ? result.status : 'paused' });
       if (!current(task)) return;
       setPrompt(''); await poll(id, client, task, result);

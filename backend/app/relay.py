@@ -76,9 +76,12 @@ def validate_target(envelope: Any) -> Target:
     path, method = envelope.get("path"), envelope.get("method")
     if not isinstance(path, str) or method not in ("GET", "POST"):
         raise RelayError(400, "INVALID_OPERATION", "不支持此接口或请求方式")
+    image = path in {"/images/generations", "/images/edits"}
     allowed = method == "POST" and path == "/images/generations"
     if provider == "openai":
         allowed |= method == "GET" and path == "/models"
+        # GPT Image models take reference images through the JSON edit endpoint.
+        allowed |= method == "POST" and path == "/images/edits"
     else:
         allowed |= method == "POST" and path == "/contents/generations/tasks"
         allowed |= method == "GET" and (path == "/contents/generations/tasks?page_size=1" or bool(re.fullmatch(r"/contents/generations/tasks/[A-Za-z0-9_-]{1,160}", path)))
@@ -89,7 +92,7 @@ def validate_target(envelope: Any) -> Target:
     body = envelope.get("body")
     if method == "POST" and not isinstance(body, dict):
         raise RelayError(400, "INVALID_BODY", "生成请求正文必须是 JSON 对象")
-    return Target(BASES[provider] + path, key, method, body, path == "/images/generations")
+    return Target(BASES[provider] + path, key, method, body, image)
 
 
 def check_length(value: str | None, limit: int, upstream: bool = False) -> None:

@@ -29,6 +29,8 @@ export interface Workflow {
   steps: WorkflowStep[]; events: WorkflowEvent[]; config: Omit<AIConfig, 'key'>; checkpointId?: string;
   origin?: { x: number; y: number };
 }
-export interface ProjectState extends WorkspaceSnapshot { workflow?: Workflow; checkpoints?: ProjectCheckpoint[] }
+/** Kept across shots: notes appended to every prompt, and image cards sent as references. */
+export interface Consistency { notes: string; references: string[] }
+export interface ProjectState extends WorkspaceSnapshot { workflow?: Workflow; checkpoints?: ProjectCheckpoint[]; consistency?: Consistency }
 export type UpdateProject = (recipe: (draft: ProjectState) => void, record?: boolean) => void;
 export type GenerationMode = 'image' | 'video';

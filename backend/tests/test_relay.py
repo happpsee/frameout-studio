@@ -71,7 +71,7 @@ def test_trailing_slash_and_provider_allowlist():
     "/videos", "/images/generations?x=1", "//api.openai.com/v1/models", "/images/../models",
     "/images%2fgenerations", "/contents/generations/tasks/x?url=http://127.0.0.1",
     "/contents/generations/tasks/../models", "/contents/generations/tasks/%2e%2e",
-    "/contents/generations/tasks?page_size=1&x=y",
+    "/contents/generations/tasks?page_size=1&x=y", "/images/edits",
 ])
 def test_path_allowlist(path):
     with pytest.raises(RelayError):
@@ -82,6 +82,11 @@ def test_permitted_paths_and_body_validation():
     models = {k: v for k, v in {**BASE, "path": "/models", "method": "GET"}.items() if k != "body"}
     assert validate_target(models).method == "GET"
     assert validate_target({**ARK, "path": "/images/generations"}).image
+    edit = validate_target({**BASE, "path": "/images/edits"})
+    assert edit.image and edit.url == "https://api.openai.com/v1/images/edits"
+    for method in ["GET", "PUT"]:
+        with pytest.raises(RelayError):
+            validate_target({k: v for k, v in {**BASE, "path": "/images/edits", "method": method}.items() if k != "body"})
     for path in ["/contents/generations/tasks?page_size=1", "/contents/generations/tasks/cgt-123_test"]:
         query = {k: v for k, v in {**ARK, "path": path, "method": "GET"}.items() if k != "body"}
         assert validate_target(query).method == "GET"

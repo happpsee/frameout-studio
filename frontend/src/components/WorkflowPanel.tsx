@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ProjectState, StepStatus } from '../types';
 import type { useWorkflow } from '../hooks/useWorkflow';
 import { workspaceDiff } from '../lib/workflow';
+import { referenceCards } from '../lib/consistency';
 
 type Props = {
   tab: 'workflow' | 'versions'; onTab: (tab: 'workflow' | 'versions') => void; onClose: () => void;
@@ -13,6 +14,8 @@ const statusNames: Record<StepStatus, string> = { queued: '等待', running: '�
 
 export default function WorkflowPanel({ tab, onTab, onClose, project, workflow, busy, createCheckpoint, restoreCheckpoint, toast, selectCard }: Props) {
   const [text, setText] = useState('');
+  const referenceCount = referenceCards(project).length;
+  const continuity = [project.consistency?.notes ? '统一设定' : '', referenceCount ? `${referenceCount} 张参考图` : ''].filter(Boolean).join('和');
   const [withVideo, setWithVideo] = useState(false);
   const [name, setName] = useState('');
   const [retrying, setRetrying] = useState<string | null>(null);
@@ -38,6 +41,7 @@ export default function WorkflowPanel({ tab, onTab, onClose, project, workflow, 
           <label className="fo-plan-check"><input type="checkbox" checked={withVideo} onChange={event => setWithVideo(event.target.checked)} disabled={busy} />图片完成后，接着生成视频</label>
           <button type="submit" className="fo-plan-preview" disabled={busy || !text.trim()}>预览计划</button>
           <p className="fo-work-note">最多 8 个镜头。先检查步骤，再开始调用已配置的生成服务。</p>
+          {continuity && <p className="fo-work-note fo-plan-continuity">每个镜头都会使用{continuity}，可在输入框上方的「一致性」里修改。</p>}
         </form>
         {run && <section className="fo-run" aria-label="当前镜头计划">
           <div className="fo-run-heading"><h3>{run.status === 'completed' ? '镜头已就绪' : run.status === 'running' ? '正在制作镜头' : '待执行的镜头计划'}</h3><span>{run.steps.filter(step => step.status === 'succeeded').length} / {run.steps.length}</span></div>
