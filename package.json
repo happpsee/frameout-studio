@@ -2,26 +2,21 @@
   "name": "frameout",
   "private": true,
   "version": "2.0.0",
-  "main": "electron/main.cjs",
   "packageManager": "pnpm@11.21.0",
   "scripts": {
-    "dev:frontend": "pnpm --filter @frameout/frontend dev",
-    "dev:server": "node --watch server/index.cjs",
-    "desktop": "pnpm build && electron .",
-    "build:desktop": "pnpm build && node scripts/build-desktop.mjs",
-    "build": "pnpm --filter @frameout/frontend build",
-    "typecheck": "pnpm --filter @frameout/frontend typecheck",
-    "test": "pnpm --filter @frameout/frontend test",
-    "test:desktop": "node --test electron/*.test.cjs utils/*.test.cjs",
-    "test:server": "node --test server/*.test.cjs",
-    "test:all": "pnpm test && pnpm test:desktop && pnpm test:server",
-    "bench": "pnpm --filter @frameout/frontend bench"
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "dev:web": "pnpm --filter @frameout/web dev",
+    "dev:server": "pnpm --filter @frameout/server dev",
+    "desktop": "turbo run build --filter=@frameout/desktop && pnpm --filter @frameout/desktop start",
+    "build:desktop": "turbo run build --filter=@frameout/desktop && pnpm --filter @frameout/desktop package",
+    "bench": "pnpm --filter @frameout/web bench"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=22.18.0"
   },
   "devDependencies": {
-    "@electron/packager": "20.3.0",
-    "electron": "45.2.3"
+    "turbo": "2.11.10"
   }
 }

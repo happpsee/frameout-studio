@@ -1,0 +1,27 @@
+{
+  "name": "@frameout/server",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/lib.ts"
+  },
+  "scripts": {
+    "dev": "node --watch src/index.ts",
+    "build": "node scripts/build.ts",
+    "start": "node dist/index.cjs",
+    "typecheck": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@frameout/shared": "workspace:*",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "catalog:",
+    "esbuild": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

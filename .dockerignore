@@ -1,7 +1,8 @@
 .git
 .DS_Store
 **/node_modules
-**/*.test.cjs
+**/.turbo
+**/release
 **/dist
 **/.env
 **/.env.*

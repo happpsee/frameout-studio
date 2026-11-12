@@ -1,0 +1,27 @@
+{
+  "name": "@frameout/desktop",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "build": "node scripts/build.ts",
+    "start": "electron .",
+    "package": "node scripts/package.ts",
+    "typecheck": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@frameout/server": "workspace:*",
+    "@frameout/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "@frameout/web": "workspace:*",
+    "@types/node": "catalog:",
+    "electron": "45.2.3",
+    "esbuild": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -1,6 +1,6 @@
 # 帧外 FRAMEOUT
 
-Vite + React + TypeScript 前端，Node.js 后端（`server/`，只用 Node 内置模块，无 npm 依赖）。原来的原生页面和 Worker 已迁移，首页、画布、素材卡片、镜头序列、预览和 API 设置均由 React 组件渲染。
+全 TypeScript 的 pnpm + Turborepo monorepo：Vite + React 前端、Express 后端、Electron 桌面端，以及前后端与桌面端共用的 `@frameout/shared`。原来的原生页面和 Worker 已迁移，首页、画布、素材卡片、镜头序列、预览和 API 设置均由 React 组件渲染。
 
 ## macOS 桌面版
 
@@ -10,7 +10,7 @@ Vite + React + TypeScript 前端，Node.js 后端（`server/`，只用 Node 内�
 
 浏览器版和桌面版使用各自的数据目录。已有浏览器素材可先下载，再导入桌面版。桌面版当前维护一份自动保存的工作区。
 
-开发和打包前先完成下节的依赖安装。`pnpm desktop` 构建并运行桌面版源码。运行以下命令生成与当前 Mac 架构对应的本地应用，输出在 `dist/desktop/`。
+开发和打包前先完成下节的依赖安装。`pnpm desktop` 构建并运行桌面版源码。运行以下命令生成与当前 Mac 架构对应的本地应用，输出在 `apps/desktop/release/`。
 
 ```bash
 pnpm build:desktop
@@ -18,7 +18,7 @@ pnpm build:desktop
 
 ## 本地启动
 
-需要 Node.js 22.12+、pnpm 11（版本见 `package.json` 的 `packageManager`）。在项目根目录运行：
+需要 Node.js 22.18+（可直接运行 `.ts` 文件）、pnpm 11（版本见 `package.json` 的 `packageManager`）。在项目根目录运行：
 
 ```bash
 pnpm install --frozen-lockfile
@@ -28,42 +28,51 @@ pnpm install --frozen-lockfile
 
 ```bash
 pnpm dev:server
-pnpm dev:frontend
+pnpm dev:web
 ```
 
-前端：http://127.0.0.1:5173 ；后端：http://127.0.0.1:8000 。开发时 Vite 将 `/api` 代理到后端；`dev:server` 使用 `node --watch`，修改 `server/` 后自动重启。
+前端：http://127.0.0.1:5173 ；后端：http://127.0.0.1:8000 。开发时 Vite 将 `/api` 代理到后端；`dev:server` 用 `node --watch` 直接运行 TypeScript 源码，修改后自动重启。
 
 ## 构建后运行
 
 ```bash
 pnpm build
-node server/index.cjs
+node apps/server/dist/index.cjs
 ```
 
-构建产物在 `frontend/dist/`。后端同时提供前端静态文件和 API，可用 `HOST`、`PORT` 环境变量改监听地址（默认 127.0.0.1:8000），访问 http://127.0.0.1:8000 即可。此项目目前按单机本地使用设计，未新增账号、多人协作或云端项目存储。
+`pnpm build` 由 Turborepo 按依赖顺序构建各包并缓存结果：前端在 `apps/web/dist/`，后端用 esbuild 打成单文件 `apps/server/dist/index.cjs`（已内含 Express，运行时不需要 node_modules）。后端同时提供前端静态文件和 API，可用 `HOST`、`PORT` 环境变量改监听地址（默认 127.0.0.1:8000），访问 http://127.0.0.1:8000 即可。此项目目前按单机本地使用设计，未新增账号、多人协作或云端项目存储。
 
 ## 目录
 
 ```text
-frontend/
-  src/
-    components/      首页、画布、镜头序列、预览、API 设置和下拉控件
-    hooks/           项目状态、生成流程、画布手势和首页动效
-    lib/             相机计算、供应商协议、项目序列化、IndexedDB
-    styles/          原视觉样式与 React 控件适配
-    types.ts         项目、素材、镜头与视频任务类型
-  public/assets/     原有图片、字体、图标和来源说明
-  vite.config.ts     React、开发代理和 Vitest 配置
-server/
-  app.cjs            路由、CORS、静态文件
-  relay.cjs          AI 请求校验、转发、超时和断连处理
-  config.cjs         Origin、大小与时限配置
-  index.cjs          Web 版入口（HOST/PORT）
-  desktop.cjs        桌面版入口，由 Electron utilityProcess 启动，监听本机随机端口
-  server.test.cjs    后端回归测试
-electron/           桌面窗口、退出保存和本地文件读写
-scripts/build-desktop.mjs  打包 macOS 应用
+apps/
+  web/                 @frameout/web：Vite + React 前端
+    src/components/    首页、画布、镜头序列、预览、API 设置和下拉控件
+    src/hooks/         项目状态、生成流程、画布手势和首页动效
+    src/lib/           相机计算、供应商协议、项目序列化、IndexedDB
+    src/styles/        原视觉样式与 React 控件适配
+    public/assets/     原有图片、字体、图标和来源说明
+    vite.config.ts     React、开发代理和 Vitest 配置
+  server/              @frameout/server：Express 后端
+    src/app.ts         路由、Host/CORS 中间件、静态文件
+    src/relay.ts       AI 请求校验、转发、超时和断连处理
+    src/config.ts      Origin、大小与时限配置
+    src/index.ts       Web 版入口（HOST/PORT）
+    scripts/build.ts   esbuild 打包成单文件
+  desktop/             @frameout/desktop：Electron 桌面端
+    src/main.ts        窗口、IPC、退出保存
+    src/preload.ts     向页面暴露 window.frameoutDesktop
+    src/server-process.ts  在 utilityProcess 中运行后端，监听本机随机端口
+    src/storage.ts / secrets.ts  本地文件读写与钥匙串加密的 Key
+    scripts/build.ts   esbuild 打包 main、preload 和服务进程
+    scripts/package.ts 打包 macOS 应用
+packages/
+  shared/              @frameout/shared：串行队列、DesktopBridge 与 IPC 通道、/api/ai 请求格式与官方地址
+turbo.json             构建、类型检查、测试任务及缓存
+pnpm-workspace.yaml    工作区与统一依赖版本（catalog）
 ```
+
+`@frameout/shared` 直接导出 TypeScript 源码，由 Vite、esbuild 和 Vitest 在使用处编译，不需要单独构建。
 
 ## 保留的功能
 
@@ -110,28 +119,27 @@ scripts/build-desktop.mjs  打包 macOS 应用
 
 视频停止等待后保留已取得的任务号；刷新后需补填相同供应商的 Key，再继续查询原任务。未取得任务号时提示先到供应商后台核对，不自动再次提交。停止本地等待不等于取消供应商任务，已经提交的请求仍可能计费。供应商返回的临时媒体链接可能失效，请及时下载。
 
-默认允许 localhost / 127.0.0.1 的 5173 和 8000 端口来源。需要不同前端地址时，用环境变量 `FRAMEOUT_ALLOWED_ORIGINS` 添加以逗号分隔的准确 Origin。`FRAMEOUT_FRONTEND_DIST` 可指定其他前端构建目录。配置示例见 `server/.env.example`，应用不会自动加载 `.env`，请使用 shell 环境变量。
+默认允许 localhost / 127.0.0.1 的 5173 和 8000 端口来源。需要不同前端地址时，用环境变量 `FRAMEOUT_ALLOWED_ORIGINS` 添加以逗号分隔的准确 Origin。`FRAMEOUT_FRONTEND_DIST` 可指定其他前端构建目录。配置示例见 `apps/server/.env.example`，应用不会自动加载 `.env`，请使用 shell 环境变量。
 
 ## 验证
 
 ```bash
+pnpm typecheck
 pnpm test
 pnpm build
-pnpm test:server
-pnpm test:desktop
 ```
 
-`pnpm test:all` 依次运行前端、桌面存储和后端测试。`pnpm bench` 用 200 个素材、8 个版本和 160 条计划记录的项目测量编辑、自动保存和画布渲染耗时，不包含在 `pnpm test` 中。
+`pnpm test` 通过 Turborepo 运行所有包的 Vitest 测试（前端、后端、桌面存储与密钥、共享队列），未改动的包直接使用缓存结果。`pnpm bench` 用 200 个素材、8 个版本和 160 条计划记录的项目测量编辑、自动保存和画布渲染耗时，不包含在 `pnpm test` 中。
 
-前端测试覆盖相机计算、手势取消与提交、双指转单指、历史操作、镜头排序与时长、浏览器媒体恢复、生成停止及续查、配置密钥隔离、下拉框键盘导航。后端测试覆盖协议校验、大小限制、错误脱敏、超时、断连取消、Cookie 隔离和静态文件。
+前端测试覆盖相机计算、手势取消与提交、双指转单指、历史操作、镜头排序与时长、浏览器媒体恢复、生成停止及续查、配置密钥隔离、下拉框键盘导航。后端测试覆盖协议校验、大小限制、错误脱敏、超时、断连取消、Cookie 隔离、Host 校验和静态文件（含软链接与路径穿越）。
 
 迁移验收使用模拟供应商响应。未使用真实 API Key 发起付费出图或出片，未实测大规模素材性能和真实触屏多指手感。浏览器人工检查了首页进入、供应商切换、加入镜头、预览、缩放输入及 390px 画布布局。
 
 ## 迁移说明
 
-本次只修改桌面项目，保留 Git 历史和原目录备份；没有提交、推送或替换线上 Sites 版本。后端最初是 FastAPI 服务，现已改为同一套接口与安全规则的 Node.js 实现（桌面版与 Web 部署共用）；旧 Worker 的发布脚本和托管清单已移除。
+本次只修改桌面项目，保留 Git 历史和原目录备份；没有提交、推送或替换线上 Sites 版本。后端最初是 FastAPI 服务，现已改为同一套接口与安全规则的 TypeScript + Express 实现（桌面版与 Web 部署共用）；旧 Worker 的发布脚本和托管清单已移除。
 
-参考：[Vite 官方文档](https://vite.dev/guide/)、[React 官方文档](https://react.dev/learn/creating-a-react-app)、[Electron utilityProcess](https://www.electronjs.org/docs/latest/api/utility-process)、[OpenAI 图片接口](https://developers.openai.com/api/reference/resources/images/methods/generate)。素材来源说明保留在 `frontend/public/assets/`。
+参考：[Vite 官方文档](https://vite.dev/guide/)、[React 官方文档](https://react.dev/learn/creating-a-react-app)、[Electron utilityProcess](https://www.electronjs.org/docs/latest/api/utility-process)、[OpenAI 图片接口](https://developers.openai.com/api/reference/resources/images/methods/generate)。素材来源说明保留在 `apps/web/public/assets/`。
 
 ## 公网部署
 
