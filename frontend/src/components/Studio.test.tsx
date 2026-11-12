@@ -171,4 +171,22 @@ describe('React studio integration', () => {
     expect(screen.getByText('已连接，提示词还在，点生成即可')).toBeTruthy();
     expect((screen.getByRole('textbox', { name: '让想法，先有一个画面。' }) as HTMLTextAreaElement).value).toBe('雨夜街头回头的女孩');
   });
+  it('opens the final cut export with the playable shots and explains a missing encoder', () => {
+    const project = initialState();
+    project.cards = [
+      { id: 'ready', x: 0, y: 0, name: '雨夜', kind: 'image', src: 'https://media.example/ready.png', provider: 'ark' },
+      { id: 'lost', x: 300, y: 0, name: '丢失', kind: 'image', src: '', mediaId: 'media-gone' },
+    ];
+    project.sequence = [{ id: 's1', cardId: 'ready', duration: 4 }, { id: 's2', cardId: 'lost', duration: 3 }];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
+    render(<Studio onClose={vi.fn()} />); frame(); frame();
+    fireEvent.click(screen.getByRole('button', { name: '导出成片' }));
+    const dialog = screen.getByRole('dialog', { name: '导出成片' });
+    expect(within(dialog).getByText(/1 个镜头 · 00:04/)).toBeTruthy();
+    expect(within(dialog).getByText('另有 1 个镜头素材缺失或未完成，已跳过')).toBeTruthy();
+    expect(within(dialog).getByRole('alert').textContent).toContain('不支持视频编码');
+    expect((within(dialog).getByRole('button', { name: /开始导出/ }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(within(dialog).getByRole('button', { name: '关闭导出' }));
+    expect(screen.queryByRole('dialog', { name: '导出成片' })).toBeNull();
+  });
 });

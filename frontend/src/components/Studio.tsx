@@ -14,6 +14,7 @@ import Select from './Select';
 import { CanvasCard, pending, videoStatus, visibleCards } from './CanvasCard';
 import Sequence from './Sequence';
 import PreviewDialog, { type PreviewItem } from './PreviewDialog';
+import ExportDialog from './ExportDialog';
 import WorkflowPanel from './WorkflowPanel';
 import AssetLibrary from './AssetLibrary';
 import DesktopGenerationSettings from './DesktopGenerationSettings';
@@ -42,6 +43,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
   const [assetsOpen, setAssetsOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(() => project.sequence.length > 0);
   const [preview, setPreview] = useState<{ items: PreviewItem[]; title: string } | null>(null);
+  const [exporting, setExporting] = useState<{ items: PreviewItem[]; skipped: number } | null>(null);
   // Capture before effects: StrictMode cleanup may save a default camera before
   // the second effect setup. That save should not suppress the first fit.
   const [fitOnOpen] = useState(needsInitialFit);
@@ -130,7 +132,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
     if (isActive) return;
     if (generationActive.current) generation.stop();
     canvas.cancelGesture();
-    setSettingsOpen(false); setHelpOpen(false); setZoomOpen(false); setPreview(null);
+    setSettingsOpen(false); setHelpOpen(false); setZoomOpen(false); setPreview(null); setExporting(null);
     if (document.activeElement instanceof HTMLElement && studioRef.current?.contains(document.activeElement)) document.activeElement.blur();
   }, [isActive, generation.stop, canvas.cancelGesture]);
   useEffect(() => { if (isActive && helpOpen) helpRef.current?.showModal(); else helpRef.current?.close(); }, [isActive, helpOpen]);
@@ -169,9 +171,18 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
     document.addEventListener('keydown', keydown); return () => document.removeEventListener('keydown', keydown);
   }, [isActive, active, undo, redo, canvas.cancelGesture, canvas.fit, canvas.zoomBy, canvas.setTool, projectRef, removeSelected, update]);
 
+  // Shots the preview and export can play: skips missing or unfinished media.
+  function sequenceItems(): PreviewItem[] {
+    return project.sequence.flatMap(shot => { const source = project.cards.find(c => c.id === shot.cardId); return source && !source.missingMedia && !pending(source) ? [{ card: source, duration: shot.duration }] : []; });
+  }
+  function openExport() {
+    const items = sequenceItems();
+    if (!items.length) { toast('成片里还没有可导出的镜头'); return; }
+    setExporting({ items, skipped: project.sequence.length - items.length });
+  }
   function openPreview(card?: Card) {
     if (card && (card.missingMedia || pending(card))) { toast('该素材尚未完成或需要重新导入'); return; }
-    const items = card ? [{ card, duration: clipDuration(card) }] : project.sequence.flatMap(shot => { const source = project.cards.find(c => c.id === shot.cardId); return source && !source.missingMedia && !pending(source) ? [{ card: source, duration: shot.duration }] : []; });
+    const items = card ? [{ card, duration: clipDuration(card) }] : sequenceItems();
     if (!items.length) { toast('先选择素材并加入成片，再开始预览'); return; }
     setPreview({ items, title: card?.name ?? project.title });
   }
@@ -245,7 +256,7 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
       <div className="fo-brand-slot">{desktop ? <div className="fo-brand" aria-label="帧外 FRAMEOUT">{brand}</div> : <button type="button" className="fo-brand" aria-label="返回 FRAMEOUT 首页" onClick={() => { canvas.cancelGesture(); onClose(); }}>{brand}</button>}</div>
       <div className="fo-project"><span className="fo-project-divider">/</span><div><span className="fo-project-title">{project.title}</span><span className="fo-save"><i /><span className="fo-save-label">{saveStatus}</span></span></div></div>
       {!desktop && <nav className="fo-workspace-tabs" aria-label="工作区"><button type="button" className="is-active" aria-current="page">画布</button><button type="button" onClick={() => setHelpOpen(true)}>使用指南 <Icon name="arrow-up-right" /></button></nav>}
-      <div className="fo-header-actions">{!desktop && <button type="button" className="fo-text-button fo-flow-button" aria-expanded={panelTab !== null} onClick={() => setPanelTab(value => value ? null : 'workflow')}>镜头计划</button>}{!desktop && <button type="button" className="fo-text-button fo-api-button" aria-label="API 设置" onClick={() => openSettings()}><Icon name="settings" /><span>API 设置</span></button>}<button type="button" className="fo-text-button fo-export-button" aria-label="导出项目" onClick={exportProject}><Icon name="download" /><span>导出项目</span></button><button type="button" className="fo-primary-button" disabled={!project.sequence.length} onClick={() => openPreview()}><Icon name="play" /><span>预览成片</span></button></div>
+      <div className="fo-header-actions">{!desktop && <button type="button" className="fo-text-button fo-flow-button" aria-expanded={panelTab !== null} onClick={() => setPanelTab(value => value ? null : 'workflow')}>镜头计划</button>}{!desktop && <button type="button" className="fo-text-button fo-api-button" aria-label="API 设置" onClick={() => openSettings()}><Icon name="settings" /><span>API 设置</span></button>}<button type="button" className="fo-text-button fo-export-button" aria-label="导出项目" onClick={exportProject}><Icon name="download" /><span>导出项目</span></button><button type="button" className="fo-text-button fo-export-video-button" aria-label="导出成片" disabled={!project.sequence.length} onClick={openExport}><Icon name="film" /><span>导出成片</span></button><button type="button" className="fo-primary-button" disabled={!project.sequence.length} onClick={() => openPreview()}><Icon name="play" /><span>预览成片</span></button></div>
     </header>
     <div className="fo-workspace-body">
       {desktop && <nav className="fo-desktop-rail" aria-label="工作台工具">{canvasTools}</nav>}
@@ -286,12 +297,13 @@ export default function Studio({ onClose, active: isActive = true }: { onClose: 
 
   {!desktop && workflowPanel}
   {isActive && preview && <PreviewDialog items={preview.items} title={preview.title} onClose={() => setPreview(null)} />}
+  {isActive && exporting && <ExportDialog shots={exporting.items} skipped={exporting.skipped} title={project.title} onClose={() => setExporting(null)} />}
   <APISettings open={isActive && settingsOpen} notice={settingsNotice} onClose={() => { setSettingsOpen(false); setSettingsNotice(''); }} config={generation.config} onChange={value => {
     const connected = !generation.config.key && Boolean(value.key);
     generation.setConfig(value);
     // Never start a paid request on save; return to the kept prompt instead.
     if (connected) { toast(generation.prompt.trim() ? '已连接，提示词还在，点生成即可' : '已连接，写下想法就能生成'); requestAnimationFrame(() => promptRef.current?.focus()); }
   }} />
-  <dialog ref={helpRef} className="fo-help-dialog" aria-labelledby="fo-help-heading" onCancel={() => setHelpOpen(false)} onClose={() => setHelpOpen(false)} onClick={event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) setHelpOpen(false); } }}><button type="button" className="fo-icon-button fo-help-close" aria-label="关闭使用指南" onClick={() => setHelpOpen(false)}><Icon name="x" /></button><span className="fo-eyebrow">A LITTLE GUIDE</span><h2 id="fo-help-heading">把想法摊开，<br />再把故事连起来。</h2><p>画布用来探索和比较。只有加入下方成片区的镜头，才会按顺序播放。</p><dl><div><dt>平移画布</dt><dd>滚轮 / 触控板滚动 · 拖动空白处<br />空格 + 拖动，或鼠标中键</dd></div><div><dt>缩放画布</dt><dd>触控板捏合 · ⌘ / Ctrl + 滚轮<br />⌘ / Ctrl ＋ / −，或点击比例</dd></div><div><dt>触屏操作</dt><dd>单指拖动 · 双指平移与缩放</dd></div><div><dt>查看素材</dt><dd>单击选择，双击预览</dd></div><div><dt>撤销 / 重做</dt><dd>⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z</dd></div><div><dt>删除素材</dt><dd>选中后按 Delete / Backspace</dd></div><div><dt>适应画布</dt><dd>按 0，或点击适应按钮</dd></div></dl><div className="fo-help-note"><strong>从参考图到镜头，再到你的故事。</strong><span>生成图片和视频前，请在 API 设置中填写供应商密钥。{window.frameoutDesktop ? '项目和本地素材自动保存到本机。供应商临时链接请及时下载。' : '素材保存在本浏览器或供应商临时链接，请及时下载。'}成片区支持顺序预览，尚不导出编码后的 MP4。</span></div>{desktop && <button type="button" className="fo-help-intro" onClick={() => { setHelpOpen(false); onClose(); }}>查看产品介绍 <Icon name="arrow-up-right" /></button>}<button type="button" className="fo-primary-button" onClick={() => setHelpOpen(false)}>开始探索 <Icon name="arrow-up-right" /></button></dialog>
+  <dialog ref={helpRef} className="fo-help-dialog" aria-labelledby="fo-help-heading" onCancel={() => setHelpOpen(false)} onClose={() => setHelpOpen(false)} onClick={event => { if (event.target === event.currentTarget) { const r = event.currentTarget.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) setHelpOpen(false); } }}><button type="button" className="fo-icon-button fo-help-close" aria-label="关闭使用指南" onClick={() => setHelpOpen(false)}><Icon name="x" /></button><span className="fo-eyebrow">A LITTLE GUIDE</span><h2 id="fo-help-heading">把想法摊开，<br />再把故事连起来。</h2><p>画布用来探索和比较。只有加入下方成片区的镜头，才会按顺序播放。</p><dl><div><dt>平移画布</dt><dd>滚轮 / 触控板滚动 · 拖动空白处<br />空格 + 拖动，或鼠标中键</dd></div><div><dt>缩放画布</dt><dd>触控板捏合 · ⌘ / Ctrl + 滚轮<br />⌘ / Ctrl ＋ / −，或点击比例</dd></div><div><dt>触屏操作</dt><dd>单指拖动 · 双指平移与缩放</dd></div><div><dt>查看素材</dt><dd>单击选择，双击预览</dd></div><div><dt>撤销 / 重做</dt><dd>⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z</dd></div><div><dt>删除素材</dt><dd>选中后按 Delete / Backspace</dd></div><div><dt>适应画布</dt><dd>按 0，或点击适应按钮</dd></div></dl><div className="fo-help-note"><strong>从参考图到镜头，再到你的故事。</strong><span>生成图片和视频前，请在 API 设置中填写供应商密钥。{window.frameoutDesktop ? '项目和本地素材自动保存到本机。供应商临时链接请及时下载。' : '素材保存在本浏览器或供应商临时链接，请及时下载。'}成片区支持顺序预览，也可以导出为 MP4（暂不含声音）。</span></div>{desktop && <button type="button" className="fo-help-intro" onClick={() => { setHelpOpen(false); onClose(); }}>查看产品介绍 <Icon name="arrow-up-right" /></button>}<button type="button" className="fo-primary-button" onClick={() => setHelpOpen(false)}>开始探索 <Icon name="arrow-up-right" /></button></dialog>
   </div>;
 }
