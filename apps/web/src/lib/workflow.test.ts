@@ -5,7 +5,10 @@ import { initialState, restoreProject, serializeProject } from './project';
 
 describe('shot plans and checkpoint persistence', () => {
   it('only schedules a video after its image dependency has succeeded', () => {
-    const workflow = createWorkflow('森林远景\n雨滴特写', true, { ...defaults('ark'), key: 'not-for-storage' });
+    const workflow = createWorkflow('森林远景\n雨滴特写', true, {
+      ...defaults('ark'),
+      key: 'not-for-storage',
+    });
     expect(workflow.steps).toHaveLength(4);
     expect(workflow.config).not.toHaveProperty('key');
     expect(nextStep(workflow)).toBe(workflow.steps[0]);
@@ -15,7 +18,10 @@ describe('shot plans and checkpoint persistence', () => {
     expect(nextStep(workflow)).toBe(workflow.steps[1]);
   });
   it('restores interrupted work as paused while preserving completed results', () => {
-    const workflow = createWorkflow('森林远景', true, { ...defaults('ark'), key: 'not-for-storage' });
+    const workflow = createWorkflow('森林远景', true, {
+      ...defaults('ark'),
+      key: 'not-for-storage',
+    });
     workflow.status = 'running';
     workflow.steps[0].status = 'succeeded';
     workflow.steps[0].outputCardId = 'image';
@@ -34,11 +40,23 @@ describe('shot plans and checkpoint persistence', () => {
     const workflow = createWorkflow('第一帧', false, { ...defaults('ark'), key: '' });
     workflow.steps[0].dependsOn = workflow.steps[0].id;
     expect(restoreWorkflow(workflow)?.steps[0].status).toBe('failed');
-    expect(() => createWorkflow(Array(9).fill('镜头').join('\n'), false, { ...defaults('ark'), key: '' })).toThrow();
+    expect(() =>
+      createWorkflow(Array(9).fill('镜头').join('\n'), false, { ...defaults('ark'), key: '' }),
+    ).toThrow();
   });
   it('serializes checkpoint media references and excludes credentials and nested history', () => {
     const state = initialState();
-    state.cards = [{ id: 'frame', name: '首帧', kind: 'image', x: 20, y: 40, src: 'blob:old-session', mediaId: 'stored-frame' }];
+    state.cards = [
+      {
+        id: 'frame',
+        name: '首帧',
+        kind: 'image',
+        x: 20,
+        y: 40,
+        src: 'blob:old-session',
+        mediaId: 'stored-frame',
+      },
+    ];
     const project = { ...state, checkpoints: [{ id: 'v1', name: '第一稿', createdAt: 1, state }] };
     const serialized = serializeProject(project);
     expect(serialized.checkpoints![0].state.cards[0].src).toBe('');

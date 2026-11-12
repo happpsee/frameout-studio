@@ -1,12 +1,21 @@
 import { Blob as NodeBlob } from 'node:buffer';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { GENERATION_MODE_KEY, PROJECT_STORAGE_KEY, flushDesktopStorage, loadDesktopStorage, readStoredValue, writeStoredValue } from './desktop-storage';
+import {
+  GENERATION_MODE_KEY,
+  PROJECT_STORAGE_KEY,
+  flushDesktopStorage,
+  loadDesktopStorage,
+  readStoredValue,
+  writeStoredValue,
+} from './desktop-storage';
 import { DesktopMediaTooLargeError, getMedia, putMedia } from './media-store';
 
 const bytes = (value: string) => new TextEncoder().encode(value).buffer;
 const files = new Map<string, ArrayBuffer>();
 const read = vi.fn(async (key: string) => files.get(key) ?? null);
-const write = vi.fn(async (key: string, value: ArrayBuffer) => { files.set(key, value); });
+const write = vi.fn(async (key: string, value: ArrayBuffer) => {
+  files.set(key, value);
+});
 
 beforeEach(() => {
   files.clear();
@@ -16,7 +25,13 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe('desktop data files', () => {
   it('loads the saved project and preferences before the workspace mounts', async () => {
-    const project = JSON.stringify({ version: 1, title: '已保存的项目', cards: [], sequence: [], camera: { x: 40, y: -20, zoom: 1.5 } });
+    const project = JSON.stringify({
+      version: 1,
+      title: '已保存的项目',
+      cards: [],
+      sequence: [],
+      camera: { x: 40, y: -20, zoom: 1.5 },
+    });
     files.set(PROJECT_STORAGE_KEY, bytes(project));
     files.set(GENERATION_MODE_KEY, bytes('video'));
     await loadDesktopStorage();
@@ -33,9 +48,15 @@ describe('desktop data files', () => {
 
   it('drains queued writes in order and leaves the latest snapshot on disk', async () => {
     let finishFirst!: () => void;
-    write.mockImplementationOnce((key, value) => new Promise<void>(resolve => {
-      finishFirst = () => { files.set(key, value); resolve(); };
-    }));
+    write.mockImplementationOnce(
+      (key, value) =>
+        new Promise<void>(resolve => {
+          finishFirst = () => {
+            files.set(key, value);
+            resolve();
+          };
+        }),
+    );
     const first = writeStoredValue(PROJECT_STORAGE_KEY, 'older');
     const second = writeStoredValue(PROJECT_STORAGE_KEY, 'latest');
     const closing = flushDesktopStorage();
@@ -61,10 +82,13 @@ describe('desktop data files', () => {
 
   it('rejects oversized media before converting it to an IPC buffer', async () => {
     const arrayBuffer = vi.fn();
-    const oversized = { size: 100 * 1024 * 1024 + 1, type: 'video/mp4', arrayBuffer } as unknown as Blob;
+    const oversized = {
+      size: 100 * 1024 * 1024 + 1,
+      type: 'video/mp4',
+      arrayBuffer,
+    } as unknown as Blob;
     await expect(putMedia(oversized)).rejects.toBeInstanceOf(DesktopMediaTooLargeError);
     expect(arrayBuffer).not.toHaveBeenCalled();
     expect(write).not.toHaveBeenCalled();
   });
-
 });

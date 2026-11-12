@@ -5,16 +5,33 @@ import Landing from './Landing';
 const disconnected = vi.fn();
 
 beforeEach(() => {
-  vi.stubGlobal('matchMedia', vi.fn((query: string) => ({
-    media: query, matches: query.includes('prefers-reduced-motion'), onchange: null,
-    addEventListener: vi.fn(), removeEventListener: vi.fn(), addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn(),
-  })));
-  vi.stubGlobal('IntersectionObserver', class {
-    observe = vi.fn(); unobserve = vi.fn(); disconnect = disconnected;
-  });
+  vi.stubGlobal(
+    'matchMedia',
+    vi.fn((query: string) => ({
+      media: query,
+      matches: query.includes('prefers-reduced-motion'),
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+  vi.stubGlobal(
+    'IntersectionObserver',
+    class {
+      observe = vi.fn();
+      unobserve = vi.fn();
+      disconnect = disconnected;
+    },
+  );
 });
 
-afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe('React landing navigation', () => {
   it('opens the same workspace from each creation button', () => {

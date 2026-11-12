@@ -3,25 +3,52 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import APISettings from './APISettings';
-import { defaults, initialConfig, loadProfiles, PREFERENCES_KEY, startingProfile } from '../lib/preferences';
+import {
+  defaults,
+  initialConfig,
+  loadProfiles,
+  PREFERENCES_KEY,
+  startingProfile,
+} from '../lib/preferences';
 import { loadRememberedKeys } from '../lib/secrets';
 import type { AIConfig } from '../types';
 
 const mocked = vi.hoisted(() => ({ createClient: vi.fn(), connect: vi.fn() }));
-vi.mock('../lib/ai-client', async importOriginal => ({ ...await importOriginal<typeof import('../lib/ai-client')>(), createClient: mocked.createClient }));
+vi.mock('../lib/ai-client', async importOriginal => ({
+  ...(await importOriginal<typeof import('../lib/ai-client')>()),
+  createClient: mocked.createClient,
+}));
 
-const showModalDescriptor = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'showModal');
+const showModalDescriptor = Object.getOwnPropertyDescriptor(
+  HTMLDialogElement.prototype,
+  'showModal',
+);
 const closeDescriptor = Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, 'close');
 beforeAll(() => {
   // jsdom has no modal API; model its open/close contract without mocking React.
   Object.defineProperties(HTMLDialogElement.prototype, {
-    showModal: { configurable: true, value(this: HTMLDialogElement) { this.open = true; } },
-    close: { configurable: true, value(this: HTMLDialogElement) { if (!this.open) return; this.open = false; this.dispatchEvent(new Event('close')); } },
+    showModal: {
+      configurable: true,
+      value(this: HTMLDialogElement) {
+        this.open = true;
+      },
+    },
+    close: {
+      configurable: true,
+      value(this: HTMLDialogElement) {
+        if (!this.open) return;
+        this.open = false;
+        this.dispatchEvent(new Event('close'));
+      },
+    },
   });
 });
 afterAll(() => {
-  if (showModalDescriptor) Object.defineProperty(HTMLDialogElement.prototype, 'showModal', showModalDescriptor); else Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal');
-  if (closeDescriptor) Object.defineProperty(HTMLDialogElement.prototype, 'close', closeDescriptor); else Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
+  if (showModalDescriptor)
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', showModalDescriptor);
+  else Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal');
+  if (closeDescriptor) Object.defineProperty(HTMLDialogElement.prototype, 'close', closeDescriptor);
+  else Reflect.deleteProperty(HTMLDialogElement.prototype, 'close');
 });
 beforeEach(() => {
   localStorage.clear();
@@ -30,9 +57,29 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-function Harness({ initial = { ...defaults(), key: 'openai-memory-secret' }, onConfig = () => {} }: { initial?: AIConfig; onConfig?: (config: AIConfig) => void }) {
-  const [open, setOpen] = useState(true), [config, setConfig] = useState(initial);
-  return <><button onClick={() => setOpen(true)}>重新打开设置</button><APISettings open={open} onClose={() => setOpen(false)} config={config} onChange={value => { setConfig(value); onConfig(value); }} /></>;
+function Harness({
+  initial = { ...defaults(), key: 'openai-memory-secret' },
+  onConfig = () => {},
+}: {
+  initial?: AIConfig;
+  onConfig?: (config: AIConfig) => void;
+}) {
+  const [open, setOpen] = useState(true),
+    [config, setConfig] = useState(initial);
+  return (
+    <>
+      <button onClick={() => setOpen(true)}>重新打开设置</button>
+      <APISettings
+        open={open}
+        onClose={() => setOpen(false)}
+        config={config}
+        onChange={value => {
+          setConfig(value);
+          onConfig(value);
+        }}
+      />
+    </>
+  );
 }
 const keyInput = () => screen.getByLabelText<HTMLInputElement>('API Key', { exact: true });
 async function provider(user: ReturnType<typeof userEvent.setup>, label: string) {
@@ -57,7 +104,9 @@ describe('API settings provider profiles and cancellation', () => {
     await provider(user, '火山方舟');
     expect(keyInput().value).toBe('ark-memory-secret');
     await user.click(screen.getByRole('button', { name: /保存配置/ }));
-    expect(onConfig).toHaveBeenLastCalledWith(expect.objectContaining({ provider: 'ark', key: 'ark-memory-secret' }));
+    expect(onConfig).toHaveBeenLastCalledWith(
+      expect.objectContaining({ provider: 'ark', key: 'ark-memory-secret' }),
+    );
     const saved = localStorage.getItem(PREFERENCES_KEY)!;
     expect(saved).not.toContain('openai-memory-secret');
     expect(saved).not.toContain('ark-memory-secret');
@@ -75,34 +124,46 @@ describe('API settings provider profiles and cancellation', () => {
     expect(keyInput().value).toBe('');
   });
 
-  it.each(['close button', 'Escape cancellation', 'backdrop click'] as const)('aborts a pending connection test after %s', async reason => {
-    let signal: AbortSignal | undefined;
-    mocked.connect.mockImplementation(({ signal: current }: { signal: AbortSignal }) => {
-      signal = current;
-      return new Promise((_resolve, reject) => current.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true }));
-    });
-    const user = userEvent.setup();
-    render(<Harness />);
-    await user.click(screen.getByRole('button', { name: '测试连接' }));
-    expect(signal?.aborted).toBe(false);
-    const dialog = screen.getByRole('dialog');
-    if (reason === 'close button') await user.click(screen.getByRole('button', { name: '关闭 API 设置' }));
-    else if (reason === 'backdrop click') fireEvent.click(dialog, { clientX: -1, clientY: -1 });
-    else {
-      // A browser dispatches cancel when Escape closes a modal dialog.
-      fireEvent(dialog, new Event('cancel', { bubbles: false, cancelable: true }));
-    }
-    await act(async () => {});
-    expect(signal?.aborted).toBe(true);
-    expect(dialog).toHaveProperty('open', false);
-    expect(screen.queryByRole('button', { name: '正在连接…' })).toBeNull();
-  });
+  it.each(['close button', 'Escape cancellation', 'backdrop click'] as const)(
+    'aborts a pending connection test after %s',
+    async reason => {
+      let signal: AbortSignal | undefined;
+      mocked.connect.mockImplementation(({ signal: current }: { signal: AbortSignal }) => {
+        signal = current;
+        return new Promise((_resolve, reject) =>
+          current.addEventListener(
+            'abort',
+            () => reject(new DOMException('Aborted', 'AbortError')),
+            { once: true },
+          ),
+        );
+      });
+      const user = userEvent.setup();
+      render(<Harness />);
+      await user.click(screen.getByRole('button', { name: '测试连接' }));
+      expect(signal?.aborted).toBe(false);
+      const dialog = screen.getByRole('dialog');
+      if (reason === 'close button')
+        await user.click(screen.getByRole('button', { name: '关闭 API 设置' }));
+      else if (reason === 'backdrop click') fireEvent.click(dialog, { clientX: -1, clientY: -1 });
+      else {
+        // A browser dispatches cancel when Escape closes a modal dialog.
+        fireEvent(dialog, new Event('cancel', { bubbles: false, cancelable: true }));
+      }
+      await act(async () => {});
+      expect(signal?.aborted).toBe(true);
+      expect(dialog).toHaveProperty('open', false);
+      expect(screen.queryByRole('button', { name: '正在连接…' })).toBeNull();
+    },
+  );
 
   it('ignores a connection response after switching the provider', async () => {
     let signal!: AbortSignal, resolve!: (value: unknown) => void;
     mocked.connect.mockImplementation(({ signal: current }: { signal: AbortSignal }) => {
       signal = current;
-      return new Promise(done => { resolve = done; });
+      return new Promise(done => {
+        resolve = done;
+      });
     });
     const user = userEvent.setup();
     render(<Harness />);
@@ -115,7 +176,9 @@ describe('API settings provider profiles and cancellation', () => {
   });
 
   it('redacts connection error messages instead of displaying the API key', async () => {
-    mocked.connect.mockRejectedValue(new Error('upstream echoed openai-memory-secret in Bearer openai-memory-secret'));
+    mocked.connect.mockRejectedValue(
+      new Error('upstream echoed openai-memory-secret in Bearer openai-memory-secret'),
+    );
     const user = userEvent.setup();
     render(<Harness />);
     await user.click(screen.getByRole('button', { name: '测试连接' }));
@@ -150,7 +213,9 @@ describe('API settings provider profiles and cancellation', () => {
     const user = userEvent.setup();
     render(<Harness />);
     expect(screen.queryByLabelText('视频模型')).toBeNull();
-    expect(screen.getByRole('link', { name: /到OpenAI控制台创建/ }).getAttribute('href')).toBe('https://platform.openai.com/api-keys');
+    expect(screen.getByRole('link', { name: /到OpenAI控制台创建/ }).getAttribute('href')).toBe(
+      'https://platform.openai.com/api-keys',
+    );
     await provider(user, '火山方舟');
     expect(screen.getByLabelText('视频模型')).toBeTruthy();
     await provider(user, 'OpenAI 兼容接口');
@@ -160,22 +225,33 @@ describe('API settings provider profiles and cancellation', () => {
   it('remembers a key in the desktop keychain only when asked', async () => {
     const write = vi.fn(async () => {});
     window.frameoutDesktop = {
-      platform: 'darwin', storage: { read: vi.fn(async () => null), write: vi.fn(async () => {}) },
-      onBeforeClose: () => () => true, openTemporaryDownload: vi.fn(), openProviderConsole: vi.fn(async () => {}),
-      secrets: { available: async () => true, read: async () => ({ ark: 'ark-remembered' }), write },
+      platform: 'darwin',
+      storage: { read: vi.fn(async () => null), write: vi.fn(async () => {}) },
+      onBeforeClose: () => () => true,
+      openTemporaryDownload: vi.fn(),
+      openProviderConsole: vi.fn(async () => {}),
+      secrets: {
+        available: async () => true,
+        read: async () => ({ ark: 'ark-remembered' }),
+        write,
+      },
     };
     try {
       await loadRememberedKeys();
       expect(startingProfile('ark').key).toBe('ark-remembered');
-      const user = userEvent.setup(), onConfig = vi.fn();
+      const user = userEvent.setup(),
+        onConfig = vi.fn();
       render(<Harness initial={{ ...defaults(), key: '' }} onConfig={onConfig} />);
-      const remember = () => screen.getByRole<HTMLInputElement>('checkbox', { name: '在本机钥匙串中记住此 Key' });
+      const remember = () =>
+        screen.getByRole<HTMLInputElement>('checkbox', { name: '在本机钥匙串中记住此 Key' });
       expect(remember().checked).toBe(false);
       await user.type(keyInput(), 'sk-openai-new');
       await user.click(remember());
       await user.click(screen.getByRole('button', { name: /保存配置/ }));
       expect(write).toHaveBeenCalledWith('openai', 'sk-openai-new');
-      expect(onConfig).toHaveBeenLastCalledWith(expect.objectContaining({ provider: 'openai', key: 'sk-openai-new' }));
+      expect(onConfig).toHaveBeenLastCalledWith(
+        expect.objectContaining({ provider: 'openai', key: 'sk-openai-new' }),
+      );
       await user.click(screen.getByRole('button', { name: '重新打开设置' }));
       await provider(user, '火山方舟');
       expect(keyInput().value).toBe('ark-remembered');

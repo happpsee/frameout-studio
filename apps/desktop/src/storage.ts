@@ -15,7 +15,8 @@ export interface Storage {
   write(key: unknown, data: unknown): Promise<void>;
 }
 
-const isErrnoException = (error: unknown): error is NodeJS.ErrnoException => error instanceof Error && 'code' in error;
+const isErrnoException = (error: unknown): error is NodeJS.ErrnoException =>
+  error instanceof Error && 'code' in error;
 
 function checkKey(key: unknown): asserts key is string {
   if (typeof key !== 'string' || !KEY.test(key)) throw new TypeError('不允许操作非独属文件夹');
@@ -39,7 +40,10 @@ export function createStorage(directory: string): Storage {
           const { size } = await fs.stat(file);
           if (size > MAX_VALUE_BYTES) throw new RangeError('Storage value is too large');
           const bytes = await fs.readFile(file);
-          return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+          return bytes.buffer.slice(
+            bytes.byteOffset,
+            bytes.byteOffset + bytes.byteLength,
+          ) as ArrayBuffer;
         } catch (error) {
           if (isErrnoException(error) && error.code === 'ENOENT') return null;
           throw error;

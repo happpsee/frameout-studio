@@ -5,8 +5,12 @@ function projectWithCards() {
   return {
     ...initialState(),
     cards: ['船灯', '起雾', '返航'].map((name, index) => ({
-      id: `shot-card-${index}`, x: index * 300, y: 20, name,
-      src: `https://media.example/shot-${index}.png`, kind: 'image' as const,
+      id: `shot-card-${index}`,
+      x: index * 300,
+      y: 20,
+      name,
+      src: `https://media.example/shot-${index}.png`,
+      kind: 'image' as const,
     })),
   };
 }
@@ -34,8 +38,19 @@ describe('project persistence compatibility', () => {
         localCard,
         providerCard,
         { ...original.cards[2], id: 'forest-wide', src: 'assets/forest-astronaut.png' },
-        { ...original.cards[2], id: 'example-ocean', src: '/assets/still-ocean.webp', label: '灵感样例' },
-        { ...localCard, id: 'demo-copy', name: `${localCard.name} · 动态`, label: '动态预览', motion: true },
+        {
+          ...original.cards[2],
+          id: 'example-ocean',
+          src: '/assets/still-ocean.webp',
+          label: '灵感样例',
+        },
+        {
+          ...localCard,
+          id: 'demo-copy',
+          name: `${localCard.name} · 动态`,
+          label: '动态预览',
+          motion: true,
+        },
       ],
       selected: 'demo-copy',
       sequence: [
@@ -60,18 +75,42 @@ describe('project persistence compatibility', () => {
     expect(JSON.stringify(saved)).not.toContain('blob:current-session');
     expect(saved.cards[0].mediaId).toBe('media-1');
     const restored = restoreProject(saved);
-    expect(restored.cards[0]).toMatchObject({ src: MISSING_MEDIA, mediaId: 'media-1', missingMedia: true });
+    expect(restored.cards[0]).toMatchObject({
+      src: MISSING_MEDIA,
+      mediaId: 'media-1',
+      missingMedia: true,
+    });
   });
 
   it('keeps the video task ID but discards API credential fields during an export', () => {
     const project = projectWithCards();
-    const config = { provider: 'ark' as const, baseUrl: 'https://ark.cn-beijing.volces.com/api/v3', imageModel: 'image', videoModel: 'video', imageSize: '1024x1024', duration: 5, videoRatio: '16:9', resolution: '720p', transport: 'proxy' as const, key: 'must-not-be-exported' };
-    Object.assign(project.cards[0], { job: { id: 'task-123', provider: 'ark', status: 'running', prompt: '森林', config }, apiKey: 'must-not-be-exported', otherConfig: config });
+    const config = {
+      provider: 'ark' as const,
+      baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+      imageModel: 'image',
+      videoModel: 'video',
+      imageSize: '1024x1024',
+      duration: 5,
+      videoRatio: '16:9',
+      resolution: '720p',
+      transport: 'proxy' as const,
+      key: 'must-not-be-exported',
+    };
+    Object.assign(project.cards[0], {
+      job: { id: 'task-123', provider: 'ark', status: 'running', prompt: '森林', config },
+      apiKey: 'must-not-be-exported',
+      otherConfig: config,
+    });
     Object.assign(project, { apiKey: 'must-not-be-exported', config });
     const saved = serializeProject(project);
     expect(JSON.stringify(saved)).not.toContain('must-not-be-exported');
     const restored = restoreProject(saved);
-    expect(restored.cards[0].job).toMatchObject({ id: 'task-123', provider: 'ark', status: 'paused', prompt: '森林' });
+    expect(restored.cards[0].job).toMatchObject({
+      id: 'task-123',
+      provider: 'ark',
+      status: 'paused',
+      prompt: '森林',
+    });
     expect(restored.cards[0].job?.config).not.toHaveProperty('key');
   });
 
@@ -89,7 +128,10 @@ describe('project persistence compatibility', () => {
   it('filters broken references and clamps a stored camera without discarding valid cards', () => {
     const project = projectWithCards();
     project.camera.zoom = 900;
-    project.sequence = [{ id: 'invalid', cardId: 'deleted-card', duration: 5 }, { id: 'valid', cardId: project.cards[0].id, duration: -8 }];
+    project.sequence = [
+      { id: 'invalid', cardId: 'deleted-card', duration: 5 },
+      { id: 'valid', cardId: project.cards[0].id, duration: -8 },
+    ];
     const restored = restoreProject(project);
     expect(restored.cards).toHaveLength(3);
     expect(restored.camera.zoom).toBe(4);

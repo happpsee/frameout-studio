@@ -13,7 +13,11 @@ export const SAFE_HEADERS = Object.freeze({
 });
 const JSON_CONTENT = /^application\/(?:json|[A-Za-z0-9!#$&^_.+-]+\+json)(?:\s*;|$)/i;
 const REDIRECTS = new Set([301, 302, 303, 307, 308]);
-const UPSTREAM_TIMEOUT_CODES = new Set(['UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_HEADERS_TIMEOUT', 'UND_ERR_BODY_TIMEOUT']);
+const UPSTREAM_TIMEOUT_CODES = new Set([
+  'UND_ERR_CONNECT_TIMEOUT',
+  'UND_ERR_HEADERS_TIMEOUT',
+  'UND_ERR_BODY_TIMEOUT',
+]);
 const TIMEOUT_MESSAGE = '供应商响应超时，未自动重试；已提交的生成请求可能仍在处理中';
 const UNAVAILABLE_MESSAGE = '无法连接供应商，请检查接口状态后重试';
 const TOO_LARGE_MESSAGE = '数据过大，请减小图片或请求大小后重试';
@@ -51,14 +55,19 @@ class ClientDisconnect extends Error {}
 
 export function failure(status: number, code: string, message: string): Reply {
   const body: ApiErrorBody = { error: { code, message } };
-  return { status, headers: { ...SAFE_HEADERS, 'content-type': 'application/json' }, body: Buffer.from(JSON.stringify(body)) };
+  return {
+    status,
+    headers: { ...SAFE_HEADERS, 'content-type': 'application/json' },
+    body: Buffer.from(JSON.stringify(body)),
+  };
 }
 
 export function redactMessage(value: unknown, apiKey = ''): string {
   let message = typeof value === 'string' ? value : '';
   if (apiKey) {
     // Providers may echo the key URL-encoded, so hide that form too.
-    for (const secret of new Set([apiKey, encodeURIComponent(apiKey)])) message = message.split(secret).join('[已隐藏]');
+    for (const secret of new Set([apiKey, encodeURIComponent(apiKey)]))
+      message = message.split(secret).join('[已隐藏]');
   }
   // Count code points, not UTF-16 units, so a cut never splits a character.
   return [...message.replace(/[\x00-\x1f\x7f]/g, ' ').trim()].slice(0, 400).join('');
@@ -73,14 +82,21 @@ const isProvider = (value: unknown): value is OfficialProvider =>
 export function validateTarget(envelope: unknown): Target {
   if (!isObject(envelope)) throw new RelayError(400, 'INVALID_REQUEST', '请求格式不正确');
   const { provider } = envelope;
-  if (!isProvider(provider)) throw new RelayError(400, 'UNSUPPORTED_PROVIDER', '此转发仅支持 OpenAI 和火山方舟官方接口');
+  if (!isProvider(provider))
+    throw new RelayError(400, 'UNSUPPORTED_PROVIDER', '此转发仅支持 OpenAI 和火山方舟官方接口');
   const base = OFFICIAL_BASE_URLS[provider];
   if (envelope.baseUrl !== base && envelope.baseUrl !== `${base}/`) {
-    throw new RelayError(400, 'INVALID_BASE_URL', '转发地址必须是所选供应商的官方 Base URL；自定义接口请使用浏览器直连');
+    throw new RelayError(
+      400,
+      'INVALID_BASE_URL',
+      '转发地址必须是所选供应商的官方 Base URL；自定义接口请使用浏览器直连',
+    );
   }
   const key = envelope.apiKey;
-  if (typeof key !== 'string' || !key) throw new RelayError(401, 'MISSING_API_KEY', '请先填写 API Key');
-  if (key.length > 4096 || /[^\x21-\x7e]/.test(key)) throw new RelayError(400, 'INVALID_API_KEY', 'API Key 不能包含空白或控制字符');
+  if (typeof key !== 'string' || !key)
+    throw new RelayError(401, 'MISSING_API_KEY', '请先填写 API Key');
+  if (key.length > 4096 || /[^\x21-\x7e]/.test(key))
+    throw new RelayError(400, 'INVALID_API_KEY', 'API Key 不能包含空白或控制字符');
   const { path, method } = envelope;
   if (typeof path !== 'string' || (method !== 'GET' && method !== 'POST')) {
     throw new RelayError(400, 'INVALID_OPERATION', '不支持此接口或请求方式');
@@ -93,20 +109,38 @@ export function validateTarget(envelope: unknown): Target {
     allowed ||= method === 'POST' && path === '/images/edits';
   } else {
     allowed ||= method === 'POST' && path === '/contents/generations/tasks';
-    allowed ||= method === 'GET' && (path === '/contents/generations/tasks?page_size=1' || /^\/contents\/generations\/tasks\/[A-Za-z0-9_-]{1,160}$/.test(path));
+    allowed ||=
+      method === 'GET' &&
+      (path === '/contents/generations/tasks?page_size=1' ||
+        /^\/contents\/generations\/tasks\/[A-Za-z0-9_-]{1,160}$/.test(path));
   }
   if (!allowed) throw new RelayError(400, 'INVALID_OPERATION', '不支持此接口或请求方式');
-  if (method === 'GET' && Object.hasOwn(envelope, 'body')) throw new RelayError(400, 'INVALID_BODY', '查询请求不能包含请求正文');
+  if (method === 'GET' && Object.hasOwn(envelope, 'body'))
+    throw new RelayError(400, 'INVALID_BODY', '查询请求不能包含请求正文');
   const body = envelope.body;
-  if (method === 'POST' && !isObject(body)) throw new RelayError(400, 'INVALID_BODY', '生成请求正文必须是 JSON 对象');
-  const target = { url: base + path, method, body: method === 'POST' ? body as Record<string, unknown> : undefined, image };
+  if (method === 'POST' && !isObject(body))
+    throw new RelayError(400, 'INVALID_BODY', '生成请求正文必须是 JSON 对象');
+  const target = {
+    url: base + path,
+    method,
+    body: method === 'POST' ? (body as Record<string, unknown>) : undefined,
+    image,
+  };
   return Object.defineProperty(target, 'apiKey', { value: key, enumerable: false }) as Target;
 }
 
-export function checkLength(value: string | null | undefined, limit: number, upstream = false): void {
+export function checkLength(
+  value: string | null | undefined,
+  limit: number,
+  upstream = false,
+): void {
   if (value === undefined || value === null) return;
   if (!/^[0-9]+$/.test(value)) {
-    throw new RelayError(upstream ? 502 : 400, upstream ? 'UPSTREAM_INVALID_RESPONSE' : 'INVALID_LENGTH', '数据长度格式不正确');
+    throw new RelayError(
+      upstream ? 502 : 400,
+      upstream ? 'UPSTREAM_INVALID_RESPONSE' : 'INVALID_LENGTH',
+      '数据长度格式不正确',
+    );
   }
   // Compare digit length before conversion to avoid pathological integer strings.
   const normalized = value.replace(/^0+/, '') || '0';
@@ -121,14 +155,17 @@ function decodeJson(bytes: Uint8Array): unknown {
   const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   // Reject NaN/Infinity and numbers that overflow to Infinity (e.g. 1e10000).
   return JSON.parse(text, (_key, value: unknown) => {
-    if (typeof value === 'number' && !Number.isFinite(value)) throw new Error('Non-finite JSON number');
+    if (typeof value === 'number' && !Number.isFinite(value))
+      throw new Error('Non-finite JSON number');
     return value;
   });
 }
 
 function readEnvelope(req: IncomingMessage, settings: Settings): Promise<unknown> {
   if (!JSON_CONTENT.test(req.headers['content-type'] ?? '')) {
-    return Promise.reject(new RelayError(415, 'INVALID_CONTENT_TYPE', '请使用 application/json 请求'));
+    return Promise.reject(
+      new RelayError(415, 'INVALID_CONTENT_TYPE', '请使用 application/json 请求'),
+    );
   }
   try {
     checkLength(req.headers['content-length'], settings.requestLimit);
@@ -166,7 +203,9 @@ function readEnvelope(req: IncomingMessage, settings: Settings): Promise<unknown
       settle(() => resolve(envelope));
     };
     const onAbort = () => settle(() => reject(new ClientDisconnect()));
-    const onClose = () => { if (!req.complete) onAbort(); };
+    const onClose = () => {
+      if (!req.complete) onAbort();
+    };
     req.on('data', onData).on('end', onEnd).on('error', onAbort).on('close', onClose);
   });
 }
@@ -186,7 +225,12 @@ async function readLimited(response: Response, limit: number): Promise<Buffer> {
   return Buffer.concat(chunks, size);
 }
 
-async function forward(target: Target, settings: Settings, fetchImpl: FetchImpl, signal: AbortSignal): Promise<Reply> {
+async function forward(
+  target: Target,
+  settings: Settings,
+  fetchImpl: FetchImpl,
+  signal: AbortSignal,
+): Promise<Reply> {
   // Only these headers are created; browser cookies and site authorization stay local.
   const response = await fetchImpl(target.url, {
     method: target.method,
@@ -224,19 +268,35 @@ async function forward(target: Target, settings: Settings, fetchImpl: FetchImpl,
       message = redactMessage(isObject(error) ? error.message : payload.message, target.apiKey);
     }
     const status = response.status >= 400 && response.status <= 599 ? response.status : 502;
-    return failure(status, `UPSTREAM_${response.status}`, message ? `供应商请求失败：${message}` : `供应商请求失败（HTTP ${response.status}）`);
+    return failure(
+      status,
+      `UPSTREAM_${response.status}`,
+      message ? `供应商请求失败：${message}` : `供应商请求失败（HTTP ${response.status}）`,
+    );
   }
-  return { status: response.status, headers: { ...SAFE_HEADERS, 'content-type': 'application/json' }, body: data };
+  return {
+    status: response.status,
+    headers: { ...SAFE_HEADERS, 'content-type': 'application/json' },
+    body: data,
+  };
 }
 
 const TIMEOUT = Symbol('timeout');
 const DISCONNECT = Symbol('disconnect');
 
 /** Resolves to a reply, or null when the client has gone away. */
-export async function handleAi(req: IncomingMessage, res: ServerResponse, settings: Settings, fetchImpl: FetchImpl): Promise<Reply | null> {
+export async function handleAi(
+  req: IncomingMessage,
+  res: ServerResponse,
+  settings: Settings,
+  fetchImpl: FetchImpl,
+): Promise<Reply | null> {
   const { origin } = req.headers;
-  if ((origin !== undefined && !settings.allowedOrigins.has(origin))
-    || (origin === undefined && String(req.headers['sec-fetch-site'] ?? '').toLowerCase() === 'cross-site')) {
+  if (
+    (origin !== undefined && !settings.allowedOrigins.has(origin)) ||
+    (origin === undefined &&
+      String(req.headers['sec-fetch-site'] ?? '').toLowerCase() === 'cross-site')
+  ) {
     return failure(403, 'CROSS_ORIGIN_BLOCKED', '只允许从已配置的前端地址发起请求');
   }
   let target: Target;
@@ -252,15 +312,23 @@ export async function handleAi(req: IncomingMessage, res: ServerResponse, settin
     throw error;
   }
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(TIMEOUT), target.image ? settings.imageTimeout : settings.queryTimeout);
-  const onClose = () => { if (!res.writableEnded) controller.abort(DISCONNECT); };
+  const timer = setTimeout(
+    () => controller.abort(TIMEOUT),
+    target.image ? settings.imageTimeout : settings.queryTimeout,
+  );
+  const onClose = () => {
+    if (!res.writableEnded) controller.abort(DISCONNECT);
+  };
   res.on('close', onClose);
   try {
     return await forward(target, settings, fetchImpl, controller.signal);
   } catch (error) {
     if (controller.signal.reason === DISCONNECT) return null;
     const code = (error as { cause?: { code?: unknown } } | null)?.cause?.code;
-    if (controller.signal.reason === TIMEOUT || (typeof code === 'string' && UPSTREAM_TIMEOUT_CODES.has(code))) {
+    if (
+      controller.signal.reason === TIMEOUT ||
+      (typeof code === 'string' && UPSTREAM_TIMEOUT_CODES.has(code))
+    ) {
       return failure(504, 'UPSTREAM_TIMEOUT', TIMEOUT_MESSAGE);
     }
     if (error instanceof RelayError) return failure(error.status, error.code, error.message);

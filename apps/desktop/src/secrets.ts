@@ -4,7 +4,10 @@ import { createStorage } from './storage.ts';
 
 const FILE = 'api-keys';
 
-export type KeyStore = Pick<SafeStorage, 'isEncryptionAvailable' | 'encryptString' | 'decryptString'>;
+export type KeyStore = Pick<
+  SafeStorage,
+  'isEncryptionAvailable' | 'encryptString' | 'decryptString'
+>;
 export type SavedKeys = Partial<Record<ProviderId, string>>;
 
 export interface Secrets {
@@ -14,7 +17,8 @@ export interface Secrets {
   write(provider: unknown, key: unknown): Promise<void>;
 }
 
-const validKey = (value: string) => value.length > 0 && value.length <= 4096 && /^[\x21-\x7e]+$/.test(value);
+const validKey = (value: string) =>
+  value.length > 0 && value.length <= 4096 && /^[\x21-\x7e]+$/.test(value);
 
 /**
  * API keys the user chose to remember. They are encrypted with Electron safeStorage
@@ -46,7 +50,8 @@ export function createSecrets(directory: string, safeStorage: KeyStore): Secrets
     read,
     write(provider, key) {
       if (!isProviderId(provider)) throw new TypeError('Unknown provider');
-      if (key !== null && (typeof key !== 'string' || !validKey(key))) throw new TypeError('Invalid API key');
+      if (key !== null && (typeof key !== 'string' || !validKey(key)))
+        throw new TypeError('Invalid API key');
       if (!safeStorage.isEncryptionAvailable()) throw new Error('本机钥匙串不可用');
       // Serialize read-modify-write so two providers saved together do not drop one another.
       return queue(directory, async () => {
@@ -54,7 +59,10 @@ export function createSecrets(directory: string, safeStorage: KeyStore): Secrets
         if (key) keys[provider] = key;
         else delete keys[provider];
         const encrypted = safeStorage.encryptString(JSON.stringify(keys));
-        await storage.write(FILE, encrypted.buffer.slice(encrypted.byteOffset, encrypted.byteOffset + encrypted.byteLength));
+        await storage.write(
+          FILE,
+          encrypted.buffer.slice(encrypted.byteOffset, encrypted.byteOffset + encrypted.byteLength),
+        );
       });
     },
   };

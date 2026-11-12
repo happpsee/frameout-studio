@@ -1,58 +1,376 @@
 /* API preferences share the canvas chrome; credentials have no persistent field. */
-.fo-studio .fo-api-dialog{width:720px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 32px);padding:0;overflow:hidden;background:#1b1f16;border:1px solid #41473b;border-radius:10px;color:var(--fo-paper)}
-.fo-api-dialog .fo-api-form{display:flex;flex-direction:column;max-height:calc(100dvh - 34px);margin:0}
-.fo-api-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding:28px 30px 23px;border-bottom:1px solid #3c4632;flex:none}
-.fo-api-head .fo-eyebrow{font-size:8px;letter-spacing:1.8px;color:var(--fo-lime)}
-.fo-api-head h2{margin:11px 0 8px!important;font:500 27px/1.4 Arial,"PingFang SC",sans-serif!important;letter-spacing:1px}
-.fo-api-head p{margin:0;font-size:11px;line-height:1.8;color:#a8b59a}
-.fo-api-dialog .fo-api-close{margin:-7px -9px 0 0;font-size:24px!important}
-.fo-api-body{padding:24px 30px 12px;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#586847 transparent;min-height:0}
-.fo-api-section{margin:0 0 26px}
-.fo-api-section-title{display:block;margin-bottom:18px;font:9px/1.6 "Courier New",monospace;color:#94ab77;letter-spacing:1.1px}
-.fo-api-grid{display:grid;grid-template-columns:1fr 1fr;gap:17px 18px}
-.fo-api-field{display:flex;flex-direction:column;min-width:0;margin-bottom:17px;gap:8px}
-.fo-api-grid>.fo-api-field{margin:0}
-.fo-api-field>label,.fo-api-label-row label{font-size:11px;line-height:1.5;color:#d2ddc5}
-.fo-api-field>input,.fo-api-field>select,.fo-api-key-row>input{width:100%;height:42px;min-width:0;border:1px solid #42483c;background:#171c13;color:#eff3e8;border-radius:4px;padding:10px 12px;font:12px Arial,sans-serif;line-height:20px;box-shadow:none}
-.fo-api-field>input::placeholder,.fo-api-key-row>input::placeholder{color:#67765a}
-.fo-api-field>input[readonly]{background:#22291d;color:#9da990}
-.fo-api-field>input:disabled,.fo-api-field>select:disabled{opacity:.42;cursor:not-allowed}
-.fo-api-field>small{color:#879a74;font-size:10px;line-height:1.8;overflow-wrap:anywhere}
-.fo-api-label-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.fo-api-key-state{font-size:9px;color:#8ba46c}
-.fo-api-key-row{display:flex;align-items:stretch;gap:8px}
-.fo-api-key-row>input{flex:1;width:0;font-family:"Courier New",monospace;letter-spacing:.3px}
-.fo-api-dialog .fo-api-reveal{flex:none;min-width:52px;padding:8px 11px;border:1px solid #42483c;border-radius:4px;background:#2e3825;font-size:10px;color:#c1d3ad}
-.fo-api-dialog .fo-api-reveal:hover{background:#414e34}
-.fo-api-capability-note{margin:14px 0 0;padding:12px 13px;border-left:2px solid #627f43;background:#25301e;color:#9eb887;font-size:10px;line-height:1.9;overflow-wrap:anywhere}
-.fo-api-connection{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.fo-api-dialog .fo-api-test{min-height:38px;min-width:99px;padding:9px 14px;border:1px solid #718d52;border-radius:4px;background:transparent;color:#d4e8bb;font-size:11px}
-.fo-api-dialog .fo-api-test:not(:disabled):hover{background:#344529;border-color:#b5ff2a}
-.fo-api-connection>span{font-size:10px;color:#839574;line-height:1.7}
-.fo-api-status{min-height:20px;margin:10px 0 5px;font-size:11px;color:#9eae8d;line-height:1.8;overflow-wrap:anywhere}
-.fo-api-status[data-state="success"]{color:#b5e489}
-.fo-api-status[data-state="error"]{color:#f1ab96}
-.fo-api-footer{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 30px;border-top:1px solid #3c4632;background:#1e2519;flex:none}
-.fo-api-dialog .fo-api-clear{padding:9px 0;background:transparent;color:#96a786;font-size:10px;min-height:38px;text-align:left}
-.fo-api-dialog .fo-api-clear:hover{color:#e7b19a}
-.fo-api-footer .fo-primary-button{min-height:40px;white-space:nowrap}
-.fo-api-footer .fo-primary-button>span{margin-left:12px;font-size:18px;font-weight:400}
-@media(max-width:540px){.fo-studio .fo-api-dialog{max-width:calc(100vw - 20px);max-height:calc(100dvh - 20px);border-radius:8px}.fo-api-dialog .fo-api-form{max-height:calc(100dvh - 22px)}.fo-api-head{padding:22px 20px 18px;gap:12px}.fo-api-head h2{font-size:24px!important}.fo-api-head p{font-size:10px}.fo-api-body{padding:20px 20px 8px}.fo-api-grid{grid-template-columns:1fr;gap:15px}.fo-api-field>input,.fo-api-field>select,.fo-api-key-row>input{font-size:16px;height:43px;padding:10px}.fo-api-field>small,.fo-api-capability-note{font-size:10px}.fo-api-footer{padding:14px 20px;gap:12px}.fo-api-footer .fo-primary-button{min-height:42px;font-size:11px!important;padding:9px 13px}.fo-api-footer .fo-primary-button>span{margin-left:3px}.fo-api-dialog .fo-api-clear{font-size:10px;max-width:130px;line-height:1.6}}
-@media(pointer:coarse){.fo-api-dialog .fo-api-reveal,.fo-api-dialog .fo-api-test,.fo-api-dialog .fo-api-clear{min-height:44px}.fo-api-field>input,.fo-api-field>select,.fo-api-key-row>input{font-size:16px}}
+.fo-studio .fo-api-dialog {
+  width: 720px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  overflow: hidden;
+  background: #1b1f16;
+  border: 1px solid #41473b;
+  border-radius: 10px;
+  color: var(--fo-paper);
+}
+.fo-api-dialog .fo-api-form {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - 34px);
+  margin: 0;
+}
+.fo-api-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 28px 30px 23px;
+  border-bottom: 1px solid #3c4632;
+  flex: none;
+}
+.fo-api-head .fo-eyebrow {
+  font-size: 8px;
+  letter-spacing: 1.8px;
+  color: var(--fo-lime);
+}
+.fo-api-head h2 {
+  margin: 11px 0 8px !important;
+  font:
+    500 27px/1.4 Arial,
+    'PingFang SC',
+    sans-serif !important;
+  letter-spacing: 1px;
+}
+.fo-api-head p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.8;
+  color: #a8b59a;
+}
+.fo-api-dialog .fo-api-close {
+  margin: -7px -9px 0 0;
+  font-size: 24px !important;
+}
+.fo-api-body {
+  padding: 24px 30px 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #586847 transparent;
+  min-height: 0;
+}
+.fo-api-section {
+  margin: 0 0 26px;
+}
+.fo-api-section-title {
+  display: block;
+  margin-bottom: 18px;
+  font:
+    9px/1.6 'Courier New',
+    monospace;
+  color: #94ab77;
+  letter-spacing: 1.1px;
+}
+.fo-api-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 17px 18px;
+}
+.fo-api-field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-bottom: 17px;
+  gap: 8px;
+}
+.fo-api-grid > .fo-api-field {
+  margin: 0;
+}
+.fo-api-field > label,
+.fo-api-label-row label {
+  font-size: 11px;
+  line-height: 1.5;
+  color: #d2ddc5;
+}
+.fo-api-field > input,
+.fo-api-field > select,
+.fo-api-key-row > input {
+  width: 100%;
+  height: 42px;
+  min-width: 0;
+  border: 1px solid #42483c;
+  background: #171c13;
+  color: #eff3e8;
+  border-radius: 4px;
+  padding: 10px 12px;
+  font:
+    12px Arial,
+    sans-serif;
+  line-height: 20px;
+  box-shadow: none;
+}
+.fo-api-field > input::placeholder,
+.fo-api-key-row > input::placeholder {
+  color: #67765a;
+}
+.fo-api-field > input[readonly] {
+  background: #22291d;
+  color: #9da990;
+}
+.fo-api-field > input:disabled,
+.fo-api-field > select:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+.fo-api-field > small {
+  color: #879a74;
+  font-size: 10px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.fo-api-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.fo-api-key-state {
+  font-size: 9px;
+  color: #8ba46c;
+}
+.fo-api-key-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+.fo-api-key-row > input {
+  flex: 1;
+  width: 0;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.3px;
+}
+.fo-api-dialog .fo-api-reveal {
+  flex: none;
+  min-width: 52px;
+  padding: 8px 11px;
+  border: 1px solid #42483c;
+  border-radius: 4px;
+  background: #2e3825;
+  font-size: 10px;
+  color: #c1d3ad;
+}
+.fo-api-dialog .fo-api-reveal:hover {
+  background: #414e34;
+}
+.fo-api-capability-note {
+  margin: 14px 0 0;
+  padding: 12px 13px;
+  border-left: 2px solid #627f43;
+  background: #25301e;
+  color: #9eb887;
+  font-size: 10px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+.fo-api-connection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.fo-api-dialog .fo-api-test {
+  min-height: 38px;
+  min-width: 99px;
+  padding: 9px 14px;
+  border: 1px solid #718d52;
+  border-radius: 4px;
+  background: transparent;
+  color: #d4e8bb;
+  font-size: 11px;
+}
+.fo-api-dialog .fo-api-test:not(:disabled):hover {
+  background: #344529;
+  border-color: #b5ff2a;
+}
+.fo-api-connection > span {
+  font-size: 10px;
+  color: #839574;
+  line-height: 1.7;
+}
+.fo-api-status {
+  min-height: 20px;
+  margin: 10px 0 5px;
+  font-size: 11px;
+  color: #9eae8d;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.fo-api-status[data-state='success'] {
+  color: #b5e489;
+}
+.fo-api-status[data-state='error'] {
+  color: #f1ab96;
+}
+.fo-api-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 30px;
+  border-top: 1px solid #3c4632;
+  background: #1e2519;
+  flex: none;
+}
+.fo-api-dialog .fo-api-clear {
+  padding: 9px 0;
+  background: transparent;
+  color: #96a786;
+  font-size: 10px;
+  min-height: 38px;
+  text-align: left;
+}
+.fo-api-dialog .fo-api-clear:hover {
+  color: #e7b19a;
+}
+.fo-api-footer .fo-primary-button {
+  min-height: 40px;
+  white-space: nowrap;
+}
+.fo-api-footer .fo-primary-button > span {
+  margin-left: 12px;
+  font-size: 18px;
+  font-weight: 400;
+}
+@media (max-width: 540px) {
+  .fo-studio .fo-api-dialog {
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 20px);
+    border-radius: 8px;
+  }
+  .fo-api-dialog .fo-api-form {
+    max-height: calc(100dvh - 22px);
+  }
+  .fo-api-head {
+    padding: 22px 20px 18px;
+    gap: 12px;
+  }
+  .fo-api-head h2 {
+    font-size: 24px !important;
+  }
+  .fo-api-head p {
+    font-size: 10px;
+  }
+  .fo-api-body {
+    padding: 20px 20px 8px;
+  }
+  .fo-api-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .fo-api-field > input,
+  .fo-api-field > select,
+  .fo-api-key-row > input {
+    font-size: 16px;
+    height: 43px;
+    padding: 10px;
+  }
+  .fo-api-field > small,
+  .fo-api-capability-note {
+    font-size: 10px;
+  }
+  .fo-api-footer {
+    padding: 14px 20px;
+    gap: 12px;
+  }
+  .fo-api-footer .fo-primary-button {
+    min-height: 42px;
+    font-size: 11px !important;
+    padding: 9px 13px;
+  }
+  .fo-api-footer .fo-primary-button > span {
+    margin-left: 3px;
+  }
+  .fo-api-dialog .fo-api-clear {
+    font-size: 10px;
+    max-width: 130px;
+    line-height: 1.6;
+  }
+}
+@media (pointer: coarse) {
+  .fo-api-dialog .fo-api-reveal,
+  .fo-api-dialog .fo-api-test,
+  .fo-api-dialog .fo-api-clear {
+    min-height: 44px;
+  }
+  .fo-api-field > input,
+  .fo-api-field > select,
+  .fo-api-key-row > input {
+    font-size: 16px;
+  }
+}
 
 /* Single-edge focus: the control itself changes tone, with no detached outer ring.
    [ label ]
    [ current selection                              v ]
    [ option                                      check ] */
-.fo-studio .fo-api-dialog :is(input,select,button):focus-visible{outline:none;outline-offset:0}
-.fo-api-dialog :is(input,select):focus-visible{border-color:#9ba48e!important;box-shadow:inset 0 0 0 1px #9ba48e26}
-.fo-api-dialog button:focus-visible{box-shadow:inset 0 0 0 1px #c3cbb3}
-.fo-studio .fo-api-dialog[open]{animation:fo-api-arrive .16s ease-out}
-@keyframes fo-api-arrive{from{opacity:0}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){.fo-studio .fo-api-dialog[open]{animation:none}}
+.fo-studio .fo-api-dialog :is(input, select, button):focus-visible {
+  outline: none;
+  outline-offset: 0;
+}
+.fo-api-dialog :is(input, select):focus-visible {
+  border-color: #9ba48e !important;
+  box-shadow: inset 0 0 0 1px #9ba48e26;
+}
+.fo-api-dialog button:focus-visible {
+  box-shadow: inset 0 0 0 1px #c3cbb3;
+}
+.fo-studio .fo-api-dialog[open] {
+  animation: fo-api-arrive 0.16s ease-out;
+}
+@keyframes fo-api-arrive {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fo-studio .fo-api-dialog[open] {
+    animation: none;
+  }
+}
 /* First-run: why the dialog opened, and where to get a key. */
-.fo-api-head .fo-api-notice{margin-top:12px;padding:9px 12px;border-left:2px solid var(--fo-lime);background:#2a3320;color:#e3f3c9;font-size:11px}
-.fo-api-field small a{display:inline-flex;align-items:center;gap:3px;margin:0 6px 0 2px;color:var(--fo-lime);text-decoration:underline;text-underline-offset:2px}
-.fo-api-field small a svg{width:11px;height:11px}
-.fo-api-remember{display:flex;align-items:center;gap:8px;margin-top:9px;font-size:11px;color:#c4ceb7;cursor:pointer}
-.fo-api-remember input{accent-color:var(--fo-lime);width:14px;height:14px;margin:0}
+.fo-api-head .fo-api-notice {
+  margin-top: 12px;
+  padding: 9px 12px;
+  border-left: 2px solid var(--fo-lime);
+  background: #2a3320;
+  color: #e3f3c9;
+  font-size: 11px;
+}
+.fo-api-field small a {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 6px 0 2px;
+  color: var(--fo-lime);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.fo-api-field small a svg {
+  width: 11px;
+  height: 11px;
+}
+.fo-api-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  font-size: 11px;
+  color: #c4ceb7;
+  cursor: pointer;
+}
+.fo-api-remember input {
+  accent-color: var(--fo-lime);
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}

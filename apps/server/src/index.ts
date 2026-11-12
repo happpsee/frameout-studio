@@ -5,7 +5,8 @@ import { settingsFromEnv } from './config.ts';
 
 const host = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 8000);
-if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT must be an integer between 1 and 65535');
+if (!Number.isInteger(port) || port < 1 || port > 65535)
+  throw new Error('PORT must be an integer between 1 and 65535');
 
 const server = http.createServer(createApp(settingsFromEnv()));
 server.listen(port, host, () => console.log(`帧外服务已启动：http://${host}:${port}`));

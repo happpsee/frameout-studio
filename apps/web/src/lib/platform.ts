@@ -3,7 +3,9 @@
 import type { DesktopBridge } from '@frameout/shared';
 
 declare global {
-  interface Window { frameoutDesktop?: DesktopBridge }
+  interface Window {
+    frameoutDesktop?: DesktopBridge;
+  }
 }
 
 /** The desktop bridge, or undefined in a browser. Read on every call so tests can stub it. */

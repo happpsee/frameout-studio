@@ -13,7 +13,11 @@ server.listen(0, HOST, () => {
   const origin = `http://${HOST}:${port}`;
   // Only the desktop window's own origin may call the relay; ignore any
   // FRAMEOUT_ALLOWED_ORIGINS inherited from the user's shell.
-  const settings = { ...settingsFromEnv(), allowedOrigins: new Set([origin]), allowedHosts: [HOST] };
+  const settings = {
+    ...settingsFromEnv(),
+    allowedOrigins: new Set([origin]),
+    allowedHosts: [HOST],
+  };
   server.on('request', createApp(settings));
   const message: ServerMessage = { type: 'ready', url: `${origin}/` };
   process.parentPort.postMessage(message);

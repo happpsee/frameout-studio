@@ -8,7 +8,8 @@ const remembered = new Map<Provider, string>();
 let available = false;
 
 export async function loadRememberedKeys(): Promise<void> {
-  available = false; remembered.clear();
+  available = false;
+  remembered.clear();
   const secrets = desktopBridge()?.secrets;
   if (!secrets) return;
   try {
@@ -19,7 +20,10 @@ export async function loadRememberedKeys(): Promise<void> {
       const key = keys[provider];
       if (typeof key === 'string' && key) remembered.set(provider, key);
     }
-  } catch { available = false; remembered.clear(); }
+  } catch {
+    available = false;
+    remembered.clear();
+  }
 }
 
 export const canRememberKeys = () => available;
@@ -30,5 +34,6 @@ export async function rememberKey(provider: Provider, key: string | null): Promi
   const secrets = desktopBridge()?.secrets;
   if (!secrets || !available) return;
   await secrets.write(provider, key);
-  if (key) remembered.set(provider, key); else remembered.delete(provider);
+  if (key) remembered.set(provider, key);
+  else remembered.delete(provider);
 }

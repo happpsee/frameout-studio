@@ -1,16 +1,74 @@
-#root { min-height: 100dvh; }
-.fo-studio { position: fixed; inset: 0; }
-button, input, textarea, select { font: inherit; }
-.fo-select { position: relative; display: inline-flex; min-width: 0; }
-.fo-select-menu { z-index: 1100; overflow-y: auto; max-height: 260px; }
-.fo-select-option { width: 100%; text-align: left; }
-.fo-select-option:focus { outline: none; background: #30392c; }
-.fo-select--duration { width: 90px; }
-.fo-api-dialog select { color-scheme: dark; }
-.fo-api-close { display: inline-flex; align-items: center; justify-content: center; }
-.fo-studio [data-icon] { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; line-height: 0; }
-.fo-studio .fo-header-actions [data-icon] { display: inline-flex; }
-.fo-api-key-row { display: flex; gap: 8px; }
-.fo-api-key-row input { flex: 1; min-width: 0; }
-.fo-api-key-row button { background: transparent; color: inherit; border: 1px solid var(--fo-line, #414738); border-radius: 6px; padding: 6px 10px; }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
+#root {
+  min-height: 100dvh;
+}
+.fo-studio {
+  position: fixed;
+  inset: 0;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+.fo-select {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+.fo-select-menu {
+  z-index: 1100;
+  overflow-y: auto;
+  max-height: 260px;
+}
+.fo-select-option {
+  width: 100%;
+  text-align: left;
+}
+.fo-select-option:focus {
+  outline: none;
+  background: #30392c;
+}
+.fo-select--duration {
+  width: 90px;
+}
+.fo-api-dialog select {
+  color-scheme: dark;
+}
+.fo-api-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.fo-studio [data-icon] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+.fo-studio .fo-header-actions [data-icon] {
+  display: inline-flex;
+}
+.fo-api-key-row {
+  display: flex;
+  gap: 8px;
+}
+.fo-api-key-row input {
+  flex: 1;
+  min-width: 0;
+}
+.fo-api-key-row button {
+  background: transparent;
+  color: inherit;
+  border: 1px solid var(--fo-line, #414738);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+}

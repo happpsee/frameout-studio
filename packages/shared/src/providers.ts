@@ -14,7 +14,9 @@ export const OFFICIAL_BASE_URLS = {
 export type OfficialProvider = keyof typeof OFFICIAL_BASE_URLS;
 
 /** What each provider can do in this app. */
-export const PROVIDER_CAPABILITIES: Readonly<Record<ProviderId, { readonly video: boolean; readonly references: boolean }>> = {
+export const PROVIDER_CAPABILITIES: Readonly<
+  Record<ProviderId, { readonly video: boolean; readonly references: boolean }>
+> = {
   openai: { video: false, references: true },
   ark: { video: true, references: true },
   compatible: { video: true, references: false },

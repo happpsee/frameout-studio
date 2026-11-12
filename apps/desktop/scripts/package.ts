@@ -1,7 +1,15 @@
 // Packages the built desktop app (dist/) and web UI into a local macOS .app.
 // Run `pnpm build:desktop` from the repository root, which builds everything first.
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -11,9 +19,14 @@ if (process.platform !== 'darwin') throw new Error('请在 macOS 上构建帧外
 
 const root = path.resolve(import.meta.dirname, '..');
 const web = path.resolve(root, '..', 'web');
-const { version, main } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')) as { version: string; main: string };
+const { version, main } = JSON.parse(readFileSync(path.join(root, 'package.json'), 'utf8')) as {
+  version: string;
+  main: string;
+};
 // The catalog/workspace specifier in package.json is not a version; ask the installed package.
-const electronVersion = (createRequire(import.meta.url)('electron/package.json') as { version: string }).version;
+const electronVersion = (
+  createRequire(import.meta.url)('electron/package.json') as { version: string }
+).version;
 const work = mkdtempSync(path.join(tmpdir(), 'frameout-desktop-'));
 const appName = '帧外';
 const appDir = path.join(work, 'app');
@@ -25,9 +38,11 @@ function run(command: string, args: string[]): void {
 }
 
 for (const file of ['dist/main.cjs', 'dist/preload.cjs', 'dist/server.cjs']) {
-  if (!existsSync(path.join(root, file))) throw new Error(`缺少 ${file}，请先运行 pnpm build:desktop`);
+  if (!existsSync(path.join(root, file)))
+    throw new Error(`缺少 ${file}，请先运行 pnpm build:desktop`);
 }
-if (!existsSync(path.join(web, 'dist/index.html'))) throw new Error('缺少已构建的前端文件，请先运行 pnpm build:desktop');
+if (!existsSync(path.join(web, 'dist/index.html')))
+  throw new Error('缺少已构建的前端文件，请先运行 pnpm build:desktop');
 
 try {
   mkdirSync(iconset);
@@ -36,7 +51,17 @@ try {
     for (const scale of [1, 2]) {
       const pixels = String(size * scale);
       const filename = `icon_${size}x${size}${scale === 2 ? '@2x' : ''}.png`;
-      run('sips', ['-s', 'format', 'png', '-z', pixels, pixels, svg, '--out', path.join(iconset, filename)]);
+      run('sips', [
+        '-s',
+        'format',
+        'png',
+        '-z',
+        pixels,
+        pixels,
+        svg,
+        '--out',
+        path.join(iconset, filename),
+      ]);
     }
   }
   run('iconutil', ['-c', 'icns', iconset, '-o', icon]);
@@ -44,7 +69,10 @@ try {
   // dist/ holds self-contained bundles, so the app ships no node_modules.
   mkdirSync(appDir);
   cpSync(path.join(root, 'dist'), path.join(appDir, 'dist'), { recursive: true });
-  writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({ name: 'frameout', version, main }));
+  writeFileSync(
+    path.join(appDir, 'package.json'),
+    JSON.stringify({ name: 'frameout', version, main }),
+  );
   cpSync(path.join(web, 'dist'), path.join(work, 'frontend'), { recursive: true });
 
   const bundles = await packager({

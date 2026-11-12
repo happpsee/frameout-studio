@@ -4,8 +4,14 @@ import { DESKTOP_CHANNELS as CHANNELS, type DesktopBridge } from '@frameout/shar
 const closeHandlers = new Set<() => Promise<void>>();
 
 ipcRenderer.on(CHANNELS.prepareClose, async (_event, token: string) => {
-  const results = await Promise.allSettled([...closeHandlers].map(handler => Promise.resolve().then(handler)));
-  ipcRenderer.send(CHANNELS.closeReady, token, results.every(result => result.status === 'fulfilled'));
+  const results = await Promise.allSettled(
+    [...closeHandlers].map(handler => Promise.resolve().then(handler)),
+  );
+  ipcRenderer.send(
+    CHANNELS.closeReady,
+    token,
+    results.every(result => result.status === 'fulfilled'),
+  );
 });
 
 const bridge: DesktopBridge = {

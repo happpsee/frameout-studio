@@ -1,4 +1,16 @@
-import { ALL_FORMATS, BlobSource, BufferTarget, CanvasSink, CanvasSource, getFirstEncodableVideoCodec, Input, Mp4OutputFormat, Output, QUALITY_HIGH, type InputVideoTrack } from 'mediabunny';
+import {
+  ALL_FORMATS,
+  BlobSource,
+  BufferTarget,
+  CanvasSink,
+  CanvasSource,
+  getFirstEncodableVideoCodec,
+  Input,
+  Mp4OutputFormat,
+  Output,
+  QUALITY_HIGH,
+  type InputVideoTrack,
+} from 'mediabunny';
 import type { Card } from '../types';
 import { exportSupported } from './export-support';
 
@@ -8,11 +20,19 @@ import { exportSupported } from './export-support';
 
 export type ExportShot = { card: Card; duration: number };
 export type ExportSize = { width: number; height: number };
-export type ExportOptions = ExportSize & { fps?: number; signal?: AbortSignal; onProgress?: (fraction: number) => void };
+export type ExportOptions = ExportSize & {
+  fps?: number;
+  signal?: AbortSignal;
+  onProgress?: (fraction: number) => void;
+};
 
 export class ExportError extends Error {
   readonly shots: string[];
-  constructor(message: string, shots: string[] = []) { super(message); this.name = 'ExportError'; this.shots = shots; }
+  constructor(message: string, shots: string[] = []) {
+    super(message);
+    this.name = 'ExportError';
+    this.shots = shots;
+  }
 }
 
 const TONES: Record<string, string> = {
@@ -37,50 +57,100 @@ export function objectPosition(value = ''): { x: number; y: number } {
     return part === '0' ? 0 : 0.5;
   };
   // A single vertical keyword ("top") applies to y; anything else reads x first.
-  if (parts.length === 1 && (parts[0] === 'top' || parts[0] === 'bottom')) return { x: 0.5, y: parse(parts[0]) };
+  if (parts.length === 1 && (parts[0] === 'top' || parts[0] === 'bottom'))
+    return { x: 0.5, y: parse(parts[0]) };
   return { x: parse(parts[0]), y: parse(parts[1]) };
 }
 
 /** Destination rectangle for CSS object-fit contain/cover with an object-position. */
-export function fitRect(source: ExportSize, target: ExportSize, fit: 'contain' | 'cover', position = { x: 0.5, y: 0.5 }) {
-  const scale = fit === 'contain' ? Math.min(target.width / source.width, target.height / source.height) : Math.max(target.width / source.width, target.height / source.height);
-  const width = source.width * scale, height = source.height * scale;
-  return { x: (target.width - width) * position.x, y: (target.height - height) * position.y, width, height };
+export function fitRect(
+  source: ExportSize,
+  target: ExportSize,
+  fit: 'contain' | 'cover',
+  position = { x: 0.5, y: 0.5 },
+) {
+  const scale =
+    fit === 'contain'
+      ? Math.min(target.width / source.width, target.height / source.height)
+      : Math.max(target.width / source.width, target.height / source.height);
+  const width = source.width * scale,
+    height = source.height * scale;
+  return {
+    x: (target.width - width) * position.x,
+    y: (target.height - height) * position.y,
+    width,
+    height,
+  };
 }
 
 type Prepared =
   | { kind: 'image'; shot: ExportShot; bitmap: ImageBitmap }
   // track is null when WebCodecs cannot decode the clip; frames then come from a <video> element.
-  | { kind: 'video'; shot: ExportShot; blob: Blob; input: Input; track: InputVideoTrack | null; last: number };
+  | {
+      kind: 'video';
+      shot: ExportShot;
+      blob: Blob;
+      input: Input;
+      track: InputVideoTrack | null;
+      last: number;
+    };
 class Unreadable extends Error {}
 class Undecodable extends Error {}
 
 async function loadBlob(card: Card, signal?: AbortSignal): Promise<Blob> {
   // blob:, data: and provider https links; the latter need CORS to be readable.
-  const response = await fetch(card.src, { signal, credentials: 'omit', referrerPolicy: 'no-referrer' });
+  const response = await fetch(card.src, {
+    signal,
+    credentials: 'omit',
+    referrerPolicy: 'no-referrer',
+  });
   if (!response.ok) throw new Error(String(response.status));
   return response.blob();
 }
 
 async function prepare(shot: ExportShot, signal?: AbortSignal): Promise<Prepared> {
   let blob: Blob;
-  try { blob = await loadBlob(shot.card, signal); } catch { throw new Unreadable(); }
+  try {
+    blob = await loadBlob(shot.card, signal);
+  } catch {
+    throw new Unreadable();
+  }
   if (shot.card.kind !== 'video') {
-    try { return { kind: 'image', shot, bitmap: await createImageBitmap(blob) }; } catch { throw new Undecodable(); }
+    try {
+      return { kind: 'image', shot, bitmap: await createImageBitmap(blob) };
+    } catch {
+      throw new Undecodable();
+    }
   }
   const input = new Input({ source: new BlobSource(blob), formats: ALL_FORMATS });
   try {
     const track = await input.getPrimaryVideoTrack();
     if (!track) throw new Undecodable();
-    const last = Math.max(0, await input.computeDuration() - 0.001);
-    return { kind: 'video', shot, blob, input, track: await track.canDecode() ? track : null, last };
-  } catch { input.dispose(); throw new Undecodable(); }
+    const last = Math.max(0, (await input.computeDuration()) - 0.001);
+    return {
+      kind: 'video',
+      shot,
+      blob,
+      input,
+      track: (await track.canDecode()) ? track : null,
+      last,
+    };
+  } catch {
+    input.dispose();
+    throw new Undecodable();
+  }
 }
 
 function once(target: EventTarget, type: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const done = () => { target.removeEventListener('error', fail); resolve(); };
-    const fail = () => { target.removeEventListener(type, done); reject(new Undecodable()); };
+    const done = () => {
+      target.removeEventListener('error', fail);
+      resolve();
+    };
+    const fail = () => {
+      target.removeEventListener(type, done);
+      reject(new Undecodable());
+    };
     target.addEventListener(type, done, { once: true });
     target.addEventListener('error', fail, { once: true });
   });
@@ -88,47 +158,80 @@ function once(target: EventTarget, type: string): Promise<void> {
 
 /** Seeks a <video> element to each time; slower than WebCodecs but plays whatever the preview plays. */
 async function* elementFrames(blob: Blob, times: number[]): AsyncGenerator<HTMLVideoElement> {
-  const url = URL.createObjectURL(blob), video = document.createElement('video');
-  video.muted = true; video.playsInline = true; video.preload = 'auto';
+  const url = URL.createObjectURL(blob),
+    video = document.createElement('video');
+  video.muted = true;
+  video.playsInline = true;
+  video.preload = 'auto';
   try {
     const loaded = once(video, 'loadeddata');
     video.src = url;
     await loaded;
     for (const time of times) {
-      if (Math.abs(video.currentTime - time) > 0.0005) { const seeked = once(video, 'seeked'); video.currentTime = time; await seeked; }
+      if (Math.abs(video.currentTime - time) > 0.0005) {
+        const seeked = once(video, 'seeked');
+        video.currentTime = time;
+        await seeked;
+      }
       yield video;
     }
-  } finally { video.removeAttribute('src'); video.load(); URL.revokeObjectURL(url); }
+  } finally {
+    video.removeAttribute('src');
+    video.load();
+    URL.revokeObjectURL(url);
+  }
 }
 
-export async function exportSequence(shots: ExportShot[], { width, height, fps = 30, signal, onProgress }: ExportOptions): Promise<Blob> {
+export async function exportSequence(
+  shots: ExportShot[],
+  { width, height, fps = 30, signal, onProgress }: ExportOptions,
+): Promise<Blob> {
   if (!shots.length) throw new ExportError('成片里还没有可导出的镜头');
-  if (!exportSupported()) throw new ExportError('当前浏览器不支持视频编码，请使用最新版 Chrome、Edge 或桌面版');
+  if (!exportSupported())
+    throw new ExportError('当前浏览器不支持视频编码，请使用最新版 Chrome、Edge 或桌面版');
   const codec = await getFirstEncodableVideoCodec(['avc', 'hevc', 'vp9', 'av1'], { width, height });
   if (!codec) throw new ExportError(`当前设备无法编码 ${width}×${height} 的视频，请换一个清晰度`);
 
   // Read every shot before encoding so a broken link fails fast, naming the shots.
-  const prepared: Prepared[] = [], unreadable: string[] = [], undecodable: string[] = [];
+  const prepared: Prepared[] = [],
+    unreadable: string[] = [],
+    undecodable: string[] = [];
   const settled = await Promise.allSettled(shots.map(shot => prepare(shot, signal)));
   settled.forEach((result, index) => {
     if (result.status === 'fulfilled') prepared.push(result.value);
-    else (result.reason instanceof Undecodable ? undecodable : unreadable).push(shots[index].card.name);
+    else
+      (result.reason instanceof Undecodable ? undecodable : unreadable).push(
+        shots[index].card.name,
+      );
   });
-  const release = () => prepared.forEach(item => { if (item.kind === 'image') item.bitmap.close(); else item.input.dispose(); });
-  if (signal?.aborted) { release(); throw new DOMException('已取消导出', 'AbortError'); }
+  const release = () =>
+    prepared.forEach(item => {
+      if (item.kind === 'image') item.bitmap.close();
+      else item.input.dispose();
+    });
+  if (signal?.aborted) {
+    release();
+    throw new DOMException('已取消导出', 'AbortError');
+  }
   if (unreadable.length || undecodable.length) {
     release();
     const reasons = [
-      unreadable.length && `${unreadable.join('、')} 的素材无法读取，供应商临时链接可能已过期或不允许读取，请下载后重新导入`,
-      undecodable.length && `${undecodable.join('、')} 的格式无法解码，请转成 MP4（H.264）后重新导入`,
+      unreadable.length &&
+        `${unreadable.join('、')} 的素材无法读取，供应商临时链接可能已过期或不允许读取，请下载后重新导入`,
+      undecodable.length &&
+        `${undecodable.join('、')} 的格式无法解码，请转成 MP4（H.264）后重新导入`,
     ].filter(Boolean);
     throw new ExportError(reasons.join('；') + '。', [...unreadable, ...undecodable]);
   }
 
   const canvas = document.createElement('canvas');
-  canvas.width = width; canvas.height = height;
+  canvas.width = width;
+  canvas.height = height;
   const context = canvas.getContext('2d')!;
-  const output = new Output({ format: new Mp4OutputFormat({ fastStart: 'in-memory' }), target: new BufferTarget() });
+  const output = new Output({
+    format: new Mp4OutputFormat({ fastStart: 'in-memory' }),
+    target: new BufferTarget(),
+  });
   const source = new CanvasSource(canvas, { codec, bitrate: QUALITY_HIGH, keyFrameInterval: 2 });
   output.addVideoTrack(source, { frameRate: fps });
   const total = shots.reduce((sum, shot) => sum + shotFrameTimes(shot.duration, fps).length, 0);
@@ -139,7 +242,12 @@ export async function exportSequence(shots: ExportShot[], { width, height, fps =
     context.fillStyle = '#000';
     context.fillRect(0, 0, width, height);
     context.filter = TONES[card.tone ?? ''] ?? 'none';
-    const rect = fitRect(size, { width, height }, card.provider ? 'contain' : 'cover', objectPosition(card.crop));
+    const rect = fitRect(
+      size,
+      { width, height },
+      card.provider ? 'contain' : 'cover',
+      objectPosition(card.crop),
+    );
     context.drawImage(image, rect.x, rect.y, rect.width, rect.height);
   };
   const add = async () => {
@@ -154,28 +262,42 @@ export async function exportSequence(shots: ExportShot[], { width, height, fps =
     for (const item of prepared) {
       const times = shotFrameTimes(item.shot.duration, fps);
       if (item.kind === 'image') {
-        for (const _ of times) { draw(item.bitmap, item.bitmap, item.shot.card); await add(); }
+        for (const _ of times) {
+          draw(item.bitmap, item.bitmap, item.shot.card);
+          await add();
+        }
         continue;
       }
       // Past the clip's end the last frame is held, as in the preview.
       const clipTimes = times.map(time => Math.min(time, item.last));
       if (!item.track) {
-        for await (const video of elementFrames(item.blob, clipTimes)) { draw(video, { width: video.videoWidth, height: video.videoHeight }, item.shot.card); await add(); }
+        for await (const video of elementFrames(item.blob, clipTimes)) {
+          draw(video, { width: video.videoWidth, height: video.videoHeight }, item.shot.card);
+          await add();
+        }
         continue;
       }
       const sink = new CanvasSink(item.track, { poolSize: 2 });
       let previous: HTMLCanvasElement | OffscreenCanvas | null = null;
       for await (const frame of sink.canvasesAtTimestamps(clipTimes)) {
         const image: HTMLCanvasElement | OffscreenCanvas | null = frame?.canvas ?? previous;
-        if (image) { draw(image, image, item.shot.card); previous = image; }
-        else { context.fillStyle = '#000'; context.fillRect(0, 0, width, height); }
+        if (image) {
+          draw(image, image, item.shot.card);
+          previous = image;
+        } else {
+          context.fillStyle = '#000';
+          context.fillRect(0, 0, width, height);
+        }
         await add();
       }
     }
     await output.finalize();
     return new Blob([output.target.buffer!], { type: 'video/mp4' });
   } catch (error) {
-    if (output.state !== 'finalized' && output.state !== 'canceled') await output.cancel().catch(() => {});
+    if (output.state !== 'finalized' && output.state !== 'canceled')
+      await output.cancel().catch(() => {});
     throw error;
-  } finally { release(); }
+  } finally {
+    release();
+  }
 }

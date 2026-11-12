@@ -2,8 +2,10 @@
 import path from 'node:path';
 
 export const LOCAL_ORIGINS = Object.freeze([
-  'http://localhost:5173', 'http://127.0.0.1:5173',
-  'http://localhost:8000', 'http://127.0.0.1:8000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:8000',
+  'http://127.0.0.1:8000',
 ]);
 
 export interface Settings {
@@ -42,14 +44,18 @@ export function settingsFromEnv(env: NodeJS.ProcessEnv = process.env): Settings 
     if (!origin) continue;
     // URL#origin drops credentials, path, query and fragment, so an exact match
     // means the value was a bare http(s) origin.
-    const valid = !origin.includes('*') && URL.canParse(origin)
-      && ['http:', 'https:'].includes(new URL(origin).protocol)
-      && new URL(origin).origin === origin;
+    const valid =
+      !origin.includes('*') &&
+      URL.canParse(origin) &&
+      ['http:', 'https:'].includes(new URL(origin).protocol) &&
+      new URL(origin).origin === origin;
     if (!valid) throw new Error('FRAMEOUT_ALLOWED_ORIGINS must contain exact http(s) origins');
     origins.add(origin);
   }
   return createSettings({
     allowedOrigins: origins,
-    ...(env.FRAMEOUT_FRONTEND_DIST ? { frontendDist: path.resolve(env.FRAMEOUT_FRONTEND_DIST) } : {}),
+    ...(env.FRAMEOUT_FRONTEND_DIST
+      ? { frontendDist: path.resolve(env.FRAMEOUT_FRONTEND_DIST) }
+      : {}),
   });
 }

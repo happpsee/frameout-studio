@@ -16,7 +16,17 @@ const common: BuildOptions = {
 await Promise.all([
   // Electron 45 runs Node 24.
   build({ ...common, entryPoints: ['src/main.ts'], outfile: 'dist/main.cjs', target: 'node24' }),
-  build({ ...common, entryPoints: ['src/server-process.ts'], outfile: 'dist/server.cjs', target: 'node24' }),
+  build({
+    ...common,
+    entryPoints: ['src/server-process.ts'],
+    outfile: 'dist/server.cjs',
+    target: 'node24',
+  }),
   // A sandboxed preload can only require "electron", so everything else is inlined.
-  build({ ...common, entryPoints: ['src/preload.ts'], outfile: 'dist/preload.cjs', target: 'chrome140' }),
+  build({
+    ...common,
+    entryPoints: ['src/preload.ts'],
+    outfile: 'dist/preload.cjs',
+    target: 'chrome140',
+  }),
 ]);

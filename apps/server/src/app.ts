@@ -1,7 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
-import express, { type ErrorRequestHandler, type Request, type RequestHandler, type Response } from 'express';
+import express, {
+  type ErrorRequestHandler,
+  type Request,
+  type RequestHandler,
+  type Response,
+} from 'express';
 import { RELAY_PATH } from '@frameout/shared';
 import type { Settings } from './config.ts';
 import { failure, handleAi, type FetchImpl, type Reply } from './relay.ts';
@@ -11,11 +16,29 @@ const ALLOWED_METHODS = ['GET', 'POST'];
 const ALLOWED_HEADERS = ['Accept', 'Accept-Language', 'Content-Language', 'Content-Type'];
 const ALLOWED_HEADER_SET = new Set(ALLOWED_HEADERS.map(value => value.toLowerCase()));
 const MIME: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
-  '.css': 'text/css; charset=utf-8', '.json': 'application/json', '.map': 'application/json', '.txt': 'text/plain; charset=utf-8',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif',
-  '.webp': 'image/webp', '.avif': 'image/avif', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2',
-  '.ttf': 'font/ttf', '.otf': 'font/otf', '.mp4': 'video/mp4', '.webm': 'video/webm', '.mp3': 'audio/mpeg', '.wasm': 'application/wasm',
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.map': 'application/json',
+  '.txt': 'text/plain; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mp3': 'audio/mpeg',
+  '.wasm': 'application/wasm',
 };
 
 function send(req: Request, res: Response, reply: Reply): void {
@@ -24,10 +47,13 @@ function send(req: Request, res: Response, reply: Reply): void {
   res.end(req.method === 'HEAD' ? undefined : reply.body);
 }
 
-const reject = (status: number, code: string, message: string): RequestHandler =>
-  (req, res) => send(req, res, failure(status, code, message));
+const reject =
+  (status: number, code: string, message: string): RequestHandler =>
+  (req, res) =>
+    send(req, res, failure(status, code, message));
 
-const isInside = (directory: string, target: string) => target === directory || target.startsWith(directory + path.sep);
+const isInside = (directory: string, target: string) =>
+  target === directory || target.startsWith(directory + path.sep);
 
 async function fileStat(file: string): Promise<fs.Stats | null> {
   try {
@@ -38,7 +64,13 @@ async function fileStat(file: string): Promise<fs.Stats | null> {
   }
 }
 
-async function sendFile(req: Request, res: Response, file: string, stat: fs.Stats, extra: Record<string, string> = {}): Promise<void> {
+async function sendFile(
+  req: Request,
+  res: Response,
+  file: string,
+  stat: fs.Stats,
+  extra: Record<string, string> = {},
+): Promise<void> {
   res.status(200).set({
     'content-type': MIME[path.extname(file).toLowerCase()] ?? 'application/octet-stream',
     'content-length': String(stat.size),
@@ -69,23 +101,31 @@ function cors(settings: Settings): RequestHandler {
     const requestMethod = req.headers['access-control-request-method'];
     if (req.method === 'OPTIONS' && origin !== undefined && requestMethod !== undefined) {
       const requested = String(req.headers['access-control-request-headers'] ?? '')
-        .split(',').map(value => value.trim().toLowerCase()).filter(Boolean);
-      const ok = settings.allowedOrigins.has(origin) && ALLOWED_METHODS.includes(requestMethod)
-        && requested.every(value => ALLOWED_HEADER_SET.has(value));
+        .split(',')
+        .map(value => value.trim().toLowerCase())
+        .filter(Boolean);
+      const ok =
+        settings.allowedOrigins.has(origin) &&
+        ALLOWED_METHODS.includes(requestMethod) &&
+        requested.every(value => ALLOWED_HEADER_SET.has(value));
       res.set({ vary: 'Origin', 'content-type': 'text/plain; charset=utf-8' });
       if (!ok) {
         res.status(400).end('Disallowed CORS request');
         return;
       }
-      res.status(200).set({
-        'access-control-allow-origin': origin,
-        'access-control-allow-methods': ALLOWED_METHODS.join(', '),
-        'access-control-allow-headers': ALLOWED_HEADERS.join(', '),
-        'access-control-max-age': '600',
-      }).end('OK');
+      res
+        .status(200)
+        .set({
+          'access-control-allow-origin': origin,
+          'access-control-allow-methods': ALLOWED_METHODS.join(', '),
+          'access-control-allow-headers': ALLOWED_HEADERS.join(', '),
+          'access-control-max-age': '600',
+        })
+        .end('OK');
       return;
     }
-    if (origin !== undefined && settings.allowedOrigins.has(origin)) res.set({ 'access-control-allow-origin': origin, vary: 'Origin' });
+    if (origin !== undefined && settings.allowedOrigins.has(origin))
+      res.set({ 'access-control-allow-origin': origin, vary: 'Origin' });
     next();
   };
 }
@@ -109,22 +149,32 @@ function frontend(settings: Settings): RequestHandler {
       return send(req, res, failure(404, 'NOT_FOUND', '文件不存在'));
     }
     const target = path.resolve(directory, relative);
-    if (!isInside(directory, target)) return send(req, res, failure(404, 'NOT_FOUND', '文件不存在'));
+    if (!isInside(directory, target))
+      return send(req, res, failure(404, 'NOT_FOUND', '文件不存在'));
     if (relative) {
       const stat = await fileStat(target);
       if (stat) {
         // Resolve symlinks before serving so a link cannot point outside the build.
-        const [real, realDirectory] = await Promise.all([fs.promises.realpath(target), fs.promises.realpath(directory)]);
-        if (!isInside(realDirectory, real)) return send(req, res, failure(404, 'NOT_FOUND', '文件不存在'));
+        const [real, realDirectory] = await Promise.all([
+          fs.promises.realpath(target),
+          fs.promises.realpath(directory),
+        ]);
+        if (!isInside(realDirectory, real))
+          return send(req, res, failure(404, 'NOT_FOUND', '文件不存在'));
         return sendFile(req, res, target, stat);
       }
     }
     const index = path.join(directory, 'index.html');
     const indexStat = await fileStat(index);
-    if (indexStat && (!relative || !path.extname(relative))) return sendFile(req, res, index, indexStat, { 'cache-control': 'no-cache' });
-    send(req, res, indexStat
-      ? failure(404, 'NOT_FOUND', '文件不存在')
-      : failure(404, 'FRONTEND_NOT_BUILT', '前端尚未构建，请先运行 pnpm build'));
+    if (indexStat && (!relative || !path.extname(relative)))
+      return sendFile(req, res, index, indexStat, { 'cache-control': 'no-cache' });
+    send(
+      req,
+      res,
+      indexStat
+        ? failure(404, 'NOT_FOUND', '文件不存在')
+        : failure(404, 'FRONTEND_NOT_BUILT', '前端尚未构建，请先运行 pnpm build'),
+    );
   };
 }
 
@@ -132,7 +182,10 @@ export interface AppOptions {
   fetch?: FetchImpl;
 }
 
-export function createApp(settings: Settings, { fetch: fetchImpl = globalThis.fetch }: AppOptions = {}): express.Express {
+export function createApp(
+  settings: Settings,
+  { fetch: fetchImpl = globalThis.fetch }: AppOptions = {},
+): express.Express {
   const app = express();
   app.disable('x-powered-by');
   app.disable('etag');
@@ -151,9 +204,13 @@ export function createApp(settings: Settings, { fetch: fetchImpl = globalThis.fe
   });
   app.all(RELAY_PATH, reject(405, 'METHOD_NOT_ALLOWED', '请使用 POST 请求'));
   app.all(['/api/health', '/api/{*rest}'], (req, res) => {
-    send(req, res, req.path === '/api/health'
-      ? failure(405, 'METHOD_NOT_ALLOWED', '不支持此请求方式')
-      : failure(404, 'NOT_FOUND', '接口不存在'));
+    send(
+      req,
+      res,
+      req.path === '/api/health'
+        ? failure(405, 'METHOD_NOT_ALLOWED', '不支持此请求方式')
+        : failure(404, 'NOT_FOUND', '接口不存在'),
+    );
   });
   app.all('/api', reject(404, 'NOT_FOUND', '接口不存在'));
   app.get('/{*path}', frontend(settings));
@@ -163,7 +220,8 @@ export function createApp(settings: Settings, { fetch: fetchImpl = globalThis.fe
     // Never echo internal errors; they can include request data.
     if (res.headersSent) res.destroy();
     // The router fails to decode a malformed path ("%E0%A4%A"): no such route or file.
-    else if (error instanceof URIError) send(req, res, failure(404, 'NOT_FOUND', '接口或文件不存在'));
+    else if (error instanceof URIError)
+      send(req, res, failure(404, 'NOT_FOUND', '接口或文件不存在'));
     else send(req, res, failure(500, 'INTERNAL_ERROR', '服务内部错误'));
   };
   app.use(onError);

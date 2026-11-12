@@ -10,42 +10,83 @@ import { getMedia } from '../lib/media-store';
 import { initialState, serializeProject, STORAGE_KEY } from '../lib/project';
 import { createWorkflow } from '../lib/workflow';
 
-vi.mock('../lib/ai-client', async original => ({ ...await original<typeof import('../lib/ai-client')>(), createClient: vi.fn() }));
-vi.mock('../lib/media-store', async original => ({ ...await original<typeof import('../lib/media-store')>(), getMedia: vi.fn() }));
+vi.mock('../lib/ai-client', async original => ({
+  ...(await original<typeof import('../lib/ai-client')>()),
+  createClient: vi.fn(),
+}));
+vi.mock('../lib/media-store', async original => ({
+  ...(await original<typeof import('../lib/media-store')>()),
+  getMedia: vi.fn(),
+}));
 const client = { generateImage: vi.fn(), submitVideo: vi.fn(), getVideo: vi.fn() };
 const config = { ...defaults('ark'), key: 'fixture-key-never-persist' };
 
 function harness() {
   return renderHook(() => {
     const workspace = useWorkspace();
-    const generation = useGeneration({ getProject: () => workspace.projectRef.current, update: workspace.update, toast: vi.fn() });
+    const generation = useGeneration({
+      getProject: () => workspace.projectRef.current,
+      update: workspace.update,
+      toast: vi.fn(),
+    });
     const workflow = useWorkflow({ ...workspace, generation, toast: vi.fn(), enabled: true });
     return { workspace, generation, workflow };
   });
 }
 beforeEach(() => {
-  localStorage.clear(); vi.clearAllMocks();
+  localStorage.clear();
+  vi.clearAllMocks();
   vi.mocked(createClient).mockReturnValue(client as unknown as ReturnType<typeof createClient>);
-  client.generateImage.mockImplementation(async ({ prompt }) => ({ src: `https://media.example/${encodeURIComponent(prompt)}.png`, provider: 'ark', model: 'image-model' }));
+  client.generateImage.mockImplementation(async ({ prompt }) => ({
+    src: `https://media.example/${encodeURIComponent(prompt)}.png`,
+    provider: 'ark',
+    model: 'image-model',
+  }));
   client.submitVideo.mockResolvedValue({ id: 'paid-video-1', status: 'queued' });
-  client.getVideo.mockResolvedValue({ id: 'paid-video-1', status: 'succeeded', src: 'https://media.example/clip.mp4' });
-  Object.defineProperty(URL, 'createObjectURL', { value: vi.fn(() => 'blob:restored-checkpoint'), configurable: true });
+  client.getVideo.mockResolvedValue({
+    id: 'paid-video-1',
+    status: 'succeeded',
+    src: 'https://media.example/clip.mp4',
+  });
+  Object.defineProperty(URL, 'createObjectURL', {
+    value: vi.fn(() => 'blob:restored-checkpoint'),
+    configurable: true,
+  });
   Object.defineProperty(URL, 'revokeObjectURL', { value: vi.fn(), configurable: true });
 });
-afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); });
+afterEach(() => {
+  cleanup();
+  localStorage.clear();
+  vi.restoreAllMocks();
+});
 
 describe('persisted creative workflow', () => {
   it('reconciles a completed image saved before its step acknowledgement without resubmitting', async () => {
     const project = initialState();
-    project.cards = [{ id: 'finished-image', name: '已完成首帧', x: 0, y: 0, kind: 'image', src: 'https://media.example/saved.png' }];
+    project.cards = [
+      {
+        id: 'finished-image',
+        name: '已完成首帧',
+        x: 0,
+        y: 0,
+        kind: 'image',
+        src: 'https://media.example/saved.png',
+      },
+    ];
     project.workflow = createWorkflow('已完成首帧', false, config);
     project.workflow.status = 'running';
-    project.workflow.steps[0] = { ...project.workflow.steps[0], status: 'running', outputCardId: 'finished-image' };
+    project.workflow.steps[0] = {
+      ...project.workflow.steps[0],
+      status: 'running',
+      outputCardId: 'finished-image',
+    };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
     const hook = harness();
     act(() => hook.result.current.generation.setConfig(config));
     await act(async () => hook.result.current.workflow.start());
-    await waitFor(() => expect(hook.result.current.workspace.project.workflow?.status).toBe('completed'));
+    await waitFor(() =>
+      expect(hook.result.current.workspace.project.workflow?.status).toBe('completed'),
+    );
     expect(client.generateImage).not.toHaveBeenCalled();
     expect(client.submitVideo).not.toHaveBeenCalled();
   });
@@ -53,26 +94,48 @@ describe('persisted creative workflow', () => {
     const project = initialState();
     project.workflow = createWorkflow('中断的首帧', false, config);
     project.workflow.status = 'running';
-    project.workflow.steps[0] = { ...project.workflow.steps[0], status: 'running', outputCardId: 'missing-image' };
+    project.workflow.steps[0] = {
+      ...project.workflow.steps[0],
+      status: 'running',
+      outputCardId: 'missing-image',
+    };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
     const hook = harness();
     act(() => hook.result.current.generation.setConfig(config));
     await act(async () => hook.result.current.workflow.start());
-    await waitFor(() => expect(hook.result.current.workspace.project.workflow?.steps[0].error).toContain('重新生成'));
+    await waitFor(() =>
+      expect(hook.result.current.workspace.project.workflow?.steps[0].error).toContain('重新生成'),
+    );
     expect(client.generateImage).not.toHaveBeenCalled();
   });
   it('keeps an unreadable restored image paused instead of acknowledging it as complete', async () => {
     const project = initialState();
-    project.cards = [{ id: 'unreadable', name: '首帧', x: 0, y: 0, kind: 'image', src: '', mediaId: 'missing-media' }];
+    project.cards = [
+      {
+        id: 'unreadable',
+        name: '首帧',
+        x: 0,
+        y: 0,
+        kind: 'image',
+        src: '',
+        mediaId: 'missing-media',
+      },
+    ];
     project.workflow = createWorkflow('首帧', false, config);
     project.workflow.status = 'running';
-    project.workflow.steps[0] = { ...project.workflow.steps[0], status: 'running', outputCardId: 'unreadable' };
+    project.workflow.steps[0] = {
+      ...project.workflow.steps[0],
+      status: 'running',
+      outputCardId: 'unreadable',
+    };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
     vi.mocked(getMedia).mockResolvedValue(null);
     const hook = harness();
     act(() => hook.result.current.generation.setConfig(config));
     await act(async () => hook.result.current.workflow.start());
-    await waitFor(() => expect(hook.result.current.workspace.project.workflow?.steps[0].error).toContain('无法读取'));
+    await waitFor(() =>
+      expect(hook.result.current.workspace.project.workflow?.steps[0].error).toContain('无法读取'),
+    );
     expect(hook.result.current.workspace.project.workflow?.steps[0].status).toBe('paused');
     expect(client.generateImage).not.toHaveBeenCalled();
   });
@@ -82,51 +145,100 @@ describe('persisted creative workflow', () => {
     act(() => hook.result.current.workflow.plan('穿过森林', true));
     expect(client.generateImage).not.toHaveBeenCalled();
     await act(async () => hook.result.current.workflow.start());
-    await waitFor(() => expect(hook.result.current.workspace.project.workflow?.status).toBe('completed'), { timeout: 4500 });
+    await waitFor(
+      () => expect(hook.result.current.workspace.project.workflow?.status).toBe('completed'),
+      { timeout: 4500 },
+    );
     expect(client.generateImage).toHaveBeenCalledTimes(1);
-    expect(client.submitVideo).toHaveBeenCalledWith(expect.objectContaining({ reference: 'https://media.example/' + encodeURIComponent('穿过森林') + '.png' }));
+    expect(client.submitVideo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reference: 'https://media.example/' + encodeURIComponent('穿过森林') + '.png',
+      }),
+    );
     expect(hook.result.current.workspace.project.checkpoints).toHaveLength(1);
     expect(hook.result.current.workspace.project.cards).toHaveLength(2);
-    expect(JSON.stringify(serializeProject(hook.result.current.workspace.project))).not.toContain(config.key);
+    expect(JSON.stringify(serializeProject(hook.result.current.workspace.project))).not.toContain(
+      config.key,
+    );
   });
   it('pauses before the next shot and ignores an image that returns after stopping', async () => {
     let resolve!: (result: { src: string; provider: string; model: string }) => void;
-    client.generateImage.mockReturnValueOnce(new Promise(done => { resolve = done; }));
+    client.generateImage.mockReturnValueOnce(
+      new Promise(done => {
+        resolve = done;
+      }),
+    );
     const hook = harness();
     act(() => hook.result.current.generation.setConfig(config));
     act(() => hook.result.current.workflow.plan('镜头一\n镜头二', false));
     await act(async () => hook.result.current.workflow.start());
     await waitFor(() => expect(client.generateImage).toHaveBeenCalledTimes(1));
     act(() => hook.result.current.workflow.pause());
-    await act(async () => { resolve({ src: 'https://media.example/late.png', provider: 'ark', model: 'image' }); });
-    await waitFor(() => expect(hook.result.current.workspace.project.workflow?.status).toBe('paused'));
+    await act(async () => {
+      resolve({ src: 'https://media.example/late.png', provider: 'ark', model: 'image' });
+    });
+    await waitFor(() =>
+      expect(hook.result.current.workspace.project.workflow?.status).toBe('paused'),
+    );
     expect(hook.result.current.workspace.project.cards).toHaveLength(0);
     expect(client.generateImage).toHaveBeenCalledTimes(1);
   });
   it('preserves a late provider task ID and resumes it without resubmitting', async () => {
     let submitted!: (result: { id: string; status: string }) => void;
-    client.submitVideo.mockReturnValueOnce(new Promise(done => { submitted = done; }));
+    client.submitVideo.mockReturnValueOnce(
+      new Promise(done => {
+        submitted = done;
+      }),
+    );
     const hook = harness();
     act(() => hook.result.current.generation.setConfig(config));
     act(() => hook.result.current.workflow.plan('镜头一', true));
     await act(async () => hook.result.current.workflow.start());
     await waitFor(() => expect(client.submitVideo).toHaveBeenCalledTimes(1));
     act(() => hook.result.current.workflow.pause());
-    await act(async () => { submitted({ id: 'late-paid-task', status: 'queued' }); });
-    await waitFor(() => expect(hook.result.current.workspace.project.cards[1].job?.id).toBe('late-paid-task'));
+    await act(async () => {
+      submitted({ id: 'late-paid-task', status: 'queued' });
+    });
+    await waitFor(() =>
+      expect(hook.result.current.workspace.project.cards[1].job?.id).toBe('late-paid-task'),
+    );
     await act(async () => hook.result.current.workflow.start());
-    await waitFor(() => expect(hook.result.current.workspace.project.workflow?.status).toBe('completed'));
+    await waitFor(() =>
+      expect(hook.result.current.workspace.project.workflow?.status).toBe('completed'),
+    );
     expect(client.submitVideo).toHaveBeenCalledTimes(1);
     expect(client.getVideo).toHaveBeenCalledWith(expect.objectContaining({ id: 'late-paid-task' }));
   });
   it('restores a checkpoint, retains an automatic backup and hydrates its stored media', async () => {
     const project = initialState();
-    project.checkpoints = [{ id: 'old', name: '已保存的第一稿', createdAt: 1, state: { ...initialState(), cards: [{ id: 'old-card', name: '旧素材', x: 10, y: 20, kind: 'image', src: '', mediaId: 'old-media' }] } }];
+    project.checkpoints = [
+      {
+        id: 'old',
+        name: '已保存的第一稿',
+        createdAt: 1,
+        state: {
+          ...initialState(),
+          cards: [
+            {
+              id: 'old-card',
+              name: '旧素材',
+              x: 10,
+              y: 20,
+              kind: 'image',
+              src: '',
+              mediaId: 'old-media',
+            },
+          ],
+        },
+      },
+    ];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
     vi.mocked(getMedia).mockResolvedValue(new Blob(['image'], { type: 'image/png' }));
     const hook = harness();
     act(() => hook.result.current.workspace.restoreCheckpoint('old'));
-    await waitFor(() => expect(hook.result.current.workspace.project.cards[0].missingMedia).toBe(false));
+    await waitFor(() =>
+      expect(hook.result.current.workspace.project.cards[0].missingMedia).toBe(false),
+    );
     expect(hook.result.current.workspace.project.cards[0].src).toBe('blob:restored-checkpoint');
     expect(hook.result.current.workspace.project.checkpoints).toHaveLength(2);
   });

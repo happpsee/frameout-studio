@@ -11,12 +11,15 @@
     "dev:server": "pnpm --filter @frameout/server dev",
     "desktop": "turbo run build --filter=@frameout/desktop && pnpm --filter @frameout/desktop start",
     "build:desktop": "turbo run build --filter=@frameout/desktop && pnpm --filter @frameout/desktop package",
-    "bench": "pnpm --filter @frameout/web bench"
+    "bench": "pnpm --filter @frameout/web bench",
+    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,cjs,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,cjs,css}\""
   },
   "engines": {
     "node": ">=22.18.0"
   },
   "devDependencies": {
-    "turbo": "2.11.10"
+    "turbo": "2.11.10",
+    "prettier": "3.9.10"
   }
 }

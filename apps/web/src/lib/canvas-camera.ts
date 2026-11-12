@@ -11,9 +11,15 @@ type Options = {
   now?: () => number;
 };
 export const clamp = (n: number, low: number, high: number) => Math.min(high, Math.max(low, n));
-export function normalizeWheel(event: Pick<WheelEvent, 'deltaMode' | 'deltaX' | 'deltaY'>, pageHeight = 800) {
+export function normalizeWheel(
+  event: Pick<WheelEvent, 'deltaMode' | 'deltaX' | 'deltaY'>,
+  pageHeight = 800,
+) {
   const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? Math.max(1, pageHeight) : 1;
-  return { dx: (Number.isFinite(event.deltaX) ? event.deltaX : 0) * unit, dy: (Number.isFinite(event.deltaY) ? event.deltaY : 0) * unit };
+  return {
+    dx: (Number.isFinite(event.deltaX) ? event.deltaX : 0) * unit,
+    dy: (Number.isFinite(event.deltaY) ? event.deltaY : 0) * unit,
+  };
 }
 export function createCamera(options: Options) {
   const request = options.requestFrame ?? requestAnimationFrame;
@@ -27,8 +33,13 @@ export function createCamera(options: Options) {
   let destroyed = false;
   const get = () => ({ ...current });
   const getTarget = () => ({ ...(animation?.target ?? current) });
-  const rest = () => { clearTimeout(timer); if (!destroyed) options.onRest?.(get()); };
-  function schedule() { if (!destroyed && frame === null) frame = request(tick); }
+  const rest = () => {
+    clearTimeout(timer);
+    if (!destroyed) options.onRest?.(get());
+  };
+  function schedule() {
+    if (!destroyed && frame === null) frame = request(tick);
+  }
   function tick() {
     frame = null;
     if (destroyed) return;
@@ -37,12 +48,23 @@ export function createCamera(options: Options) {
       const progress = options.reducedMotion?.() ? 1 : clamp((now() - animation.start) / 180, 0, 1);
       const amount = 1 - (1 - progress) ** 3;
       const { from, target } = animation;
-      current = { x: from.x + (target.x - from.x) * amount, y: from.y + (target.y - from.y) * amount, zoom: from.zoom + (target.zoom - from.zoom) * amount };
+      current = {
+        x: from.x + (target.x - from.x) * amount,
+        y: from.y + (target.y - from.y) * amount,
+        zoom: from.zoom + (target.zoom - from.zoom) * amount,
+      };
       dirty = true;
-      if (progress === 1) { animation = null; finished = true; }
+      if (progress === 1) {
+        animation = null;
+        finished = true;
+      }
     }
-    if (dirty) { dirty = false; options.onRender(get()); }
-    if (animation) schedule(); else if (finished) rest();
+    if (dirty) {
+      dirty = false;
+      options.onRender(get());
+    }
+    if (animation) schedule();
+    else if (finished) rest();
   }
   function cancel() {
     animation = null;
@@ -60,8 +82,13 @@ export function createCamera(options: Options) {
       y: Number.isFinite(next.y) ? next.y : current.y,
       zoom: Number.isFinite(next.zoom) ? clamp(next.zoom, 0.15, 4) : current.zoom,
     };
-    if (settings.animate && !options.reducedMotion?.()) animation = { from: get(), target, start: now() };
-    else { current = target; dirty = true; timer = setTimeout(rest, 180); }
+    if (settings.animate && !options.reducedMotion?.())
+      animation = { from: get(), target, start: now() };
+    else {
+      current = target;
+      dirty = true;
+      timer = setTimeout(rest, 180);
+    }
     schedule();
   }
   function zoomTo(zoom: number, point: Point, settings: { animate?: boolean } = {}) {
@@ -72,11 +99,29 @@ export function createCamera(options: Options) {
     set({ x: point.x - world.x * next, y: point.y - world.y * next, zoom: next }, settings);
   }
   function zoomBy(factor: number, point: Point, settings: { animate?: boolean } = {}) {
-    if (Number.isFinite(factor) && factor > 0) zoomTo((settings.animate ? getTarget() : get()).zoom * factor, point, settings);
+    if (Number.isFinite(factor) && factor > 0)
+      zoomTo((settings.animate ? getTarget() : get()).zoom * factor, point, settings);
   }
-  function pan(dx: number, dy: number) { if (Number.isFinite(dx) && Number.isFinite(dy)) set({ ...current, x: current.x + dx, y: current.y + dy }); }
-  function flush() { if (frame !== null) cancelFrame(frame); frame = null; if (dirty && !destroyed) { dirty = false; options.onRender(get()); } if (animation) schedule(); }
-  function destroy() { cancel(); destroyed = true; if (frame !== null) cancelFrame(frame); frame = null; dirty = false; }
+  function pan(dx: number, dy: number) {
+    if (Number.isFinite(dx) && Number.isFinite(dy))
+      set({ ...current, x: current.x + dx, y: current.y + dy });
+  }
+  function flush() {
+    if (frame !== null) cancelFrame(frame);
+    frame = null;
+    if (dirty && !destroyed) {
+      dirty = false;
+      options.onRender(get());
+    }
+    if (animation) schedule();
+  }
+  function destroy() {
+    cancel();
+    destroyed = true;
+    if (frame !== null) cancelFrame(frame);
+    frame = null;
+    dirty = false;
+  }
   schedule();
   return { get, getTarget, set, pan, zoomTo, zoomBy, cancel, flush, destroy };
 }

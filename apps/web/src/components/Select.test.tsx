@@ -4,12 +4,37 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Select from './Select';
 
-const options = [{ value: 'one', label: '第一个' }, { value: 'two', label: '第二个' }, { value: 'three', label: '第三个' }];
+const options = [
+  { value: 'one', label: '第一个' },
+  { value: 'two', label: '第二个' },
+  { value: 'three', label: '第三个' },
+];
 afterEach(cleanup);
 
-function Harness({ disabled = false, onChange = () => {} }: { disabled?: boolean; onChange?: (value: string) => void }) {
+function Harness({
+  disabled = false,
+  onChange = () => {},
+}: {
+  disabled?: boolean;
+  onChange?: (value: string) => void;
+}) {
   const [value, setValue] = useState('two');
-  return <dialog open aria-label="设置对话框"><button type="button">上一个字段</button><Select label="参数" disabled={disabled} value={value} onChange={next => { setValue(next); onChange(next); }} options={options} /><input aria-label="下一个字段" /></dialog>;
+  return (
+    <dialog open aria-label="设置对话框">
+      <button type="button">上一个字段</button>
+      <Select
+        label="参数"
+        disabled={disabled}
+        value={value}
+        onChange={next => {
+          setValue(next);
+          onChange(next);
+        }}
+        options={options}
+      />
+      <input aria-label="下一个字段" />
+    </dialog>
+  );
 }
 
 describe('React Select keyboard behavior', () => {

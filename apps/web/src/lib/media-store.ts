@@ -2,17 +2,26 @@ import { MAX_MEDIA_BYTES } from '@frameout/shared';
 import { desktopBridge } from './platform';
 
 export class DesktopMediaTooLargeError extends Error {
-  constructor() { super('桌面版单个素材最大支持 100 MB'); }
+  constructor() {
+    super('桌面版单个素材最大支持 100 MB');
+  }
 }
 
 let database: Promise<IDBDatabase> | undefined;
 function open(): Promise<IDBDatabase> {
-  if (!database) database = new Promise((resolve, reject) => {
-    const request = indexedDB.open('frameout-media-v1', 1);
-    request.onupgradeneeded = () => { if (!request.result.objectStoreNames.contains('media')) request.result.createObjectStore('media', { keyPath: 'id' }); };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => { database = undefined; reject(new Error('浏览器素材存储不可用')); };
-  });
+  if (!database)
+    database = new Promise((resolve, reject) => {
+      const request = indexedDB.open('frameout-media-v1', 1);
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains('media'))
+          request.result.createObjectStore('media', { keyPath: 'id' });
+      };
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => {
+        database = undefined;
+        reject(new Error('浏览器素材存储不可用'));
+      };
+    });
   return database;
 }
 export async function putMedia(blob: Blob): Promise<string> {
@@ -32,7 +41,8 @@ export async function putMedia(blob: Blob): Promise<string> {
     const transaction = db.transaction('media', 'readwrite');
     transaction.objectStore('media').put({ id, blob, createdAt: Date.now() });
     transaction.oncomplete = () => resolve();
-    transaction.onerror = transaction.onabort = () => reject(new Error('素材未能保存到浏览器，请及时下载'));
+    transaction.onerror = transaction.onabort = () =>
+      reject(new Error('素材未能保存到浏览器，请及时下载'));
   });
   return id;
 }
