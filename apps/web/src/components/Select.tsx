@@ -17,11 +17,11 @@ export default function Select({
   className = '',
   disabled,
 }: Props) {
-  const id = useId(),
-    trigger = useRef<HTMLButtonElement>(null),
-    menu = useRef<HTMLDivElement>(null);
-  const [open, setOpen] = useState(false),
-    [active, setActive] = useState(0);
+  const id = useId();
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
   const [position, setPosition] = useState({ left: 0, top: 0, width: 100, maxHeight: 260 });
   const variant = /duration/.test(className)
     ? 'duration'
@@ -49,12 +49,12 @@ export default function Select({
   }
   useLayoutEffect(() => {
     if (!open || !trigger.current) return;
-    const rect = trigger.current.getBoundingClientRect(),
-      height = Math.min(260, options.length * 40 + 12);
+    const rect = trigger.current.getBoundingClientRect();
+    const height = Math.min(260, options.length * 40 + 12);
     const below = window.innerHeight - rect.bottom - 12;
     const up = below < Math.min(160, height) && rect.top > below;
-    const available = Math.max(80, up ? rect.top - 12 : below),
-      maxHeight = Math.min(height, available);
+    const available = Math.max(80, up ? rect.top - 12 : below);
+    const maxHeight = Math.min(height, available);
     const width = Math.min(Math.max(rect.width, 130), window.innerWidth - 20);
     setPosition({
       left: Math.max(10, Math.min(rect.left, window.innerWidth - width - 10)),

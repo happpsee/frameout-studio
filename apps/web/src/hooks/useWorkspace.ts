@@ -48,8 +48,8 @@ export function useWorkspace() {
   const projectRef = useRef(project);
   const savedLabel = isDesktop() ? '已保存到本机' : '已保存到此浏览器';
   const [saveStatus, setSaveStatus] = useState(savedLabel);
-  const undoStack = useRef<Snapshot[]>([]),
-    redoStack = useRef<Snapshot[]>([]);
+  const undoStack = useRef<Snapshot[]>([]);
+  const redoStack = useRef<Snapshot[]>([]);
   const hydratedMedia = useRef(new Map<string, string>());
   const [, renderHistory] = useState(0);
   const update: UpdateProject = useCallback((recipe, record = true) => {
@@ -138,8 +138,8 @@ export function useWorkspace() {
       });
   }, []);
   const saveProject = useCallback((): void | Promise<void> => {
-    const project = projectRef.current,
-      checkpoints = project.checkpoints;
+    const project = projectRef.current;
+    const checkpoints = project.checkpoints;
     const workspace = serializeProject({ ...project, checkpoints: undefined });
     const writeMain = (withCheckpoints = false) =>
       writeChanged(

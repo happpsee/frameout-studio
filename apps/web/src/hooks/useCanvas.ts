@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import type { Camera, ProjectState, UpdateProject } from '../types';
-import { clamp, createCamera, normalizeWheel, type CameraController } from '../lib/canvas-camera';
+import {
+  CARD_HEIGHT,
+  CARD_WIDTH,
+  clamp,
+  createCamera,
+  normalizeWheel,
+  type CameraController,
+} from '../lib/canvas-camera';
 
 const blocked =
   '.fo-composer,.fo-selection-actions,.fo-canvas-tools,.fo-camera-tools,.fo-canvas-intro';
@@ -74,10 +81,10 @@ export function useCanvas(options: Options) {
       controller.current?.set({ x: 60, y: 20, zoom: 0.8 }, { animate });
       return;
     }
-    const left = Math.min(...cards.map(c => c.x)),
-      top = Math.min(...cards.map(c => c.y));
-    const width = Math.max(...cards.map(c => c.x + 270)) - left,
-      height = Math.max(...cards.map(c => c.y + 219)) - top;
+    const left = Math.min(...cards.map(c => c.x));
+    const top = Math.min(...cards.map(c => c.y));
+    const width = Math.max(...cards.map(c => c.x + CARD_WIDTH)) - left;
+    const height = Math.max(...cards.map(c => c.y + CARD_HEIGHT)) - top;
     const safeLeft = viewport.clientWidth < 600 ? 68 : 95;
     const availableWidth = Math.max(100, viewport.clientWidth - safeLeft - 24);
     const availableHeight = Math.max(100, viewport.clientHeight - 245);
@@ -97,8 +104,8 @@ export function useCanvas(options: Options) {
   }, []);
   const toWorld = useCallback(
     (clientX: number, clientY: number) => {
-      const point = viewportPoint(clientX, clientY),
-        current = controller.current?.get() ?? latest.current.projectRef.current.camera;
+      const point = viewportPoint(clientX, clientY);
+      const current = controller.current?.get() ?? latest.current.projectRef.current.camera;
       return { x: (point.x - current.x) / current.zoom, y: (point.y - current.y) / current.zoom };
     },
     [viewportPoint],
@@ -139,8 +146,8 @@ export function useCanvas(options: Options) {
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
       if (drag.kind === 'card' && drag.id && drag.moved && !cancelled && nextPosition) {
-        const final = nextPosition,
-          id = drag.id;
+        const final = nextPosition;
+        const id = drag.id;
         latest.current.update(draft => {
           const card = draft.cards.find(c => c.id === id);
           if (card) {
@@ -184,8 +191,8 @@ export function useCanvas(options: Options) {
       finish(false);
       camera.cancel();
       const [a, b] = [...pointers.values()];
-      const point = viewportPoint((a.x + b.x) / 2, (a.y + b.y) / 2),
-        c = camera.get();
+      const point = viewportPoint((a.x + b.x) / 2, (a.y + b.y) / 2);
+      const c = camera.get();
       pinch = {
         distance: Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)),
         zoom: c.zoom,
@@ -241,12 +248,12 @@ export function useCanvas(options: Options) {
           latest.current.update(draft => {
             draft.selected = null;
           }, false);
-        const c = camera.get();
+        const current = camera.get();
         drag = {
           kind: 'camera',
           pointerId: event.pointerId,
           start: { x: event.clientX, y: event.clientY },
-          origin: { x: c.x, y: c.y },
+          origin: { x: current.x, y: current.y },
           moved: false,
         };
         setPanning(true);
@@ -257,8 +264,8 @@ export function useCanvas(options: Options) {
       if (!pointers.has(event.pointerId)) return;
       pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       if (pinch && pointers.size >= 2) {
-        const [a, b] = [...pointers.values()],
-          point = viewportPoint((a.x + b.x) / 2, (a.y + b.y) / 2);
+        const [a, b] = [...pointers.values()];
+        const point = viewportPoint((a.x + b.x) / 2, (a.y + b.y) / 2);
         const zoom = clamp(
           (pinch.zoom * Math.hypot(b.x - a.x, b.y - a.y)) / pinch.distance,
           0.15,
@@ -268,8 +275,8 @@ export function useCanvas(options: Options) {
         return;
       }
       if (!drag || drag.pointerId !== event.pointerId) return;
-      const dx = event.clientX - drag.start.x,
-        dy = event.clientY - drag.start.y;
+      const dx = event.clientX - drag.start.x;
+      const dy = event.clientY - drag.start.y;
       if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
       if (drag.kind === 'camera')
         camera.set({ ...camera.get(), x: drag.origin.x + dx, y: drag.origin.y + dy });
@@ -294,13 +301,13 @@ export function useCanvas(options: Options) {
         suppressUntil.current = performance.now() + 300;
         if (pointers.size >= 2) beginPinch();
         else if (pointers.size === 1) {
-          const [id, point] = [...pointers.entries()][0],
-            c = camera.get();
+          const [id, point] = [...pointers.entries()][0];
+          const current = camera.get();
           drag = {
             kind: 'camera',
             pointerId: id,
             start: point,
-            origin: { x: c.x, y: c.y },
+            origin: { x: current.x, y: current.y },
             moved: false,
           };
         } else setPanning(false);

@@ -1,10 +1,9 @@
 import { memo } from 'react';
 import type { Card } from '../types';
+import { CARD_HEIGHT, CARD_WIDTH } from '../lib/canvas-camera';
 import { CardMedia } from './CardMedia';
 import Icon from './Icon';
 
-export const CARD_WIDTH = 270,
-  CARD_HEIGHT = 219;
 export const pending = (card?: Card) => Boolean(card?.job && card.job.status !== 'succeeded');
 const statuses: Record<string, string> = {
   submitting: '正在提交',
@@ -97,10 +96,10 @@ export function visibleCards(
   pinned: (string | null | undefined)[],
   margin = 400,
 ) {
-  const left = (-margin - camera.x) / camera.zoom,
-    top = (-margin - camera.y) / camera.zoom;
-  const right = (width + margin - camera.x) / camera.zoom,
-    bottom = (height + margin - camera.y) / camera.zoom;
+  const left = (-margin - camera.x) / camera.zoom;
+  const top = (-margin - camera.y) / camera.zoom;
+  const right = (width + margin - camera.x) / camera.zoom;
+  const bottom = (height + margin - camera.y) / camera.zoom;
   return cards.filter(
     card =>
       pinned.includes(card.id) ||

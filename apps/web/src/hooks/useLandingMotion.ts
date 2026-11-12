@@ -226,9 +226,9 @@ export function useLandingMotion(rootRef: RefObject<HTMLDivElement | null>) {
       const cta = query('.cta-main h2');
       const ctaBox = query('.final-cta')?.getBoundingClientRect();
       if (cta && ctaBox && ctaBox.bottom > 0 && ctaBox.top < viewport) {
-        const p = clamp((viewport - ctaBox.top) / viewport);
-        cta.style.translate = `${mix(-45, 0, p)}px 0`;
-        cta.style.opacity = String(mix(0.3, 1, p));
+        const progress = clamp((viewport - ctaBox.top) / viewport);
+        cta.style.translate = `${mix(-45, 0, progress)}px 0`;
+        cta.style.opacity = String(mix(0.3, 1, progress));
       }
     }
     function scheduleScroll() {

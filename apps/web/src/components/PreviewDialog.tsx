@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { Card } from '../types';
 import Icon from './Icon';
 import { timeLabel } from './Sequence';
+import { closeOnBackdropClick } from '../lib/dialog';
 
 export type PreviewItem = { card: Card; duration: number };
 export default function PreviewDialog({
@@ -13,20 +14,20 @@ export default function PreviewDialog({
   title: string;
   onClose: () => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null),
-    video = useRef<HTMLVideoElement>(null);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
   const total = items.reduce((sum, item) => sum + item.duration, 0);
-  const [time, setTime] = useState(0),
-    [playing, setPlaying] = useState(true);
-  let offset = 0,
-    index = 0;
+  const [time, setTime] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  let offset = 0;
+  let index = 0;
   for (let i = 0; i < items.length; i++) {
     index = i;
     if (time < offset + items[i].duration || i === items.length - 1) break;
     offset += items[i].duration;
   }
-  const current = items[index],
-    card = current.card;
+  const current = items[index];
+  const card = current.card;
   const timeRef = useRef(time);
   timeRef.current = time;
   useEffect(() => {
@@ -37,8 +38,8 @@ export default function PreviewDialog({
       video.current?.pause();
       return;
     }
-    let frame = 0,
-      previous = 0;
+    let frame = 0;
+    let previous = 0;
     const tick = (now: number) => {
       if (previous) {
         const next = Math.min(total, timeRef.current + Math.min(0.1, (now - previous) / 1000));
@@ -91,18 +92,7 @@ export default function PreviewDialog({
       aria-labelledby="fo-preview-heading"
       onCancel={onClose}
       onClose={onClose}
-      onClick={event => {
-        if (event.target === event.currentTarget) {
-          const r = event.currentTarget.getBoundingClientRect();
-          if (
-            event.clientX < r.left ||
-            event.clientX > r.right ||
-            event.clientY < r.top ||
-            event.clientY > r.bottom
-          )
-            onClose();
-        }
-      }}
+      onClick={closeOnBackdropClick(onClose)}
     >
       <div className="fo-preview-head">
         <div>

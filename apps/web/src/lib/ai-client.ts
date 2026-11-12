@@ -355,8 +355,8 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
       throw new AIError('参考图需为公开 HTTPS 图片或 Base64 图片', { code: 'CONFIG_REFERENCE' });
     if (references.length && provider === 'compatible')
       throw new AIError('参考图仅支持 OpenAI 与火山方舟官方接口', { code: 'CONFIG_REFERENCE' });
-    let path = '/images/generations',
-      body: ProviderJson;
+    let path = '/images/generations';
+    let body: ProviderJson;
     if (provider === 'ark') {
       // Seedream takes references on the same endpoint. 5.0 pro/flash do not accept sequential_image_generation; omit it.
       body = {

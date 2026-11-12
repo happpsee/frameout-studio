@@ -73,8 +73,8 @@ export function fitRect(
     fit === 'contain'
       ? Math.min(target.width / source.width, target.height / source.height)
       : Math.max(target.width / source.width, target.height / source.height);
-  const width = source.width * scale,
-    height = source.height * scale;
+  const width = source.width * scale;
+  const height = source.height * scale;
   return {
     x: (target.width - width) * position.x,
     y: (target.height - height) * position.y,
@@ -158,8 +158,8 @@ function once(target: EventTarget, type: string): Promise<void> {
 
 /** Seeks a <video> element to each time; slower than WebCodecs but plays whatever the preview plays. */
 async function* elementFrames(blob: Blob, times: number[]): AsyncGenerator<HTMLVideoElement> {
-  const url = URL.createObjectURL(blob),
-    video = document.createElement('video');
+  const url = URL.createObjectURL(blob);
+  const video = document.createElement('video');
   video.muted = true;
   video.playsInline = true;
   video.preload = 'auto';
@@ -193,9 +193,9 @@ export async function exportSequence(
   if (!codec) throw new ExportError(`当前设备无法编码 ${width}×${height} 的视频，请换一个清晰度`);
 
   // Read every shot before encoding so a broken link fails fast, naming the shots.
-  const prepared: Prepared[] = [],
-    unreadable: string[] = [],
-    undecodable: string[] = [];
+  const prepared: Prepared[] = [];
+  const unreadable: string[] = [];
+  const undecodable: string[] = [];
   const settled = await Promise.allSettled(shots.map(shot => prepare(shot, signal)));
   settled.forEach((result, index) => {
     if (result.status === 'fulfilled') prepared.push(result.value);

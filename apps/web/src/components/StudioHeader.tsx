@@ -1,0 +1,138 @@
+import { isDesktop } from '../lib/platform';
+import Icon from './Icon';
+
+interface StudioHeaderProps {
+  title: string;
+  saveStatus: string;
+  /** Whether the sequence has shots to preview or export. */
+  hasShots: boolean;
+  workflowOpen: boolean;
+  onHome: () => void;
+  onHelp: () => void;
+  onToggleWorkflow: () => void;
+  onSettings: () => void;
+  onExportProject: () => void;
+  onExportVideo: () => void;
+  onPreview: () => void;
+}
+
+function Brand() {
+  return (
+    <>
+      <span className="fo-brand-mark">
+        F<span>↗</span>
+      </span>
+      <span>
+        FRAMEOUT<span className="fo-brand-zh">帧外</span>
+      </span>
+    </>
+  );
+}
+
+export default function StudioHeader({
+  title,
+  saveStatus,
+  hasShots,
+  workflowOpen,
+  onHome,
+  onHelp,
+  onToggleWorkflow,
+  onSettings,
+  onExportProject,
+  onExportVideo,
+  onPreview,
+}: StudioHeaderProps) {
+  // The desktop app has no landing page to return to and keeps these actions in its side rail.
+  const desktop = isDesktop();
+  return (
+    <header className="fo-header">
+      <div className="fo-brand-slot">
+        {desktop ? (
+          <div className="fo-brand" aria-label="帧外 FRAMEOUT">
+            <Brand />
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="fo-brand"
+            aria-label="返回 FRAMEOUT 首页"
+            onClick={onHome}
+          >
+            <Brand />
+          </button>
+        )}
+      </div>
+      <div className="fo-project">
+        <span className="fo-project-divider">/</span>
+        <div>
+          <span className="fo-project-title">{title}</span>
+          <span className="fo-save">
+            <i />
+            <span className="fo-save-label">{saveStatus}</span>
+          </span>
+        </div>
+      </div>
+      {!desktop && (
+        <nav className="fo-workspace-tabs" aria-label="工作区">
+          <button type="button" className="is-active" aria-current="page">
+            画布
+          </button>
+          <button type="button" onClick={onHelp}>
+            使用指南 <Icon name="arrow-up-right" />
+          </button>
+        </nav>
+      )}
+      <div className="fo-header-actions">
+        {!desktop && (
+          <>
+            <button
+              type="button"
+              className="fo-text-button fo-flow-button"
+              aria-expanded={workflowOpen}
+              onClick={onToggleWorkflow}
+            >
+              镜头计划
+            </button>
+            <button
+              type="button"
+              className="fo-text-button fo-api-button"
+              aria-label="API 设置"
+              onClick={onSettings}
+            >
+              <Icon name="settings" />
+              <span>API 设置</span>
+            </button>
+          </>
+        )}
+        <button
+          type="button"
+          className="fo-text-button fo-export-button"
+          aria-label="导出项目"
+          onClick={onExportProject}
+        >
+          <Icon name="download" />
+          <span>导出项目</span>
+        </button>
+        <button
+          type="button"
+          className="fo-text-button fo-export-video-button"
+          aria-label="导出成片"
+          disabled={!hasShots}
+          onClick={onExportVideo}
+        >
+          <Icon name="film" />
+          <span>导出成片</span>
+        </button>
+        <button
+          type="button"
+          className="fo-primary-button"
+          disabled={!hasShots}
+          onClick={onPreview}
+        >
+          <Icon name="play" />
+          <span>预览成片</span>
+        </button>
+      </div>
+    </header>
+  );
+}

@@ -27,13 +27,13 @@ export default memo(function Sequence({
   collapsed?: boolean;
   onToggle?: () => void;
 }) {
-  const [dragged, setDragged] = useState<string | null>(null),
-    [target, setTarget] = useState<string | null>(null);
+  const [dragged, setDragged] = useState<string | null>(null);
+  const [target, setTarget] = useState<string | null>(null);
   function reorder(fromId: string, toId: string) {
     if (fromId === toId) return;
     update(draft => {
-      const from = draft.sequence.findIndex(s => s.id === fromId),
-        to = draft.sequence.findIndex(s => s.id === toId);
+      const from = draft.sequence.findIndex(s => s.id === fromId);
+      const to = draft.sequence.findIndex(s => s.id === toId);
       if (from < 0 || to < 0) return;
       const [shot] = draft.sequence.splice(from, 1);
       draft.sequence.splice(to, 0, shot);

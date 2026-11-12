@@ -35,15 +35,15 @@ export default function ExportDialog({
   title: string;
   onClose: () => void;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null),
-    controller = useRef<AbortController | null>(null),
-    url = useRef('');
-  const [ratio, setRatio] = useState('16:9'),
-    [quality, setQuality] = useState('1080p');
+  const dialog = useRef<HTMLDialogElement>(null);
+  const controller = useRef<AbortController | null>(null);
+  const url = useRef('');
+  const [ratio, setRatio] = useState('16:9');
+  const [quality, setQuality] = useState('1080p');
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const total = shots.reduce((sum, shot) => sum + shot.duration, 0);
-  const running = phase.kind === 'running',
-    supported = exportSupported();
+  const running = phase.kind === 'running';
+  const supported = exportSupported();
   useEffect(() => {
     if (dialog.current && !dialog.current.open) dialog.current.showModal();
   }, []);

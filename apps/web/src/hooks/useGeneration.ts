@@ -14,6 +14,7 @@ import { GENERATION_MODE_KEY, readStoredValue, writeStoredValue } from '../lib/d
 import { encodeReference, referenceCards, supportsReferences, withNotes } from '../lib/consistency';
 import { initialConfig, redact, saveProfile } from '../lib/preferences';
 import { desktopBridge } from '../lib/platform';
+import { CARD_CENTER } from '../lib/canvas-camera';
 import { PROVIDER_CAPABILITIES } from '@frameout/shared';
 
 // openSettings shows the API settings with a reason; without it, missing settings fall back to a toast.
@@ -61,13 +62,13 @@ function initialMode(): GenerationMode {
 }
 
 export function useGeneration({ getProject, update, toast, openSettings }: Options) {
-  const [mode, setModeState] = useState<GenerationMode>(initialMode),
-    [prompt, setPrompt] = useState('');
-  const [config, setConfigState] = useState<AIConfig>(initialConfig),
-    [active, setActive] = useState(false);
-  const taskRef = useRef<ActiveTask | null>(null),
-    mounted = useRef(true),
-    urls = useRef(new Set<string>());
+  const [mode, setModeState] = useState<GenerationMode>(initialMode);
+  const [prompt, setPrompt] = useState('');
+  const [config, setConfigState] = useState<AIConfig>(initialConfig);
+  const [active, setActive] = useState(false);
+  const taskRef = useRef<ActiveTask | null>(null);
+  const mounted = useRef(true);
+  const urls = useRef(new Set<string>());
   // Encoded reference images by card and source, so a plan does not re-encode them for every shot.
   const encoded = useRef(new Map<string, Promise<string>>());
   const latest = useRef({ getProject, update, toast, openSettings });
@@ -150,8 +151,10 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
     const camera = getProject().camera;
     const viewport = document.querySelector('.fo-viewport')?.getBoundingClientRect();
     return {
-      x: ((viewport?.width || 1000) / 2 - camera.x) / camera.zoom - 135,
-      y: (Math.max(160, (viewport?.height || 600) / 2 - 80) - camera.y) / camera.zoom - 110,
+      x: ((viewport?.width || 1000) / 2 - camera.x) / camera.zoom - CARD_CENTER.x,
+      y:
+        (Math.max(160, (viewport?.height || 600) / 2 - 80) - camera.y) / camera.zoom -
+        CARD_CENTER.y,
     };
   }
   async function storeMedia(
@@ -316,8 +319,8 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
     try {
       const client = createClient(generationConfig);
       // Shot consistency: shared notes go with every prompt; reference images with images where supported.
-      const project = getProject(),
-        prompted = withNotes(text, project.consistency?.notes);
+      const project = getProject();
+      const prompted = withNotes(text, project.consistency?.notes);
       if (!video) {
         const sources = supportsReferences(generationConfig.provider)
           ? referenceCards(project)

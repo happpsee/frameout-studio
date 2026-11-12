@@ -6,39 +6,34 @@ import {
   useState,
   type CSSProperties,
 } from 'react';
-import type { Card, GenerationMode } from '../types';
+import type { Card } from '../types';
 import { useWorkspace } from '../hooks/useWorkspace';
 import { useGeneration } from '../hooks/useGeneration';
 import { useCanvas } from '../hooks/useCanvas';
 import { useWorkflow } from '../hooks/useWorkflow';
-import { clamp } from '../lib/canvas-camera';
+import { CARD_CENTER, CARD_HEIGHT, CARD_WIDTH, clamp } from '../lib/canvas-camera';
 import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { readStoredValue } from '../lib/desktop-storage';
 import { desktopBridge, isDesktop } from '../lib/platform';
 import { serializeProject, STORAGE_KEY } from '../lib/project';
 import APISettings from './APISettings';
 import Icon from './Icon';
-import Select from './Select';
 import { CanvasCard, pending, videoStatus, visibleCards } from './CanvasCard';
 import Sequence from './Sequence';
 import PreviewDialog, { type PreviewItem } from './PreviewDialog';
 import ExportDialog from './ExportDialog';
-import ConsistencyDialog, { ConsistencyBar } from './ConsistencyDialog';
-import {
-  MAX_REFERENCES,
-  referenceCards,
-  supportsReferences,
-  usableReference,
-} from '../lib/consistency';
+import ConsistencyDialog from './ConsistencyDialog';
+import { MAX_REFERENCES, referenceCards, supportsReferences } from '../lib/consistency';
 import WorkflowPanel from './WorkflowPanel';
 import AssetLibrary from './AssetLibrary';
-import DesktopGenerationSettings from './DesktopGenerationSettings';
+import StudioHeader from './StudioHeader';
+import CanvasTools, { type PanelTab } from './CanvasTools';
+import SelectionActions from './SelectionActions';
+import ZoomControl from './ZoomControl';
+import Composer from './Composer';
+import HelpDialog from './HelpDialog';
 
 const uid = () => 'f-' + crypto.randomUUID();
-const modeOptions = [
-  { value: 'image', label: '图片' },
-  { value: 'video', label: '视频' },
-];
 function clipDuration(card: Card) {
   const duration = card.duration;
   return card.kind === 'video' &&
@@ -83,34 +78,35 @@ export default function Studio({
     createCheckpoint,
     restoreCheckpoint,
   } = useWorkspace();
-  const viewportRef = useRef<HTMLElement>(null),
-    composerRef = useRef<HTMLFormElement>(null),
-    selectionRef = useRef<HTMLDivElement>(null);
-  const fileInput = useRef<HTMLInputElement>(null),
-    promptRef = useRef<HTMLTextAreaElement>(null),
-    helpRef = useRef<HTMLDialogElement>(null),
-    zoomRef = useRef<HTMLDivElement>(null),
-    zoomButtonRef = useRef<HTMLButtonElement>(null);
-  const [toastText, setToastText] = useState(''),
-    toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const [settingsOpen, setSettingsOpen] = useState(false),
-    [settingsNotice, setSettingsNotice] = useState(''),
-    [helpOpen, setHelpOpen] = useState(false),
-    [zoomOpen, setZoomOpen] = useState(false),
-    [zoomText, setZoomText] = useState('80');
-  const [panelTab, setPanelTab] = useState<'workflow' | 'versions' | null>(null);
+  // Elements
+  const studioRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLElement>(null);
+  const composerRef = useRef<HTMLFormElement>(null);
+  const selectionRef = useRef<HTMLDivElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const promptRef = useRef<HTMLTextAreaElement>(null);
+
+  // Dialogs and panels
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsNotice, setSettingsNotice] = useState('');
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [consistencyOpen, setConsistencyOpen] = useState(false);
+  const [panelTab, setPanelTab] = useState<PanelTab | null>(null);
   const [assetsOpen, setAssetsOpen] = useState(false);
   const [timelineOpen, setTimelineOpen] = useState(() => project.sequence.length > 0);
   const [preview, setPreview] = useState<{ items: PreviewItem[]; title: string } | null>(null);
   const [exporting, setExporting] = useState<{ items: PreviewItem[]; skipped: number } | null>(
     null,
   );
-  const [consistencyOpen, setConsistencyOpen] = useState(false);
+
+  const [toastText, setToastText] = useState('');
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
   // Capture before effects: StrictMode cleanup may save a default camera before
   // the second effect setup. That save should not suppress the first fit.
   const [fitOnOpen] = useState(needsInitialFit);
-  const didInitialFit = useRef(!fitOnOpen),
-    studioRef = useRef<HTMLDivElement>(null);
+  const didInitialFit = useRef(!fitOnOpen);
   const [layout, setLayout] = useState({
     width: 1200,
     height: 600,
@@ -118,8 +114,10 @@ export default function Studio({
     selectionWidth: 400,
     selectionHeight: 48,
   });
-  const uploadedURLs = useRef(new Set<string>()),
-    mounted = useRef(true);
+
+  // Object URLs for imported files, revoked on unmount.
+  const uploadedURLs = useRef(new Set<string>());
+  const mounted = useRef(true);
   const pendingImports = useRef(new Set<Promise<void>>());
   const toast = useCallback((message: string) => {
     setToastText(message);
@@ -169,8 +167,8 @@ export default function Studio({
       const camera = projectRef.current.camera;
       const rect = viewportRef.current?.getBoundingClientRect();
       const origin = point ?? {
-        x: ((rect?.width ?? 1000) / 2 - camera.x) / camera.zoom - 135,
-        y: ((rect?.height ?? 600) / 2 - camera.y) / camera.zoom - 110,
+        x: ((rect?.width ?? 1000) / 2 - camera.x) / camera.zoom - CARD_CENTER.x,
+        y: ((rect?.height ?? 600) / 2 - camera.y) / camera.zoom - CARD_CENTER.y,
       };
       for (const [index, file] of valid.entries()) {
         const src = URL.createObjectURL(file);
@@ -364,10 +362,6 @@ export default function Studio({
     )
       document.activeElement.blur();
   }, [isActive, generation.stop, canvas.cancelGesture]);
-  useEffect(() => {
-    if (isActive && helpOpen) helpRef.current?.showModal();
-    else helpRef.current?.close();
-  }, [isActive, helpOpen]);
   useLayoutEffect(() => {
     if (!isActive) return;
     const measure = () => {
@@ -391,15 +385,6 @@ export default function Studio({
     if (composerRef.current) observer.observe(composerRef.current);
     return () => observer.disconnect();
   }, [desktop, isActive, Boolean(selected), generation.mode, selected?.job?.status]);
-  useEffect(() => {
-    if (!isActive || !zoomOpen) return;
-    const close = (event: PointerEvent) => {
-      if (event.target instanceof Node && !zoomRef.current?.contains(event.target))
-        setZoomOpen(false);
-    };
-    document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
-  }, [isActive, zoomOpen]);
   useEffect(() => {
     if (!isActive) return;
     const keydown = (event: KeyboardEvent) => {
@@ -512,23 +497,13 @@ export default function Studio({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast('已导出项目结构；本地素材文件需另外保留');
   }
-  function closeZoom() {
-    setZoomOpen(false);
-    zoomButtonRef.current?.focus({ preventScroll: true });
-  }
-  function setZoom(value: number) {
-    if (Number.isFinite(value) && value > 0) {
-      canvas.zoomTo(clamp(value, 15, 400));
-      closeZoom();
-    }
-  }
-  let selectionStyle: CSSProperties = {},
-    outside = false;
+  let selectionStyle: CSSProperties = {};
+  let outside = false;
   if (selectedPosition) {
-    const left = canvas.camera.x + selectedPosition.x * canvas.camera.zoom,
-      top = canvas.camera.y + selectedPosition.y * canvas.camera.zoom;
-    const right = left + 270 * canvas.camera.zoom,
-      bottom = top + 219 * canvas.camera.zoom;
+    const left = canvas.camera.x + selectedPosition.x * canvas.camera.zoom;
+    const top = canvas.camera.y + selectedPosition.y * canvas.camera.zoom;
+    const right = left + CARD_WIDTH * canvas.camera.zoom;
+    const bottom = top + CARD_HEIGHT * canvas.camera.zoom;
     outside = right < 0 || left > layout.width || bottom < 0 || top > layout.height;
     let x = clamp(
       (left + right - layout.selectionWidth) / 2,
@@ -554,7 +529,7 @@ export default function Studio({
         ? '供应商素材链接可能过期，请及时下载保存。'
         : '';
 
-  const openPanel = (tab: 'workflow' | 'versions') => {
+  const openPanel = (tab: PanelTab) => {
     setAssetsOpen(false);
     setPanelTab(current => (current === tab ? null : tab));
   };
@@ -567,208 +542,45 @@ export default function Studio({
     if (rect)
       canvas.restoreCamera({
         zoom: canvas.camera.zoom,
-        x: rect.width / 2 - (card.x + 135) * canvas.camera.zoom,
-        y: rect.height / 2 - (card.y + 110) * canvas.camera.zoom,
+        x: rect.width / 2 - (card.x + CARD_CENTER.x) * canvas.camera.zoom,
+        y: rect.height / 2 - (card.y + CARD_CENTER.y) * canvas.camera.zoom,
       });
   };
-  const brand = (
-    <>
-      <span className="fo-brand-mark">
-        F<span>↗</span>
-      </span>
-      <span>
-        FRAMEOUT<span className="fo-brand-zh">帧外</span>
-      </span>
-    </>
-  );
-  const references = referenceCards(project),
-    referenceIds = new Set(references.map(card => card.id));
+  const references = referenceCards(project);
+  const referenceIds = new Set(references.map(card => card.id));
   const composer = (
-    <form
-      ref={composerRef}
-      className={`fo-composer${active ? ' is-busy' : ''}`}
-      onSubmit={event => {
-        event.preventDefault();
-        if (!active) void generation.generate();
-      }}
-    >
-      <div className="fo-composer-top">
-        <label htmlFor="fo-prompt">{desktop ? '提示词' : '让想法，先有一个画面。'}</label>
-        <Select
-          className="fo-generation-mode"
-          value={generation.mode}
-          onChange={value => generation.setMode(value as GenerationMode)}
-          options={modeOptions}
-          label="生成模式"
-          disabled={active}
-        />
-      </div>
-      <ConsistencyBar
-        notes={project.consistency?.notes ?? ''}
-        references={references}
-        onOpen={() => setConsistencyOpen(true)}
-      />
-      <textarea
-        ref={promptRef}
-        className="fo-prompt"
-        id="fo-prompt"
-        rows={2}
-        placeholder="描述你想生成的画面或镜头…"
-        maxLength={4000}
-        value={generation.prompt}
-        onChange={event => generation.setPrompt(event.target.value)}
-        onKeyDown={event => {
-          if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-            event.preventDefault();
-            void generation.generate();
-          }
-        }}
-      />
-      {desktop && (
-        <DesktopGenerationSettings
-          config={generation.config}
-          video={generation.mode === 'video'}
-          disabled={active}
-          onChange={generation.setConfig}
-          onSettings={() => openSettings()}
-        />
-      )}
-      {taskNote && (
-        <p className="fo-task-note" role="status">
-          {taskNote}
-        </p>
-      )}
-      <div className="fo-composer-bottom">
-        {!active && !generation.config.key ? (
-          <button type="button" className="fo-connect-service" onClick={() => openSettings()}>
-            连接生成服务
-            <Icon name="arrow-up-right" />
-          </button>
-        ) : (
-          <span className="fo-generation-state">
-            {active
-              ? '正在等待供应商结果…'
-              : `${generation.config.provider.toUpperCase()} · ${generation.mode === 'video' ? generation.config.videoModel : generation.config.imageModel}`}
-          </span>
-        )}
-        {active && (
-          <button
-            type="button"
-            className="fo-cancel-generation"
-            onClick={workflow.running ? workflow.pause : generation.stop}
-          >
-            停止等待
-          </button>
-        )}
-        <button type="submit" className="fo-generate-button" disabled={active}>
-          <Icon name="sparkles" />
-          <span>{generation.mode === 'video' ? '生成视频' : '生成图片'}</span>
-          <Icon name="arrow-up-right" />
-        </button>
-      </div>
-      <div className="fo-generation-line" />
-    </form>
+    <Composer
+      generation={generation}
+      busy={active}
+      onStop={workflow.running ? workflow.pause : generation.stop}
+      notes={project.consistency?.notes ?? ''}
+      references={references}
+      taskNote={taskNote}
+      onConsistency={() => setConsistencyOpen(true)}
+      onSettings={() => openSettings()}
+      formRef={composerRef}
+      promptRef={promptRef}
+    />
   );
   const canvasTools = (
-    <aside className="fo-canvas-tools" aria-label="画布工具">
-      <button
-        type="button"
-        className={`fo-icon-button${canvas.tool === 'select' ? ' is-active' : ''}`}
-        aria-label="选择工具"
-        aria-pressed={canvas.tool === 'select'}
-        title="选择素材 · V"
-        onClick={() => canvas.setTool('select')}
-      >
-        <Icon name="cursor" />
-      </button>
-      <button
-        type="button"
-        className={`fo-icon-button${canvas.tool === 'hand' ? ' is-active' : ''}`}
-        aria-label="移动画布工具"
-        aria-pressed={canvas.tool === 'hand'}
-        title="移动画布 · H / 空格"
-        onClick={() => canvas.setTool('hand')}
-      >
-        <Icon name="hand" />
-      </button>
-      <span className="fo-tool-divider" />
-      <button
-        type="button"
-        className="fo-icon-button"
-        aria-label="添加本地素材"
-        title="添加本地图片或视频"
-        onClick={() => fileInput.current?.click()}
-      >
-        <Icon name="upload" />
-      </button>
-      {desktop && (
-        <>
-          <button
-            type="button"
-            className={`fo-icon-button${assetsOpen ? ' is-active' : ''}`}
-            aria-label="项目素材"
-            title="项目素材"
-            aria-expanded={assetsOpen}
-            onClick={() => {
-              setPanelTab(null);
-              setAssetsOpen(value => !value);
-            }}
-          >
-            <Icon name="grid" />
-          </button>
-          <button
-            type="button"
-            className={`fo-icon-button${panelTab === 'workflow' ? ' is-active' : ''}`}
-            aria-label="镜头计划"
-            title="镜头计划"
-            aria-expanded={panelTab === 'workflow'}
-            onClick={() => openPanel('workflow')}
-          >
-            <Icon name="film" />
-          </button>
-          <button
-            type="button"
-            className={`fo-icon-button${panelTab === 'versions' ? ' is-active' : ''}`}
-            aria-label="版本记录"
-            title="版本记录"
-            aria-expanded={panelTab === 'versions'}
-            onClick={() => openPanel('versions')}
-          >
-            <Icon name="clock" />
-          </button>
-          <span className="fo-tool-divider" />
-        </>
-      )}
-      <button
-        type="button"
-        className="fo-icon-button"
-        aria-label="撤销"
-        title="撤销 · ⌘ / Ctrl Z"
-        disabled={!canUndo || active}
-        onClick={guardedUndo}
-      >
-        <Icon name="undo" />
-      </button>
-      <button
-        type="button"
-        className="fo-icon-button"
-        aria-label="重做"
-        title="重做 · ⇧ ⌘ Z"
-        disabled={!canRedo || active}
-        onClick={guardedRedo}
-      >
-        <Icon name="redo" />
-      </button>
-      <span className="fo-tool-divider" />
-      <button
-        type="button"
-        className="fo-icon-button"
-        aria-label="打开使用指南"
-        onClick={() => setHelpOpen(true)}
-      >
-        <Icon name="help" />
-      </button>
-    </aside>
+    <CanvasTools
+      tool={canvas.tool}
+      onTool={canvas.setTool}
+      onUpload={() => fileInput.current?.click()}
+      assetsOpen={assetsOpen}
+      onToggleAssets={() => {
+        setPanelTab(null);
+        setAssetsOpen(value => !value);
+      }}
+      panelTab={panelTab}
+      onPanel={openPanel}
+      canUndo={canUndo}
+      canRedo={canRedo}
+      busy={active}
+      onUndo={guardedUndo}
+      onRedo={guardedRedo}
+      onHelp={() => setHelpOpen(true)}
+    />
   );
   const workflowPanel = isActive && panelTab && (
     <WorkflowPanel
@@ -801,98 +613,22 @@ export default function Studio({
       hidden={!isActive}
     >
       <div className="fo-app">
-        <header className="fo-header">
-          <div className="fo-brand-slot">
-            {desktop ? (
-              <div className="fo-brand" aria-label="帧外 FRAMEOUT">
-                {brand}
-              </div>
-            ) : (
-              <button
-                type="button"
-                className="fo-brand"
-                aria-label="返回 FRAMEOUT 首页"
-                onClick={() => {
-                  canvas.cancelGesture();
-                  onClose();
-                }}
-              >
-                {brand}
-              </button>
-            )}
-          </div>
-          <div className="fo-project">
-            <span className="fo-project-divider">/</span>
-            <div>
-              <span className="fo-project-title">{project.title}</span>
-              <span className="fo-save">
-                <i />
-                <span className="fo-save-label">{saveStatus}</span>
-              </span>
-            </div>
-          </div>
-          {!desktop && (
-            <nav className="fo-workspace-tabs" aria-label="工作区">
-              <button type="button" className="is-active" aria-current="page">
-                画布
-              </button>
-              <button type="button" onClick={() => setHelpOpen(true)}>
-                使用指南 <Icon name="arrow-up-right" />
-              </button>
-            </nav>
-          )}
-          <div className="fo-header-actions">
-            {!desktop && (
-              <button
-                type="button"
-                className="fo-text-button fo-flow-button"
-                aria-expanded={panelTab !== null}
-                onClick={() => setPanelTab(value => (value ? null : 'workflow'))}
-              >
-                镜头计划
-              </button>
-            )}
-            {!desktop && (
-              <button
-                type="button"
-                className="fo-text-button fo-api-button"
-                aria-label="API 设置"
-                onClick={() => openSettings()}
-              >
-                <Icon name="settings" />
-                <span>API 设置</span>
-              </button>
-            )}
-            <button
-              type="button"
-              className="fo-text-button fo-export-button"
-              aria-label="导出项目"
-              onClick={exportProject}
-            >
-              <Icon name="download" />
-              <span>导出项目</span>
-            </button>
-            <button
-              type="button"
-              className="fo-text-button fo-export-video-button"
-              aria-label="导出成片"
-              disabled={!project.sequence.length}
-              onClick={openExport}
-            >
-              <Icon name="film" />
-              <span>导出成片</span>
-            </button>
-            <button
-              type="button"
-              className="fo-primary-button"
-              disabled={!project.sequence.length}
-              onClick={() => openPreview()}
-            >
-              <Icon name="play" />
-              <span>预览成片</span>
-            </button>
-          </div>
-        </header>
+        <StudioHeader
+          title={project.title}
+          saveStatus={saveStatus}
+          hasShots={project.sequence.length > 0}
+          workflowOpen={panelTab !== null}
+          onHome={() => {
+            canvas.cancelGesture();
+            onClose();
+          }}
+          onHelp={() => setHelpOpen(true)}
+          onToggleWorkflow={() => setPanelTab(value => (value ? null : 'workflow'))}
+          onSettings={() => openSettings()}
+          onExportProject={exportProject}
+          onExportVideo={openExport}
+          onPreview={() => openPreview()}
+        />
         <div className="fo-workspace-body">
           {desktop && (
             <nav className="fo-desktop-rail" aria-label="工作台工具">
@@ -928,8 +664,8 @@ export default function Studio({
                   project.selected,
                   canvas.dragPosition?.id,
                 ]).map(card => {
-                  const dragging = canvas.dragPosition?.id === card.id,
-                    position = dragging ? canvas.dragPosition! : card;
+                  const dragging = canvas.dragPosition?.id === card.id;
+                  const position = dragging ? canvas.dragPosition! : card;
                   return (
                     <CanvasCard
                       key={card.id}
@@ -971,186 +707,32 @@ export default function Studio({
 
               {!desktop && canvasTools}
               {selected && (
-                <div
-                  ref={selectionRef}
-                  className={`fo-selection-actions${outside ? ' is-outside' : ''}`}
+                <SelectionActions
+                  card={selected}
+                  outside={outside}
                   style={selectionStyle}
-                  aria-hidden={outside}
-                >
-                  <span className="fo-selected-name">{selected.name}</span>
-                  <button
-                    type="button"
-                    className="fo-small-button"
-                    disabled={
-                      active ||
-                      selected.kind === 'video' ||
-                      selected.missingMedia ||
-                      pending(selected)
-                    }
-                    onClick={() => {
-                      void generation.generate(selected);
-                    }}
-                  >
-                    <Icon name="film" />
-                    <span>图生视频</span>
-                  </button>
-                  {pending(selected) && (
-                    <button
-                      type="button"
-                      className="fo-small-button"
-                      disabled={active}
-                      onClick={() => {
-                        void generation.resume(selected);
-                      }}
-                    >
-                      <Icon name="clock" />
-                      <span>继续查询</span>
-                    </button>
-                  )}
-                  {selected.kind === 'image' && (
-                    <button
-                      type="button"
-                      className={`fo-small-button fo-reference-toggle${referenceIds.has(selected.id) ? ' is-active' : ''}`}
-                      aria-pressed={referenceIds.has(selected.id)}
-                      disabled={!usableReference(selected)}
-                      onClick={() => toggleReference(selected.id)}
-                    >
-                      <Icon name="copy" />
-                      <span>{referenceIds.has(selected.id) ? '取消参考' : '设为参考'}</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="fo-small-button fo-add-shot"
-                    disabled={pending(selected) || selected.missingMedia}
-                    onClick={() => addToSequence(selected.id)}
-                  >
-                    <Icon name="plus" />
-                    <span>加入成片</span>
-                  </button>
-                  {selected.provider && (
-                    <button
-                      type="button"
-                      className="fo-icon-button"
-                      aria-label="下载生成素材"
-                      disabled={pending(selected) || selected.missingMedia}
-                      onClick={() => {
-                        void generation.download(selected);
-                      }}
-                    >
-                      <Icon name="download" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="fo-icon-button"
-                    aria-label="删除选中素材"
-                    disabled={active}
-                    onClick={removeSelected}
-                  >
-                    <Icon name="trash" />
-                  </button>
-                </div>
+                  barRef={selectionRef}
+                  busy={active}
+                  isReference={referenceIds.has(selected.id)}
+                  onGenerateVideo={() => void generation.generate(selected)}
+                  onResume={() => void generation.resume(selected)}
+                  onToggleReference={() => toggleReference(selected.id)}
+                  onAddShot={() => addToSequence(selected.id)}
+                  onDownload={() => void generation.download(selected)}
+                  onRemove={removeSelected}
+                />
               )}
 
               {!desktop && composer}
-              <div ref={zoomRef} className="fo-camera-tools" aria-label="缩放控制">
-                <button
-                  type="button"
-                  className="fo-icon-button"
-                  aria-label="缩小"
-                  onClick={() => canvas.zoomBy(1 / 1.2)}
-                >
-                  <Icon name="minus" />
-                </button>
-                <button
-                  ref={zoomButtonRef}
-                  type="button"
-                  className="fo-zoom-label"
-                  aria-expanded={zoomOpen}
-                  aria-controls="fo-zoom-popover"
-                  aria-haspopup="dialog"
-                  aria-label="缩放比例选项"
-                  onClick={() => {
-                    setZoomText(String(Math.round(canvas.camera.zoom * 100)));
-                    setZoomOpen(value => !value);
-                  }}
-                >
-                  {Math.round(canvas.camera.zoom * 100)}%
-                </button>
-                <button
-                  type="button"
-                  className="fo-icon-button"
-                  aria-label="放大"
-                  onClick={() => canvas.zoomBy(1.2)}
-                >
-                  <Icon name="plus" />
-                </button>
-                <span className="fo-tool-divider" />
-                <button
-                  type="button"
-                  className="fo-icon-button"
-                  aria-label="适应全部素材"
-                  onClick={() => canvas.fit()}
-                >
-                  <Icon name="maximize" />
-                </button>
-                {zoomOpen && (
-                  <div
-                    className="fo-zoom-popover"
-                    id="fo-zoom-popover"
-                    role="dialog"
-                    aria-label="画布缩放"
-                    onKeyDown={event => {
-                      if (event.key === 'Escape') {
-                        event.stopPropagation();
-                        closeZoom();
-                      }
-                    }}
-                  >
-                    <form
-                      className="fo-zoom-form"
-                      onSubmit={event => {
-                        event.preventDefault();
-                        setZoom(Number(zoomText.trim().replace(/%$/, '')));
-                      }}
-                    >
-                      <label htmlFor="fo-zoom-input">缩放比例</label>
-                      <div>
-                        <input
-                          autoFocus
-                          className="fo-zoom-input"
-                          id="fo-zoom-input"
-                          inputMode="decimal"
-                          aria-label="缩放比例"
-                          value={zoomText}
-                          onChange={event => setZoomText(event.target.value)}
-                          onFocus={event => event.target.select()}
-                        />
-                        <span>%</span>
-                        <button type="submit">应用</button>
-                      </div>
-                    </form>
-                    <div className="fo-zoom-presets">
-                      {[50, 100, 200].map(value => (
-                        <button type="button" key={value} onClick={() => setZoom(value)}>
-                          {value}%
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      className="fo-zoom-fit"
-                      onClick={() => {
-                        canvas.fit();
-                        closeZoom();
-                      }}
-                    >
-                      适应全部素材<span>⌘ / Ctrl 0</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+              <ZoomControl
+                open={zoomOpen}
+                onOpenChange={setZoomOpen}
+                active={isActive}
+                zoom={canvas.camera.zoom}
+                onZoomBy={canvas.zoomBy}
+                onZoomToPercent={canvas.zoomTo}
+                onFit={() => canvas.fit()}
+              />
               <div className="fo-canvas-hint">
                 <span>滚动平移</span>
                 <i>·</i>
@@ -1264,103 +846,11 @@ export default function Studio({
           }
         }}
       />
-      <dialog
-        ref={helpRef}
-        className="fo-help-dialog"
-        aria-labelledby="fo-help-heading"
-        onCancel={() => setHelpOpen(false)}
+      <HelpDialog
+        open={isActive && helpOpen}
         onClose={() => setHelpOpen(false)}
-        onClick={event => {
-          if (event.target === event.currentTarget) {
-            const r = event.currentTarget.getBoundingClientRect();
-            if (
-              event.clientX < r.left ||
-              event.clientX > r.right ||
-              event.clientY < r.top ||
-              event.clientY > r.bottom
-            )
-              setHelpOpen(false);
-          }
-        }}
-      >
-        <button
-          type="button"
-          className="fo-icon-button fo-help-close"
-          aria-label="关闭使用指南"
-          onClick={() => setHelpOpen(false)}
-        >
-          <Icon name="x" />
-        </button>
-        <span className="fo-eyebrow">A LITTLE GUIDE</span>
-        <h2 id="fo-help-heading">
-          把想法摊开，
-          <br />
-          再把故事连起来。
-        </h2>
-        <p>画布用来探索和比较。只有加入下方成片区的镜头，才会按顺序播放。</p>
-        <dl>
-          <div>
-            <dt>平移画布</dt>
-            <dd>
-              滚轮 / 触控板滚动 · 拖动空白处
-              <br />
-              空格 + 拖动，或鼠标中键
-            </dd>
-          </div>
-          <div>
-            <dt>缩放画布</dt>
-            <dd>
-              触控板捏合 · ⌘ / Ctrl + 滚轮
-              <br />⌘ / Ctrl ＋ / −，或点击比例
-            </dd>
-          </div>
-          <div>
-            <dt>触屏操作</dt>
-            <dd>单指拖动 · 双指平移与缩放</dd>
-          </div>
-          <div>
-            <dt>查看素材</dt>
-            <dd>单击选择，双击预览</dd>
-          </div>
-          <div>
-            <dt>撤销 / 重做</dt>
-            <dd>⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z</dd>
-          </div>
-          <div>
-            <dt>删除素材</dt>
-            <dd>选中后按 Delete / Backspace</dd>
-          </div>
-          <div>
-            <dt>适应画布</dt>
-            <dd>按 0，或点击适应按钮</dd>
-          </div>
-        </dl>
-        <div className="fo-help-note">
-          <strong>从参考图到镜头，再到你的故事。</strong>
-          <span>
-            生成图片和视频前，请在 API 设置中填写供应商密钥。
-            {desktop
-              ? '项目和本地素材自动保存到本机。供应商临时链接请及时下载。'
-              : '素材保存在本浏览器或供应商临时链接，请及时下载。'}
-            成片区支持顺序预览，也可以导出为 MP4（暂不含声音）。
-          </span>
-        </div>
-        {desktop && (
-          <button
-            type="button"
-            className="fo-help-intro"
-            onClick={() => {
-              setHelpOpen(false);
-              onClose();
-            }}
-          >
-            查看产品介绍 <Icon name="arrow-up-right" />
-          </button>
-        )}
-        <button type="button" className="fo-primary-button" onClick={() => setHelpOpen(false)}>
-          开始探索 <Icon name="arrow-up-right" />
-        </button>
-      </dialog>
+        onShowIntro={onClose}
+      />
     </div>
   );
 }

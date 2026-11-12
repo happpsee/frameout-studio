@@ -12,6 +12,7 @@ import { canRememberKeys, rememberKey, rememberedKey } from '../lib/secrets';
 import { desktopBridge } from '../lib/platform';
 import Select from './Select';
 import Icon from './Icon';
+import { closeOnBackdropClick } from '../lib/dialog';
 /** notice explains why the dialog opened (for example, a generation without a key). */
 export default function APISettings({
   open,
@@ -26,18 +27,18 @@ export default function APISettings({
   onChange: (config: AIConfig) => void;
   notice?: string;
 }) {
-  const dialog = useRef<HTMLDialogElement>(null),
-    request = useRef<AbortController | null>(null),
-    keyField = useRef<HTMLInputElement>(null);
-  const profiles = useRef(loadProfiles().profiles),
-    previousOpen = useRef(false);
-  const [draft, setDraft] = useState(config),
-    [reveal, setReveal] = useState(false),
-    [testing, setTesting] = useState(false);
-  const [status, setStatus] = useState({ text: '', kind: '' }),
-    [saving, setSaving] = useState(false);
-  const keychain = canRememberKeys(),
-    [remember, setRemember] = useState(() => Boolean(rememberedKey(config.provider)));
+  const dialog = useRef<HTMLDialogElement>(null);
+  const request = useRef<AbortController | null>(null);
+  const keyField = useRef<HTMLInputElement>(null);
+  const profiles = useRef(loadProfiles().profiles);
+  const previousOpen = useRef(false);
+  const [draft, setDraft] = useState(config);
+  const [reveal, setReveal] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [status, setStatus] = useState({ text: '', kind: '' });
+  const [saving, setSaving] = useState(false);
+  const keychain = canRememberKeys();
+  const [remember, setRemember] = useState(() => Boolean(rememberedKey(config.provider)));
   function abortTest() {
     request.current?.abort();
     request.current = null;
@@ -146,18 +147,7 @@ export default function APISettings({
       aria-labelledby="fo-api-heading"
       onCancel={onClose}
       onClose={onClose}
-      onClick={event => {
-        if (event.target === event.currentTarget) {
-          const r = event.currentTarget.getBoundingClientRect();
-          if (
-            event.clientX < r.left ||
-            event.clientX > r.right ||
-            event.clientY < r.top ||
-            event.clientY > r.bottom
-          )
-            onClose();
-        }
-      }}
+      onClick={closeOnBackdropClick(onClose)}
     >
       <form className="fo-api-form" onSubmit={event => void save(event)}>
         <header className="fo-api-head">

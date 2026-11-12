@@ -11,6 +11,12 @@ type Options = {
   now?: () => number;
 };
 export const clamp = (n: number, low: number, high: number) => Math.min(high, Math.max(low, n));
+
+/** Size of a card on the canvas at zoom 1. Keep in step with `.fo-card` in styles/studio.css. */
+export const CARD_WIDTH = 270;
+export const CARD_HEIGHT = 219;
+/** Offset from a card's top-left corner to its centre, rounded to whole canvas units. */
+export const CARD_CENTER = { x: CARD_WIDTH / 2, y: Math.round(CARD_HEIGHT / 2) };
 export function normalizeWheel(
   event: Pick<WheelEvent, 'deltaMode' | 'deltaX' | 'deltaY'>,
   pageHeight = 800,
