@@ -20,12 +20,6 @@ function run(command, args) {
 }
 
 try {
-  run(path.join(root, 'backend/.desktop-venv/bin/python'), [
-    '-m', 'PyInstaller', '--noconfirm', '--onefile', '--name', 'frameout-api',
-    '--distpath', work, '--workpath', path.join(work, 'build'), '--specpath', work,
-    '--hidden-import', 'anyio._backends._asyncio', 'backend/desktop.py',
-  ]);
-
   mkdirSync(iconset);
   const svg = path.join(root, 'frontend/public/assets/favicon.svg');
   for (const size of [16, 32, 128, 256, 512]) {
@@ -38,14 +32,12 @@ try {
   run('iconutil', ['-c', 'icns', iconset, '-o', icon]);
 
   mkdirSync(appDir);
-  // electron/storage.cjs requires ../utils/queue, so ship utils beside electron.
-  for (const dir of ['electron', 'utils']) {
+  // electron/storage.cjs requires ../utils/queue and the main process forks
+  // ../server/desktop.cjs, so ship both beside electron.
+  for (const dir of ['electron', 'utils', 'server']) {
     cpSync(path.join(root, dir), path.join(appDir, dir), { recursive: true, filter: source => !source.endsWith('.test.cjs') });
   }
   cpSync(path.join(root, 'frontend/dist'), path.join(work, 'frontend'), { recursive: true });
-  const api = path.join(work, 'api', 'frameout-api');
-  mkdirSync(api, { recursive: true });
-  cpSync(path.join(work, 'frameout-api'), path.join(api, 'frameout-api'));
   writeFileSync(path.join(appDir, 'package.json'), JSON.stringify({ name, version, main }));
   const bundles = await packager({
     dir: appDir,
@@ -59,13 +51,12 @@ try {
     arch: process.arch,
     asar: true,
     icon: [icon],
-    extraResource: [api, path.join(work, 'frontend')],
+    extraResource: [path.join(work, 'frontend')],
     overwrite: true,
   });
   for (const bundle of bundles) {
     const app = path.join(bundle, `${appName}.app`);
     // This build is for local use. Sign the app and Chromium helpers together.
-    run('codesign', ['--force', '--sign', '-', path.join(app, 'Contents/Resources/frameout-api/frameout-api')]);
     run('codesign', ['--force', '--deep', '--sign', '-', app]);
     run('codesign', ['--verify', '--deep', '--strict', app]);
     console.log(app);

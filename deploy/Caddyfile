@@ -7,6 +7,6 @@
     }
 
     # Default upstream read/header timeouts are not shortened: image generation
-    # may take up to 300 seconds before FastAPI returns a response.
+    # may take up to 300 seconds before the server returns a response.
     reverse_proxy app:8000
 }

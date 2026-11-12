@@ -1,16 +1,10 @@
 .DS_Store
-__pycache__/
 *.tar.gz
 *.zip
 .site-local/
 
 dist/
 node_modules/
-backend/.venv/
-backend/.desktop-venv/
-.venv/
-*.egg-info/
-.pytest_cache/
 .env
 .env.*
 !.env.example

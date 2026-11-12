@@ -1,9 +1,7 @@
-const { app, BrowserWindow, dialog, ipcMain, Menu, safeStorage, shell } = require('electron');
-const { spawn } = require('node:child_process');
+const { app, BrowserWindow, dialog, ipcMain, Menu, safeStorage, shell, utilityProcess } = require('electron');
 const { randomUUID } = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
-const { createInterface } = require('node:readline');
 const { createStorage } = require('./storage.cjs');
 const { createSecrets } = require('./secrets.cjs');
 
@@ -29,7 +27,7 @@ let quitApproved = false;
 
 function localOrigin(value) {
   const url = new URL(value);
-  if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1' || !url.port || url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
+  if (url.protocol !== 'http:' || url.hostname !== '127.0.0.1' || !url.port || url.pathname !== '/' || url.search || url.hash) {
     throw new Error('帧外服务必须使用本机回环地址');
   }
   return url.origin;
@@ -43,51 +41,49 @@ function isTrusted(event) {
   return url.origin === origin && url.pathname === '/';
 }
 
+// The API server runs in a utility process (Electron's own Node sidecar), so a
+// large upstream JSON response never blocks the main process or the window.
 function startBackend() {
-  const repo = path.resolve(__dirname, '..');
-  const executable = app.isPackaged
-    ? path.join(process.resourcesPath, 'frameout-api', process.platform === 'win32' ? 'frameout-api.exe' : 'frameout-api')
-    : path.join(repo, 'backend', '.venv', process.platform === 'win32' ? 'Scripts/python.exe' : 'bin/python');
-  const args = app.isPackaged ? [] : [path.join(repo, 'backend', 'desktop.py')];
-  const frontend = app.isPackaged ? path.join(process.resourcesPath, 'frontend') : path.join(repo, 'frontend', 'dist');
+  const frontend = app.isPackaged ? path.join(process.resourcesPath, 'frontend') : path.resolve(__dirname, '..', 'frontend', 'dist');
   if (!fs.existsSync(path.join(frontend, 'index.html'))) throw new Error('缺少已构建的前端文件');
 
   return new Promise((resolve, reject) => {
-    const child = spawn(executable, args, {
+    const child = utilityProcess.fork(path.join(__dirname, '..', 'server', 'desktop.cjs'), [], {
       cwd: userData,
-      env: { ...process.env, FRAMEOUT_FRONTEND_DIST: frontend, FRAMEOUT_PARENT_PID: String(process.pid), PYTHONUNBUFFERED: '1' },
-      stdio: ['ignore', 'pipe', 'pipe'],
-      windowsHide: true,
+      env: { ...process.env, FRAMEOUT_FRONTEND_DIST: frontend },
+      serviceName: '帧外服务',
+      stdio: ['ignore', 'inherit', 'pipe'],
     });
     backend = child;
     let ready = false;
     let failed = false;
+    let exited = false;
     let errors = '';
     const timeout = setTimeout(() => fail(new Error('等待帧外服务启动超时')), STARTUP_TIMEOUT);
     function fail(error) {
       if (ready || failed) return;
       failed = true;
       clearTimeout(timeout);
-      if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM');
+      if (!exited) child.kill();
       if (errors) console.error(errors.trim());
       reject(error);
     }
-    child.stderr.setEncoding('utf8');
-    child.stderr.on('data', text => { errors = (errors + text).slice(-16_384); });
-    child.once('error', fail);
-    child.once('close', (code, signal) => {
+    child.stderr?.setEncoding('utf8');
+    child.stderr?.on('data', text => { errors = (errors + text).slice(-16_384); });
+    child.once('exit', code => {
+      exited = true;
       if (backend === child) backend = undefined;
       if (!ready) {
-        fail(new Error(`帧外服务启动失败（${signal || code}）`));
+        fail(new Error(`帧外服务启动失败（${code}）`));
       } else if (!quitApproved) {
         if (errors) console.error(errors.trim());
         dialog.showErrorBox('帧外服务已停止', '请关闭并重新打开帧外。');
       }
     });
-    createInterface({ input: child.stdout }).on('line', line => {
-      if (ready || failed || !line.startsWith('FRAMEOUT_READY ')) return;
+    child.on('message', message => {
+      if (ready || failed || message?.type !== 'ready') return;
       try {
-        const url = localOrigin(line.slice('FRAMEOUT_READY '.length));
+        const url = localOrigin(message.url);
         ready = true;
         clearTimeout(timeout);
         resolve(url);
@@ -237,7 +233,7 @@ if (!app.requestSingleInstanceLock()) {
   });
   app.on('will-quit', () => {
     quitApproved = true;
-    backend?.kill('SIGTERM');
+    backend?.kill();
   });
   app.whenReady().then(async () => {
     installMenu();

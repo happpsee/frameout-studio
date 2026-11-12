@@ -1,11 +1,7 @@
 .git
 .DS_Store
 **/node_modules
-**/.venv
-**/.desktop-venv
-**/__pycache__
-**/.pytest_cache
-**/*.egg-info
+**/*.test.cjs
 **/dist
 **/.env
 **/.env.*

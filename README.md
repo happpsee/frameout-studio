@@ -1,46 +1,46 @@
 # 帧外 FRAMEOUT
 
-Vite + React + TypeScript 前端，FastAPI + HTTPX 后端。原来的原生页面和 Worker 已迁移，首页、画布、素材卡片、镜头序列、预览和 API 设置均由 React 组件渲染。
+Vite + React + TypeScript 前端，Node.js 后端（`server/`，只用 Node 内置模块，无 npm 依赖）。原来的原生页面和 Worker 已迁移，首页、画布、素材卡片、镜头序列、预览和 API 设置均由 React 组件渲染。
 
 ## macOS 桌面版
 
 首次启动展示产品介绍，之后启动直接恢复工作台；可从使用指南再次查看介绍。桌面工作台采用 56px 顶栏、左侧工具栏、中央画布和右侧生成面板。素材、镜头计划与版本记录按需打开，空镜头序列默认收起。
 
-双击「帧外.app」直接打开工作台。应用自带前端和 FastAPI 服务。画布、镜头顺序、模型偏好和素材自动保存在 `~/Library/Application Support/FRAMEOUT/storage/`。可从菜单栏「帧外 → 打开数据文件夹」找到它。应用退出时会等待正在保存的项目。单个素材最多保存 100 MiB。供应商链接允许下载时，生成的文件也会存到本机。API Key 默认只在本次运行期间有效；在 API 设置中勾选「在本机钥匙串中记住此 Key」后，Key 经 Electron safeStorage 加密（macOS 由钥匙串保管加密密钥）保存在 `~/Library/Application Support/FRAMEOUT/secrets/`，取消勾选或点「清除所有密钥」即删除。钥匙串不可用时不提供此选项，也不会明文保存。
+双击「帧外.app」直接打开工作台。应用自带前端和本机 Node 服务（由 Electron 的 utilityProcess 运行）。画布、镜头顺序、模型偏好和素材自动保存在 `~/Library/Application Support/FRAMEOUT/storage/`。可从菜单栏「帧外 → 打开数据文件夹」找到它。应用退出时会等待正在保存的项目。单个素材最多保存 100 MiB。供应商链接允许下载时，生成的文件也会存到本机。API Key 默认只在本次运行期间有效；在 API 设置中勾选「在本机钥匙串中记住此 Key」后，Key 经 Electron safeStorage 加密（macOS 由钥匙串保管加密密钥）保存在 `~/Library/Application Support/FRAMEOUT/secrets/`，取消勾选或点「清除所有密钥」即删除。钥匙串不可用时不提供此选项，也不会明文保存。
 
 浏览器版和桌面版使用各自的数据目录。已有浏览器素材可先下载，再导入桌面版。桌面版当前维护一份自动保存的工作区。
 
-开发和打包前先完成下节的 Node.js、Python 依赖安装。`npm run desktop` 构建并运行桌面版源码。打包使用 Homebrew 的 Python 3.12，运行以下命令生成与当前 Mac 架构对应的本地应用，输出在 `dist/desktop/`。
+开发和打包前先完成下节的依赖安装。`pnpm desktop` 构建并运行桌面版源码。运行以下命令生成与当前 Mac 架构对应的本地应用，输出在 `dist/desktop/`。
 
 ```bash
-"$(brew --prefix python@3.12)/bin/python3.12" -m venv backend/.desktop-venv
-backend/.desktop-venv/bin/python -m pip install -r backend/requirements.lock pyinstaller==6.22.3
-npm run build:desktop
+pnpm build:desktop
 ```
 
 ## 本地启动
 
-需要 Node.js 22.12+、Python 3.10+。在项目根目录运行：
+需要 Node.js 22.12+、pnpm 11（版本见 `package.json` 的 `packageManager`）。在项目根目录运行：
 
 ```bash
-npm ci
-python3 -m venv backend/.venv
-backend/.venv/bin/python -m pip install -r backend/requirements.lock
-npm run dev
+pnpm install --frozen-lockfile
 ```
 
-前端：http://127.0.0.1:5173 ；后端：http://127.0.0.1:8000 ；API 文档：http://127.0.0.1:8000/docs 。`Ctrl+C` 会停止前后端。`npm run dev:frontend` 和 `npm run dev:backend` 可分别启动，开发时 Vite 将 `/api` 代理到 FastAPI。
+在两个终端中分别启动后端和前端：
 
-Windows 创建虚拟环境后，将上面的 Python 路径换成 `backend/.venv/Scripts/python.exe`。统一启动脚本会自动选择系统对应路径。
+```bash
+pnpm dev:server
+pnpm dev:frontend
+```
+
+前端：http://127.0.0.1:5173 ；后端：http://127.0.0.1:8000 。开发时 Vite 将 `/api` 代理到后端；`dev:server` 使用 `node --watch`，修改 `server/` 后自动重启。
 
 ## 构建后运行
 
 ```bash
-npm run build
-backend/.venv/bin/python -m uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000
+pnpm build
+node server/index.cjs
 ```
 
-构建产物在 `frontend/dist/`。FastAPI 同时提供前端静态文件和 API，访问 http://127.0.0.1:8000 即可。此项目目前按单机本地使用设计，未新增账号、多人协作或云端项目存储。
+构建产物在 `frontend/dist/`。后端同时提供前端静态文件和 API，可用 `HOST`、`PORT` 环境变量改监听地址（默认 127.0.0.1:8000），访问 http://127.0.0.1:8000 即可。此项目目前按单机本地使用设计，未新增账号、多人协作或云端项目存储。
 
 ## 目录
 
@@ -54,15 +54,14 @@ frontend/
     types.ts         项目、素材、镜头与视频任务类型
   public/assets/     原有图片、字体、图标和来源说明
   vite.config.ts     React、开发代理和 Vitest 配置
-backend/
-  app/main.py        应用生命周期、路由、静态文件
-  app/relay.py       AI 请求校验、转发、超时和断连处理
-  app/config.py      Origin、大小与时限配置
-  tests/            后端回归测试
-  requirements.lock 本轮验证使用的精确 Python 依赖版本
-scripts/dev.mjs      同时启动 Vite 与 FastAPI
+server/
+  app.cjs            路由、CORS、静态文件
+  relay.cjs          AI 请求校验、转发、超时和断连处理
+  config.cjs         Origin、大小与时限配置
+  index.cjs          Web 版入口（HOST/PORT）
+  desktop.cjs        桌面版入口，由 Electron utilityProcess 启动，监听本机随机端口
+  server.test.cjs    后端回归测试
 electron/           桌面窗口、退出保存和本地文件读写
-backend/desktop.py  桌面版专用的本机 FastAPI 入口
 scripts/build-desktop.mjs  打包 macOS 应用
 ```
 
@@ -98,7 +97,7 @@ scripts/build-desktop.mjs  打包 macOS 应用
 
 点击画布右上角「API 设置」配置自己的供应商。OpenAI 配置提供图片生成；火山方舟提供图片与异步视频协议；自定义兼容服务使用浏览器直连，需要供应商支持相应接口与跨域。模型名可以修改，实际可用模型与参数取决于账户权限。
 
-FastAPI 提供：
+后端提供：
 
 | 接口 | 用途 |
 | --- | --- |
@@ -111,18 +110,18 @@ FastAPI 提供：
 
 视频停止等待后保留已取得的任务号；刷新后需补填相同供应商的 Key，再继续查询原任务。未取得任务号时提示先到供应商后台核对，不自动再次提交。停止本地等待不等于取消供应商任务，已经提交的请求仍可能计费。供应商返回的临时媒体链接可能失效，请及时下载。
 
-默认允许 localhost / 127.0.0.1 的 5173 和 8000 端口来源。需要不同前端地址时，用环境变量 `FRAMEOUT_ALLOWED_ORIGINS` 添加以逗号分隔的准确 Origin。`FRAMEOUT_FRONTEND_DIST` 可指定其他前端构建目录。配置示例见 `backend/.env.example`，应用不会自动加载 `.env`，请使用 shell 环境变量。
+默认允许 localhost / 127.0.0.1 的 5173 和 8000 端口来源。需要不同前端地址时，用环境变量 `FRAMEOUT_ALLOWED_ORIGINS` 添加以逗号分隔的准确 Origin。`FRAMEOUT_FRONTEND_DIST` 可指定其他前端构建目录。配置示例见 `server/.env.example`，应用不会自动加载 `.env`，请使用 shell 环境变量。
 
 ## 验证
 
 ```bash
-npm test
-npm run build
-npm run test:backend
-npm run test:desktop
+pnpm test
+pnpm build
+pnpm test:server
+pnpm test:desktop
 ```
 
-`npm run test:all` 依次运行前端、桌面存储和后端测试。`npm run bench` 用 200 个素材、8 个版本和 160 条计划记录的项目测量编辑、自动保存和画布渲染耗时，不包含在 `npm test` 中。
+`pnpm test:all` 依次运行前端、桌面存储和后端测试。`pnpm bench` 用 200 个素材、8 个版本和 160 条计划记录的项目测量编辑、自动保存和画布渲染耗时，不包含在 `pnpm test` 中。
 
 前端测试覆盖相机计算、手势取消与提交、双指转单指、历史操作、镜头排序与时长、浏览器媒体恢复、生成停止及续查、配置密钥隔离、下拉框键盘导航。后端测试覆盖协议校验、大小限制、错误脱敏、超时、断连取消、Cookie 隔离和静态文件。
 
@@ -130,9 +129,9 @@ npm run test:desktop
 
 ## 迁移说明
 
-本次只修改桌面项目，保留 Git 历史和原目录备份；没有提交、推送或替换线上 Sites 版本。FastAPI 是独立 Python 服务，旧 Worker 的发布脚本和托管清单已移除。
+本次只修改桌面项目，保留 Git 历史和原目录备份；没有提交、推送或替换线上 Sites 版本。后端最初是 FastAPI 服务，现已改为同一套接口与安全规则的 Node.js 实现（桌面版与 Web 部署共用）；旧 Worker 的发布脚本和托管清单已移除。
 
-参考：[Vite 官方文档](https://vite.dev/guide/)、[React 官方文档](https://react.dev/learn/creating-a-react-app)、[FastAPI 异步测试](https://fastapi.tiangolo.com/advanced/async-tests/)、[OpenAI 图片接口](https://developers.openai.com/api/reference/resources/images/methods/generate)。素材来源说明保留在 `frontend/public/assets/`。
+参考：[Vite 官方文档](https://vite.dev/guide/)、[React 官方文档](https://react.dev/learn/creating-a-react-app)、[Electron utilityProcess](https://www.electronjs.org/docs/latest/api/utility-process)、[OpenAI 图片接口](https://developers.openai.com/api/reference/resources/images/methods/generate)。素材来源说明保留在 `frontend/public/assets/`。
 
 ## 公网部署
 
