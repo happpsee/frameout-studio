@@ -12,6 +12,9 @@ import { useGeneration } from '../hooks/useGeneration';
 import { useCanvas } from '../hooks/useCanvas';
 import { useWorkflow } from '../hooks/useWorkflow';
 import { useExampleImport } from '../hooks/useExampleImport';
+import { useNotes } from '../hooks/useNotes';
+import { linkedIds } from '../lib/notes';
+import { CanvasNote } from './CanvasNote';
 import { CARD_CENTER, CARD_HEIGHT, CARD_WIDTH, clamp } from '../lib/canvas-camera';
 import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { readStoredValue } from '../lib/desktop-storage';
@@ -296,6 +299,15 @@ export default function Studio({
     setPrompt: generation.setPrompt,
     toast,
   });
+  const notes = useNotes({
+    projectRef,
+    update,
+    viewportRef,
+    workflow,
+    clearCards: () => canvas.selection.select(null),
+    toast,
+  });
+  const linked = linkedIds(project, project.selected, notes.selected);
   const selected = project.cards.find(card => card.id === project.selected);
   const hasSelection = Boolean(selected);
   const selectedJobStatus = selected?.job?.status;
@@ -622,6 +634,7 @@ export default function Studio({
       tool={canvas.tool}
       onTool={canvas.setTool}
       onUpload={() => fileInput.current?.click()}
+      onAddNote={notes.add}
       assetsOpen={assetsOpen}
       onToggleAssets={() => {
         setPanelTab(null);
@@ -734,14 +747,40 @@ export default function Studio({
                       selected={selected?.id === card.id || canvas.selection.ids.includes(card.id)}
                       dragging={dragging}
                       reference={referenceIds.has(card.id)}
+                      linked={linked.cards.has(card.id)}
                       onSelect={selectCard}
                       onOpen={openCard}
                       onDuration={cardDuration}
                     />
                   );
                 })}
+                {project.notes?.map(note => (
+                  <CanvasNote
+                    key={note.id}
+                    note={note}
+                    zoom={canvas.camera.zoom}
+                    selected={notes.selected === note.id}
+                    linked={linked.notes.has(note.id)}
+                    workflow={project.workflow}
+                    busy={active}
+                    results={project.cards.filter(card => card.noteId === note.id).length}
+                    onSelect={notes.select}
+                    onChange={notes.change}
+                    onMove={notes.move}
+                    onRemove={notes.remove}
+                    onUsePrompt={text => {
+                      generation.setPrompt(text);
+                      promptRef.current?.focus();
+                      toast('已填入生成框');
+                    }}
+                    onPlan={notes.plan}
+                    onStart={() => void workflow.start()}
+                    onPause={workflow.pause}
+                    onSelectCard={selectCard}
+                  />
+                ))}
               </div>
-              {!project.cards.length && (
+              {!project.cards.length && !project.notes?.length && (
                 <div className="fo-canvas-empty">
                   {desktop ? (
                     <>
@@ -753,13 +792,20 @@ export default function Studio({
                   ) : (
                     <span>从第一个画面开始。</span>
                   )}
-                  <p>上传图片或视频，也可以输入提示词生成素材。</p>
+                  <p>上传图片或视频，输入提示词生成素材，或者先写一份脚本。</p>
                   <button
                     type="button"
                     className="fo-primary-button"
                     onClick={() => fileInput.current?.click()}
                   >
                     添加素材 <Icon name="plus" />
+                  </button>
+                  <button
+                    type="button"
+                    className="fo-inline-button"
+                    onClick={() => notes.add('script')}
+                  >
+                    先写脚本
                   </button>
                 </div>
               )}

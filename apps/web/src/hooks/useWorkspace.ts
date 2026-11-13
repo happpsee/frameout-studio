@@ -17,13 +17,14 @@ import { recordEvent } from '../lib/workflow';
 import { isDesktop } from '../lib/platform';
 import { useProjectSync } from './useProjectSync';
 
-type Snapshot = Pick<ProjectState, 'cards' | 'sequence' | 'selected' | 'title'>;
+type Snapshot = Pick<ProjectState, 'cards' | 'sequence' | 'selected' | 'title' | 'notes'>;
 // Project states are immutable (Immer), so undo entries can share them instead of copying.
 const snapshot = (project: ProjectState): Snapshot => ({
   cards: project.cards,
   sequence: project.sequence,
   selected: project.selected,
   title: project.title,
+  notes: project.notes,
 });
 const UNSAVED = Symbol('unsaved');
 function restore(projectId: string): ProjectState {
@@ -140,6 +141,7 @@ export function useWorkspace(projectId: string) {
           selected: restored.selected,
           cards: restored.cards,
           sequence: restored.sequence,
+          notes: restored.notes,
         });
         if (draft.workflow) {
           draft.workflow.status = 'paused';

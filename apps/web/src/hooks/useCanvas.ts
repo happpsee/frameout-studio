@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import type { Camera, Card, ProjectState, UpdateProject } from '../types';
+import { NOTE_HEIGHT, NOTE_WIDTH } from '../lib/notes';
 import {
   CARD_HEIGHT,
   CARD_WIDTH,
@@ -14,6 +15,8 @@ import { useClipboardImport } from './useClipboardImport';
 
 const blocked =
   '.fo-composer,.fo-selection-actions,.fo-canvas-tools,.fo-camera-tools,.fo-canvas-intro';
+/** Notes handle their own pointer input: typing, and dragging by the header. */
+const ownInput = `${blocked},.fo-note`;
 type Point = { x: number; y: number };
 type Drag = {
   kind: 'card' | 'camera' | 'marquee';
@@ -94,15 +97,19 @@ export function useCanvas(options: Options) {
     if (latest.current.active === false) return;
     const viewport = latest.current.viewportRef.current;
     if (!viewport?.clientWidth) return;
-    const cards = latest.current.projectRef.current.cards;
-    if (!cards.length) {
+    const { cards, notes = [] } = latest.current.projectRef.current;
+    const boxes = [
+      ...cards.map(c => ({ x: c.x, y: c.y, right: c.x + CARD_WIDTH, bottom: c.y + CARD_HEIGHT })),
+      ...notes.map(n => ({ x: n.x, y: n.y, right: n.x + NOTE_WIDTH, bottom: n.y + NOTE_HEIGHT })),
+    ];
+    if (!boxes.length) {
       controller.current?.set({ x: 60, y: 20, zoom: 0.8 }, { animate });
       return;
     }
-    const left = Math.min(...cards.map(c => c.x));
-    const top = Math.min(...cards.map(c => c.y));
-    const width = Math.max(...cards.map(c => c.x + CARD_WIDTH)) - left;
-    const height = Math.max(...cards.map(c => c.y + CARD_HEIGHT)) - top;
+    const left = Math.min(...boxes.map(box => box.x));
+    const top = Math.min(...boxes.map(box => box.y));
+    const width = Math.max(...boxes.map(box => box.right)) - left;
+    const height = Math.max(...boxes.map(box => box.bottom)) - top;
     const safeLeft = viewport.clientWidth < 600 ? 68 : 95;
     const availableWidth = Math.max(100, viewport.clientWidth - safeLeft - 24);
     const availableHeight = Math.max(100, viewport.clientHeight - 245);
@@ -276,7 +283,7 @@ export function useCanvas(options: Options) {
     };
     const down = (event: PointerEvent) => {
       if (latest.current.active === false) return;
-      if (![0, 1].includes(event.button) || (event.target as Element).closest(blocked)) return;
+      if (![0, 1].includes(event.button) || (event.target as Element).closest(ownInput)) return;
       camera.cancel();
       event.preventDefault();
       const target = event.target as Element;
@@ -410,7 +417,7 @@ export function useCanvas(options: Options) {
       if (
         latest.current.active !== false &&
         performance.now() >= suppressUntil.current &&
-        !(event.target as Element).closest(`${blocked},.fo-card`)
+        !(event.target as Element).closest(`${ownInput},.fo-card`)
       )
         latest.current.onBackgroundDoubleClick();
     };

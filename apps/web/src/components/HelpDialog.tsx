@@ -14,6 +14,10 @@ const SHORTCUTS: { action: string; keys: string[] }[] = [
     action: '选择多个',
     keys: ['⇧ Shift + 单击 · ⇧ Shift + 拖动空白处框选', '选中后可一起拖动、删除'],
   },
+  {
+    action: '文本和脚本',
+    keys: ['左侧工具栏添加，拖标题条移动', '脚本每行一个镜头，可整组生成'],
+  },
   { action: '撤销 / 重做', keys: ['⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z'] },
   { action: '删除素材', keys: ['选中后按 Delete / Backspace'] },
   { action: '适应画布', keys: ['按 0，或点击适应按钮'] },

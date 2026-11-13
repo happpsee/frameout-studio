@@ -1,0 +1,199 @@
+/* Text and script notes on the canvas. Width: keep in step with NOTE_WIDTH in lib/notes.ts. */
+.fo-note {
+  position: absolute;
+  width: 300px;
+  pointer-events: auto;
+  background: var(--fo-card);
+  outline: 1px solid var(--fo-card-outline);
+  box-shadow: 0 10px 30px var(--fo-shadow-1);
+  border-radius: 5px;
+  color: var(--fo-text-2);
+  transition:
+    box-shadow 0.18s,
+    outline-color 0.18s;
+}
+.fo-note.is-script {
+  border-top: 2px solid var(--fo-accent-muted);
+}
+.fo-note.is-selected {
+  outline: 2px solid var(--fo-accent);
+  box-shadow: 0 5px 24px var(--fo-shadow-4);
+  z-index: 5;
+}
+.fo-note.is-linked,
+.fo-card.is-linked {
+  outline: 2px dashed var(--fo-accent-muted);
+}
+.fo-note.is-dragging {
+  z-index: 10;
+  box-shadow: 0 15px 35px var(--fo-shadow-5);
+  transition: none;
+}
+.fo-note-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.fo-note.is-dragging .fo-note-top {
+  cursor: grabbing;
+}
+.fo-note-top svg {
+  width: 12px;
+  height: 12px;
+  stroke: var(--fo-text-5);
+}
+.fo-note-top input {
+  min-width: 0;
+  max-width: 60%;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 3px;
+  background: none;
+  color: var(--fo-text-1);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+}
+.fo-note-top input:focus {
+  outline: 1px solid var(--fo-line-4);
+  background: var(--fo-field);
+}
+.fo-note-top > span:last-child {
+  margin-left: auto;
+  font:
+    9px 'Courier New',
+    monospace;
+  color: var(--fo-text-faint);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.fo-note textarea {
+  display: block;
+  width: 100%;
+  padding: 8px 12px 10px;
+  border: 0;
+  border-top: 1px solid var(--fo-line);
+  background: none;
+  color: var(--fo-text-2);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.7;
+  resize: none;
+}
+.fo-note textarea:focus {
+  outline: none;
+  background: var(--fo-field);
+}
+.fo-note textarea::placeholder {
+  color: var(--fo-text-dim);
+}
+.fo-note-shots {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--fo-line);
+  list-style: none;
+}
+.fo-note-shots button {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--fo-line-3);
+  border-radius: 50%;
+  background: none;
+  color: var(--fo-text-5);
+  font-size: 10px;
+  cursor: pointer;
+}
+.fo-note-shots button:disabled {
+  cursor: default;
+}
+.fo-note-shots [data-status='succeeded'] button {
+  border-color: var(--fo-accent);
+  background: var(--fo-accent-tint);
+  color: var(--fo-text-1);
+}
+.fo-note-shots [data-status='running'] button {
+  border-color: var(--fo-accent);
+  border-style: dashed;
+}
+.fo-note-shots [data-status='failed'] button {
+  border-color: var(--fo-danger);
+  color: var(--fo-danger);
+}
+.fo-note-shots [data-status='paused'] button {
+  border-color: var(--fo-warn-line);
+  color: var(--fo-warn);
+}
+.fo-note-count {
+  margin-left: auto;
+  font:
+    10px 'Courier New',
+    monospace;
+  color: var(--fo-text-faint);
+}
+.fo-note-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid var(--fo-line);
+  font-size: 11px;
+}
+.fo-note-actions button {
+  padding: 5px 10px;
+  border: 1px solid var(--fo-line-3);
+  border-radius: 4px;
+  background: none;
+  color: var(--fo-text-2);
+  font: inherit;
+  cursor: pointer;
+}
+.fo-note-actions button:hover:not(:disabled) {
+  background: var(--fo-hover);
+}
+.fo-note-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.fo-note-actions .fo-note-primary {
+  border-color: var(--fo-lime);
+  background: var(--fo-lime);
+  color: var(--fo-ink);
+  font-weight: 600;
+}
+.fo-note-actions .fo-note-primary:hover:not(:disabled) {
+  background: var(--fo-lime);
+  filter: brightness(1.08);
+}
+.fo-note-actions label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--fo-text-5);
+  cursor: pointer;
+}
+.fo-note-actions .fo-note-remove {
+  margin-left: auto;
+  padding: 5px 7px;
+  border-color: transparent;
+}
+.fo-note-remove svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+.fo-note-hint {
+  margin: 0;
+  padding: 0 12px 10px;
+  color: var(--fo-text-6);
+  font-size: 11px;
+  line-height: 1.6;
+}

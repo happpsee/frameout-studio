@@ -54,7 +54,9 @@ export function useWorkflow(options: Options) {
     if (!options.enabled) pause();
   }, [options.enabled, pause]);
 
-  const plan = useCallback((text: string, withVideo: boolean) => {
+  /** `from` ties the plan to the script note it was written in and places results beside it. */
+  type PlanSource = { noteId: string; origin: { x: number; y: number } };
+  const plan = useCallback((text: string, withVideo: boolean, from?: PlanSource) => {
     const { generation, projectRef, update } = latest.current;
     if (generation.active || executing.current || projectRef.current.workflow?.status === 'running')
       throw new Error('请先停止当前生成');
@@ -62,7 +64,11 @@ export function useWorkflow(options: Options) {
       throw new Error('图生视频计划需要选择支持视频的供应商');
     const workflow = createWorkflow(text, withVideo, generation.config);
     const camera = projectRef.current.camera;
-    workflow.origin = { x: (120 - camera.x) / camera.zoom, y: (100 - camera.y) / camera.zoom };
+    workflow.origin = from?.origin ?? {
+      x: (120 - camera.x) / camera.zoom,
+      y: (100 - camera.y) / camera.zoom,
+    };
+    if (from) workflow.noteId = from.noteId;
     recordEvent(workflow, `已编排 ${workflow.steps.length} 个步骤，等待开始`);
     update(draft => {
       draft.workflow = workflow;
@@ -222,10 +228,13 @@ export function useWorkflow(options: Options) {
               y: (workflow.origin?.y || 0) + Math.floor(imageIndex / 2) * 280,
             },
             onCard: id =>
-              mutate(workflowId, value => {
-                const current = value.steps.find(item => item.id === step.id);
+              latest.current.update(draft => {
+                if (draft.workflow?.id !== workflowId) return;
+                const current = draft.workflow.steps.find(item => item.id === step.id);
                 if (current) current.outputCardId = id;
-              }),
+                const card = draft.cards.find(item => item.id === id);
+                if (card && draft.workflow.noteId) card.noteId = draft.workflow.noteId;
+              }, false),
           });
         }
       } catch (caught) {

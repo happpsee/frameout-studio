@@ -40,6 +40,7 @@ interface CanvasToolsProps {
   tool: CanvasTool;
   onTool: (tool: CanvasTool) => void;
   onUpload: () => void;
+  onAddNote: (kind: 'text' | 'script') => void;
   assetsOpen: boolean;
   onToggleAssets: () => void;
   panelTab: PanelTab | null;
@@ -107,6 +108,18 @@ export default function CanvasTools(props: CanvasToolsProps) {
         label="添加本地素材"
         title="添加本地图片或视频"
         onClick={props.onUpload}
+      />
+      <ToolButton
+        icon="text"
+        label="添加文本"
+        title="添加文本：剧本、文案、备忘"
+        onClick={() => props.onAddNote('text')}
+      />
+      <ToolButton
+        icon="list"
+        label="添加脚本"
+        title="添加脚本：每行一个镜头，可整组生成"
+        onClick={() => props.onAddNote('script')}
       />
       {desktopPanels}
       <ToolButton

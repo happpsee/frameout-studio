@@ -49,10 +49,21 @@ export interface Card {
   prompt?: string;
   /** Generated video: id of the image card used as the first frame; '' for text-to-video. */
   sourceId?: string;
+  /** Id of the script note whose shot plan made this card. */
+  noteId?: string;
   model?: string;
   mimeType?: string;
   requestId?: string;
   generatedAt?: string;
+}
+/** Text on the canvas. A script holds one shot per line and can be made into a shot plan. */
+export interface Note {
+  id: string;
+  x: number;
+  y: number;
+  kind: 'text' | 'script';
+  title: string;
+  text: string;
 }
 export interface Camera {
   x: number;
@@ -71,6 +82,7 @@ export interface WorkspaceSnapshot {
   selected: string | null;
   cards: Card[];
   sequence: Shot[];
+  notes?: Note[];
 }
 export interface ProjectCheckpoint {
   id: string;
@@ -103,6 +115,8 @@ export interface Workflow {
   config: Omit<AIConfig, 'key'>;
   checkpointId?: string;
   origin?: { x: number; y: number };
+  /** The script note this plan was made from. */
+  noteId?: string;
 }
 /** Kept across shots: notes appended to every prompt, and image cards sent as references. */
 export interface Consistency {

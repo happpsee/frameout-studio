@@ -92,6 +92,7 @@ export function restoreWorkflow(input: Workflow | undefined, recover = true): Wo
       input.origin && Number.isFinite(input.origin.x) && Number.isFinite(input.origin.y)
         ? { x: input.origin.x, y: input.origin.y }
         : { x: 0, y: 0 },
+    noteId: typeof input.noteId === 'string' ? input.noteId : undefined,
     status:
       input.status === 'draft' || input.status === 'completed'
         ? input.status
@@ -137,6 +138,6 @@ export function workspaceDiff(current: WorkspaceSnapshot, previous: WorkspaceSna
 }
 
 export function workspaceOnly(project: ProjectState): WorkspaceSnapshot {
-  const { version, title, camera, selected, cards, sequence } = project;
-  return { version, title, camera, selected, cards, sequence };
+  const { version, title, camera, selected, cards, sequence, notes } = project;
+  return { version, title, camera, selected, cards, sequence, notes };
 }

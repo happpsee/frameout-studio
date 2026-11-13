@@ -35,6 +35,8 @@ type Props = {
   selected: boolean;
   dragging: boolean;
   reference: boolean;
+  /** Connected to the selection: its first frame, a video made from it, or its script's result. */
+  linked?: boolean;
   onSelect: (id: string) => void;
   onOpen: (id: string) => void;
   onDuration: (card: Card, duration: number) => void;
@@ -48,6 +50,7 @@ export const CanvasCard = memo(function CanvasCard({
   selected,
   dragging,
   reference,
+  linked,
   onSelect,
   onOpen,
   onDuration,
@@ -56,7 +59,7 @@ export const CanvasCard = memo(function CanvasCard({
   return (
     <article
       data-id={card.id}
-      className={`fo-card${selected ? ' is-selected' : ''}${dragging ? ' is-dragging' : ''}${reference ? ' is-reference' : ''}${failed ? ' is-failed' : ''}`}
+      className={`fo-card${selected ? ' is-selected' : ''}${dragging ? ' is-dragging' : ''}${reference ? ' is-reference' : ''}${failed ? ' is-failed' : ''}${linked ? ' is-linked' : ''}`}
       style={{ left: x, top: y }}
     >
       <div className="fo-card-top">

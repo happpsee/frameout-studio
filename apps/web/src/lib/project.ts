@@ -1,6 +1,7 @@
 import type { AIConfig, Card, ProjectCheckpoint, ProjectState, WorkspaceSnapshot } from '../types';
 import { restoreWorkflow } from './workflow';
 import { normalizeConsistency } from './consistency';
+import { restoreNotes } from './notes';
 
 const legacySampleSources = new Set([
   '/assets/forest-astronaut.png',
@@ -94,6 +95,7 @@ export function serializeWorkspace(project: WorkspaceSnapshot): WorkspaceSnapsho
         'remoteTemporary',
         'prompt',
         'sourceId',
+        'noteId',
         'model',
         'mimeType',
         'requestId',
@@ -115,9 +117,11 @@ export function serializeWorkspace(project: WorkspaceSnapshot): WorkspaceSnapsho
       return value;
     });
   const ids = new Set(cards.map(card => card.id));
+  const notes = restoreNotes(project.notes);
   return {
     version: 1,
     title: project.title,
+    ...(notes.length ? { notes } : {}),
     camera: { ...project.camera },
     selected: project.selected && ids.has(project.selected) ? project.selected : null,
     cards,
@@ -172,6 +176,7 @@ function restoreWorkspace(input: unknown): WorkspaceSnapshot {
       } as Card;
       if (typeof card.prompt !== 'string') delete card.prompt;
       if (typeof card.sourceId !== 'string') delete card.sourceId;
+      if (typeof card.noteId !== 'string') delete card.noteId;
       if (card.job) {
         card.job = {
           ...card.job,
@@ -190,8 +195,10 @@ function restoreWorkspace(input: unknown): WorkspaceSnapshot {
       return card;
     });
   const title = typeof saved.title === 'string' ? saved.title.slice(0, 100) : fallback.title;
+  const notes = restoreNotes(saved.notes);
   return {
     version: 1,
+    ...(notes.length ? { notes } : {}),
     title: title === '森林来信' && !cards.length ? fallback.title : title,
     cards,
     selected:
