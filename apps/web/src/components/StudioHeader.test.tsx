@@ -29,6 +29,31 @@ const editTitle = () => {
 afterEach(cleanup);
 
 describe('studio header', () => {
+  it.each([false, true])('goes back to the project list (desktop: %s)', desktop => {
+    if (desktop) vi.stubGlobal('frameoutDesktop', { storage: {}, onBeforeClose: () => () => {} });
+    const onHome = vi.fn();
+    render(
+      <StudioHeader
+        title="未命名项目"
+        saveStatus="已保存"
+        hasShots={false}
+        workflowOpen={false}
+        onHome={onHome}
+        onHelp={() => {}}
+        onToggleWorkflow={() => {}}
+        onSettings={() => {}}
+        onExportProject={() => {}}
+        onExportVideo={() => {}}
+        onPreview={() => {}}
+      />,
+    );
+    const back = screen.getByRole('button', { name: '返回项目列表' });
+    expect(back.textContent).toBe('项目');
+    fireEvent.click(back);
+    expect(onHome).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
+  });
+
   it('names the project export honestly and explains what it leaves out', () => {
     const onExportProject = vi.fn();
     render(

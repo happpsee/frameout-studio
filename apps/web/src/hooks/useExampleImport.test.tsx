@@ -3,7 +3,10 @@ import { act, cleanup, renderHook } from '@testing-library/react';
 import { useExampleImport } from './useExampleImport';
 import { useWorkspace } from './useWorkspace';
 import { requestExample, takeExampleRequest } from '../lib/examples';
-import { EXAMPLE_LABEL, initialState, STORAGE_KEY } from '../lib/project';
+import { EXAMPLE_LABEL, initialState } from '../lib/project';
+import { projectDataKeys } from '../lib/projects';
+const TEST_PROJECT = 'test';
+const STORAGE_KEY = projectDataKeys(TEST_PROJECT).project;
 
 const camera = { x: 0, y: 0, zoom: 1 };
 const viewport = document.createElement('main');
@@ -14,7 +17,7 @@ function renderStudio(active: boolean) {
   const toast = vi.fn();
   const view = renderHook(
     ({ active }: { active: boolean }) => {
-      const workspace = useWorkspace();
+      const workspace = useWorkspace(TEST_PROJECT);
       useExampleImport({
         active,
         projectRef: workspace.projectRef,

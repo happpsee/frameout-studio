@@ -40,6 +40,10 @@ let requested: StudioExample['id'] | null = null;
 export function requestExample(id: StudioExample['id']) {
   requested = id;
 }
+/** The pending example, left in place for the studio to take. */
+export function peekExampleRequest(): StudioExample | undefined {
+  return requested ? findExample(requested) : undefined;
+}
 /** Returns the pending example once, then clears it. */
 export function takeExampleRequest(): StudioExample | undefined {
   const id = requested;

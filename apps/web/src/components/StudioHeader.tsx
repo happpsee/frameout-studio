@@ -11,6 +11,7 @@ interface StudioHeaderProps {
   /** Whether the sequence has shots to preview or export. */
   hasShots: boolean;
   workflowOpen: boolean;
+  /** Back to the project list. */
   onHome: () => void;
   onHelp: () => void;
   onToggleWorkflow: () => void;
@@ -22,19 +23,6 @@ interface StudioHeaderProps {
 
 /** The project file is not a backup: say so before people rely on it. */
 const EXPORT_PROJECT_NOTE = '只含画布布局和设置，不含图片和视频，目前也还不能导回来。';
-
-function Brand() {
-  return (
-    <>
-      <span className="fo-brand-mark">
-        F<span>↗</span>
-      </span>
-      <span>
-        FRAMEOUT<span className="fo-brand-zh">帧外</span>
-      </span>
-    </>
-  );
-}
 
 export default function StudioHeader({
   title,
@@ -50,25 +38,21 @@ export default function StudioHeader({
   onExportVideo,
   onPreview,
 }: StudioHeaderProps) {
-  // The desktop app has no landing page to return to and keeps these actions in its side rail.
+  // The desktop app keeps the tool actions in its side rail.
   const desktop = isDesktop();
   return (
     <header className="fo-header">
       <div className="fo-brand-slot">
-        {desktop ? (
-          <div className="fo-brand" aria-label="帧外 FRAMEOUT">
-            <Brand />
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="fo-brand"
-            aria-label="返回 FRAMEOUT 首页"
-            onClick={onHome}
-          >
-            <Brand />
-          </button>
-        )}
+        <button
+          type="button"
+          className="fo-back-projects"
+          aria-label="返回项目列表"
+          title="返回项目列表"
+          onClick={onHome}
+        >
+          <Icon name="arrow-left" />
+          <span>项目</span>
+        </button>
       </div>
       <div className="fo-project">
         <span className="fo-project-divider">/</span>

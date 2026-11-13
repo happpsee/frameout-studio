@@ -7,8 +7,11 @@ import { useWorkflow } from './useWorkflow';
 import { createClient } from '../lib/ai-client';
 import { defaults } from '../lib/preferences';
 import { getMedia } from '../lib/media-store';
-import { initialState, serializeProject, STORAGE_KEY } from '../lib/project';
+import { initialState, serializeProject } from '../lib/project';
 import { createWorkflow } from '../lib/workflow';
+import { projectDataKeys } from '../lib/projects';
+const TEST_PROJECT = 'test';
+const STORAGE_KEY = projectDataKeys(TEST_PROJECT).project;
 
 vi.mock('../lib/ai-client', async original => ({
   ...(await original<typeof import('../lib/ai-client')>()),
@@ -23,7 +26,7 @@ const config = { ...defaults('ark'), key: 'fixture-key-never-persist' };
 
 function harness() {
   return renderHook(() => {
-    const workspace = useWorkspace();
+    const workspace = useWorkspace(TEST_PROJECT);
     const generation = useGeneration({
       getProject: () => workspace.projectRef.current,
       update: workspace.update,

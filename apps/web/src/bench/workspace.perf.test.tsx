@@ -5,8 +5,11 @@ import { act, cleanup, render, renderHook } from '@testing-library/react';
 import { afterAll, afterEach, beforeEach, describe, it, vi } from 'vitest';
 import Studio from '../components/Studio';
 import { useWorkspace } from '../hooks/useWorkspace';
-import { initialState, serializeProject, serializeWorkspace, STORAGE_KEY } from '../lib/project';
+import { initialState, serializeProject, serializeWorkspace } from '../lib/project';
 import type { Card, ProjectState } from '../types';
+import { projectDataKeys } from '../lib/projects';
+const TEST_PROJECT = 'test';
+const STORAGE_KEY = projectDataKeys(TEST_PROJECT).project;
 
 const CARDS = 200;
 const results: Record<string, string> = {};
@@ -138,7 +141,7 @@ afterAll(() => {
 
 describe(`workspace with ${CARDS} cards, 8 versions and a 160-event plan`, () => {
   it('measures one recorded edit', () => {
-    const { result } = renderHook(useWorkspace);
+    const { result } = renderHook(() => useWorkspace(TEST_PROJECT));
     let x = 0;
     const ms = time(
       () =>
@@ -173,7 +176,7 @@ describe(`workspace with ${CARDS} cards, 8 versions and a 160-event plan`, () =>
             committed += duration;
           }}
         >
-          <Studio onClose={() => {}} />
+          <Studio projectId="test" onClose={() => {}} />
         </Profiler>
       </StrictMode>,
     );

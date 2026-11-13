@@ -17,7 +17,7 @@ const config = { ...defaults('ark'), key: 'fixture-key-never-persist' };
 
 function harness() {
   return renderHook(() => {
-    const workspace = useWorkspace();
+    const workspace = useWorkspace('test');
     const generation = useGeneration({
       getProject: () => workspace.projectRef.current,
       update: workspace.update,

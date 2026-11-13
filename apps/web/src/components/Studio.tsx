@@ -16,7 +16,8 @@ import { CARD_CENTER, CARD_HEIGHT, CARD_WIDTH, clamp } from '../lib/canvas-camer
 import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { readStoredValue } from '../lib/desktop-storage';
 import { desktopBridge, isDesktop } from '../lib/platform';
-import { serializeProject, STORAGE_KEY } from '../lib/project';
+import { serializeProject } from '../lib/project';
+import { projectDataKeys } from '../lib/projects';
 import APISettings from './APISettings';
 import Icon from './Icon';
 import { CanvasCard, jobNote, pending, visibleCards } from './CanvasCard';
@@ -47,9 +48,9 @@ function clipDuration(card: Card) {
     ? duration
     : 4;
 }
-function needsInitialFit() {
+function needsInitialFit(projectId: string) {
   try {
-    const saved = JSON.parse(readStoredValue(STORAGE_KEY) || 'null');
+    const saved = JSON.parse(readStoredValue(projectDataKeys(projectId).project) || 'null');
     return !(
       saved?.version === 1 &&
       Array.isArray(saved.cards) &&
@@ -62,10 +63,16 @@ function needsInitialFit() {
 }
 
 export default function Studio({
+  projectId,
   onClose,
+  onShowIntro = onClose,
   active: isActive = true,
 }: {
+  /** Mount with key={projectId}: undo history and generation state belong to one project. */
+  projectId: string;
+  /** Back to the project list. */
   onClose: () => void;
+  onShowIntro?: () => void;
   active?: boolean;
 }) {
   const desktop = isDesktop();
@@ -82,7 +89,7 @@ export default function Studio({
     renameProject,
     createCheckpoint,
     restoreCheckpoint,
-  } = useWorkspace();
+  } = useWorkspace(projectId);
   // Elements
   const studioRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLElement>(null);
@@ -110,7 +117,7 @@ export default function Studio({
 
   // Capture before effects: StrictMode cleanup may save a default camera before
   // the second effect setup. That save should not suppress the first fit.
-  const [fitOnOpen] = useState(needsInitialFit);
+  const [fitOnOpen] = useState(() => needsInitialFit(projectId));
   const didInitialFit = useRef(!fitOnOpen);
   const [layout, setLayout] = useState({
     width: 1200,
@@ -265,6 +272,10 @@ export default function Studio({
       }),
     [flush, stopGeneration, pauseWorkflow],
   );
+  useEffect(() => {
+    // Leaving for the project list: save now so the list shows the latest counts and cover.
+    if (!isActive) flush().catch(() => {});
+  }, [isActive, flush]);
   const canvas = useCanvas({
     active: isActive,
     viewportRef,
@@ -908,7 +919,7 @@ export default function Studio({
       <HelpDialog
         open={isActive && helpOpen}
         onClose={() => setHelpOpen(false)}
-        onShowIntro={onClose}
+        onShowIntro={onShowIntro}
       />
     </div>
   );

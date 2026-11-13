@@ -4,8 +4,10 @@ import {
   GENERATION_MODE_KEY,
   PROJECT_STORAGE_KEY,
   flushDesktopStorage,
+  loadDesktopKeys,
   loadDesktopStorage,
   readStoredValue,
+  removeStoredValue,
   writeStoredValue,
 } from './desktop-storage';
 import { DesktopMediaTooLargeError, getMedia, putMedia } from './media-store';
@@ -40,10 +42,48 @@ describe('desktop data files', () => {
     expect(write).not.toHaveBeenCalled();
   });
 
-  it('rejects a damaged project instead of opening and overwriting it', async () => {
+  it('starts with a damaged pre-project workspace and leaves the file alone', async () => {
     files.set(PROJECT_STORAGE_KEY, bytes('{damaged'));
-    await expect(loadDesktopStorage()).rejects.toThrow();
+    await loadDesktopStorage();
+    expect(readStoredValue(PROJECT_STORAGE_KEY)).toBe('{damaged');
     expect(write).not.toHaveBeenCalled();
+  });
+
+  it('loads other keys on demand, keeps newer writes and refuses a damaged value', async () => {
+    files.set('frameout-project-a', bytes('saved-a'));
+    files.set('frameout-project-b', bytes('saved-b'));
+    files.set('frameout-project-bad', bytes('{damaged'));
+    await loadDesktopStorage();
+    expect(readStoredValue('frameout-project-a')).toBeNull();
+    void writeStoredValue('frameout-project-b', 'newer-b');
+    await loadDesktopKeys(['frameout-project-a', 'frameout-project-b', 'frameout-project-none']);
+    expect(readStoredValue('frameout-project-a')).toBe('saved-a');
+    expect(readStoredValue('frameout-project-b')).toBe('newer-b');
+    expect(readStoredValue('frameout-project-none')).toBeNull();
+    const check = (_key: string, value: string) => void JSON.parse(value);
+    await expect(loadDesktopKeys(['frameout-project-bad'], check)).rejects.toThrow();
+    expect(readStoredValue('frameout-project-bad')).toBeNull();
+    await flushDesktopStorage();
+    expect(new TextDecoder().decode(files.get('frameout-project-bad'))).toBe('{damaged');
+  });
+
+  it('removes a value by emptying its file, and can hold a write until another finishes', async () => {
+    await loadDesktopStorage();
+    let finish!: () => void;
+    const first = new Promise<void>(resolve => (finish = resolve));
+    const index = writeStoredValue('frameout-projects-v1', 'index', first);
+    expect(readStoredValue('frameout-projects-v1')).toBe('index');
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(files.has('frameout-projects-v1')).toBe(false);
+    finish();
+    await index;
+    expect(new TextDecoder().decode(files.get('frameout-projects-v1'))).toBe('index');
+    await removeStoredValue('frameout-projects-v1');
+    expect(readStoredValue('frameout-projects-v1')).toBeNull();
+    expect(files.get('frameout-projects-v1')!.byteLength).toBe(0);
+    await loadDesktopStorage();
+    expect(readStoredValue('frameout-projects-v1')).toBeNull();
   });
 
   it('drains queued writes in order and leaves the latest snapshot on disk', async () => {

@@ -2,7 +2,6 @@ import type { AIConfig, Card, ProjectCheckpoint, ProjectState, WorkspaceSnapshot
 import { restoreWorkflow } from './workflow';
 import { normalizeConsistency } from './consistency';
 
-export { PROJECT_STORAGE_KEY as STORAGE_KEY, CHECKPOINTS_STORAGE_KEY } from './desktop-storage';
 const legacySampleSources = new Set([
   '/assets/forest-astronaut.png',
   '/assets/still-ocean.webp',

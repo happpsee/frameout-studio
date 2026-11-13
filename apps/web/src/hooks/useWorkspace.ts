@@ -2,20 +2,20 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { produce } from 'immer';
 import type { ProjectState, UpdateProject } from '../types';
 import {
-  CHECKPOINTS_STORAGE_KEY,
   initialState,
   normalizeProjectTitle,
   restoreProject,
   serializeCheckpoints,
   serializeProject,
   serializeWorkspace,
-  STORAGE_KEY,
   uid,
 } from '../lib/project';
+import { findProject, projectDataKeys } from '../lib/projects';
 import { getMedia } from '../lib/media-store';
 import { flushDesktopStorage, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
 import { recordEvent } from '../lib/workflow';
 import { isDesktop } from '../lib/platform';
+import { useProjectSync } from './useProjectSync';
 
 type Snapshot = Pick<ProjectState, 'cards' | 'sequence' | 'selected' | 'title'>;
 // Project states are immutable (Immer), so undo entries can share them instead of copying.
@@ -26,13 +26,21 @@ const snapshot = (project: ProjectState): Snapshot => ({
   title: project.title,
 });
 const UNSAVED = Symbol('unsaved');
-function restore() {
+function restore(projectId: string): ProjectState {
+  const project = restoreSaved(projectDataKeys(projectId));
+  // A rename made in the project list while the project was closed is the newer name.
+  const title = findProject(projectId)?.title;
+  return title && title !== project.title ? { ...project, title } : project;
+}
+function restoreSaved(keys: { project: string; checkpoints: string }): ProjectState {
+  const raw = readStoredValue(keys.project);
   try {
-    const saved = JSON.parse(readStoredValue(STORAGE_KEY) || 'null');
+    const saved = JSON.parse(raw || 'null');
+    if (raw && (saved?.version !== 1 || !Array.isArray(saved.cards))) keepDamaged(keys, raw);
     // Older saves (and a fallback after a failed snapshot write) keep versions inside the project.
     if (saved && typeof saved === 'object' && !Array.isArray(saved.checkpoints)) {
       try {
-        const checkpoints = JSON.parse(readStoredValue(CHECKPOINTS_STORAGE_KEY) || 'null');
+        const checkpoints = JSON.parse(readStoredValue(keys.checkpoints) || 'null');
         if (Array.isArray(checkpoints)) saved.checkpoints = checkpoints;
       } catch {
         /* A damaged version list must not discard the project. */
@@ -40,12 +48,23 @@ function restore() {
     }
     return restoreProject(saved);
   } catch {
+    if (raw) keepDamaged(keys, raw);
     return initialState();
   }
 }
+/** Autosave will replace a project that cannot be read; keep a copy of it first. */
+function keepDamaged(keys: { project: string }, raw: string) {
+  try {
+    void writeStoredValue(keys.project + '-damaged', raw)?.catch(() => {});
+  } catch {
+    /* Storage is full; nothing more can be done here. */
+  }
+}
 
-export function useWorkspace() {
-  const [project, setProject] = useState(restore);
+/** The open project's contents, undo history and autosave. Mount once per project. */
+export function useWorkspace(projectId: string) {
+  const [project, setProject] = useState(() => restore(projectId));
+  const [keys] = useState(() => projectDataKeys(projectId));
   const projectRef = useRef(project);
   const savedLabel = isDesktop() ? '已保存到本机' : '已保存到此浏览器';
   const [saveStatus, setSaveStatus] = useState(savedLabel);
@@ -148,42 +167,48 @@ export function useWorkspace() {
         throw error;
       });
   }, []);
+  const recordSave = useProjectSync(projectId, projectRef, update);
+  const writeProject = useCallback(
+    (project: ProjectState, workspace: ProjectState): void | Promise<void> => {
+      const checkpoints = project.checkpoints;
+      const writeMain = (withCheckpoints = false) =>
+        writeChanged(
+          keys.project,
+          JSON.stringify(
+            withCheckpoints
+              ? { ...workspace, checkpoints: serializeCheckpoints(checkpoints) }
+              : workspace,
+          ),
+        );
+      if (checkpoints === savedCheckpoints.current) return writeMain();
+      // Write versions first; if that fails, keep them inside the project so they are not lost.
+      let write: void | Promise<void>;
+      try {
+        write = writeChanged(keys.checkpoints, JSON.stringify(serializeCheckpoints(checkpoints)));
+      } catch (error) {
+        writeMain(true);
+        throw error;
+      }
+      savedCheckpoints.current = checkpoints;
+      if (!write) return writeMain();
+      return write.then(
+        () => writeMain(),
+        async error => {
+          if (savedCheckpoints.current === checkpoints) savedCheckpoints.current = UNSAVED;
+          await writeMain(true);
+          throw error;
+        },
+      );
+    },
+    [writeChanged, keys],
+  );
   const saveProject = useCallback((): void | Promise<void> => {
     const project = projectRef.current;
-    const checkpoints = project.checkpoints;
     const workspace = serializeProject({ ...project, checkpoints: undefined });
-    const writeMain = (withCheckpoints = false) =>
-      writeChanged(
-        STORAGE_KEY,
-        JSON.stringify(
-          withCheckpoints
-            ? { ...workspace, checkpoints: serializeCheckpoints(checkpoints) }
-            : workspace,
-        ),
-      );
-    if (checkpoints === savedCheckpoints.current) return writeMain();
-    // Write versions first; if that fails, keep them inside the project so they are not lost.
-    let write: void | Promise<void>;
-    try {
-      write = writeChanged(
-        CHECKPOINTS_STORAGE_KEY,
-        JSON.stringify(serializeCheckpoints(checkpoints)),
-      );
-    } catch (error) {
-      writeMain(true);
-      throw error;
-    }
-    savedCheckpoints.current = checkpoints;
-    if (!write) return writeMain();
-    return write.then(
-      () => writeMain(),
-      async error => {
-        if (savedCheckpoints.current === checkpoints) savedCheckpoints.current = UNSAVED;
-        await writeMain(true);
-        throw error;
-      },
-    );
-  }, [writeChanged]);
+    const write = writeProject(project, workspace);
+    recordSave(project, workspace);
+    return write;
+  }, [writeProject, recordSave]);
   const flush = useCallback(async () => {
     await saveProject();
     await flushDesktopStorage();

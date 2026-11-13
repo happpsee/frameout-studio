@@ -2569,3 +2569,29 @@ body[data-studio='true'] {
     min-width: 30px;
   }
 }
+.fo-back-projects {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px 7px 9px;
+  border: 1px solid var(--fo-line-2);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fo-paper);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fo-back-projects svg {
+  width: 16px;
+  height: 16px;
+}
+.fo-back-projects:hover,
+.fo-back-projects:focus-visible {
+  border-color: var(--fo-accent);
+  color: var(--fo-accent);
+}
+.fo-app-notice {
+  position: fixed;
+  z-index: 100;
+}

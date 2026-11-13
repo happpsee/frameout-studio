@@ -3,8 +3,11 @@ import { StrictMode } from 'react';
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Studio from './Studio';
-import { initialState, STORAGE_KEY } from '../lib/project';
+import { initialState } from '../lib/project';
 import { defaults, saveProfile } from '../lib/preferences';
+import { projectDataKeys } from '../lib/projects';
+const TEST_PROJECT = 'test';
+const STORAGE_KEY = projectDataKeys(TEST_PROJECT).project;
 
 let frameId = 0;
 const frames = new Map<number, FrameRequestCallback>();
@@ -82,7 +85,7 @@ afterEach(() => {
 describe('React studio integration', () => {
   it('previews a shot plan from the toolbar and persists its dependencies before generation', () => {
     saveProfile({ ...defaults('ark'), key: '' });
-    render(<Studio onClose={vi.fn()} />);
+    render(<Studio projectId="test" onClose={vi.fn()} />);
     frame();
     frame();
     fireEvent.click(screen.getByRole('button', { name: '镜头计划' }));
@@ -108,7 +111,7 @@ describe('React studio integration', () => {
       },
     ];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-    render(<Studio onClose={vi.fn()} />);
+    render(<Studio projectId="test" onClose={vi.fn()} />);
     frame();
     frame();
     fireEvent.click(screen.getByRole('button', { name: '镜头计划' }));
@@ -123,7 +126,7 @@ describe('React studio integration', () => {
     localStorage.setItem('frameout-generation-mode', 'demo');
     render(
       <StrictMode>
-        <Studio onClose={vi.fn()} />
+        <Studio projectId="test" onClose={vi.fn()} />
       </StrictMode>,
     );
     frame();
@@ -145,7 +148,7 @@ describe('React studio integration', () => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
     const { container } = render(
       <StrictMode>
-        <Studio onClose={vi.fn()} />
+        <Studio projectId="test" onClose={vi.fn()} />
       </StrictMode>,
     );
     frame();
@@ -168,7 +171,7 @@ describe('React studio integration', () => {
       },
     ];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saved));
-    const { container } = render(<Studio onClose={vi.fn()} />);
+    const { container } = render(<Studio projectId="test" onClose={vi.fn()} />);
     frame();
     frame();
     const video = container.querySelector('video')!;
@@ -181,7 +184,7 @@ describe('React studio integration', () => {
   });
   it('changes timeline duration by keyboard and keeps it in sync after undo/redo', () => {
     saveWorkspaceWithMedia();
-    render(<Studio onClose={vi.fn()} />);
+    render(<Studio projectId="test" onClose={vi.fn()} />);
     frame();
     frame();
     fireEvent.click(screen.getByRole('button', { name: '选择素材：穿过森林' }));
@@ -200,7 +203,7 @@ describe('React studio integration', () => {
   });
   it('reorders shots, removes them and restores removal with undo', () => {
     saveWorkspaceWithMedia();
-    const { container } = render(<Studio onClose={vi.fn()} />);
+    const { container } = render(<Studio projectId="test" onClose={vi.fn()} />);
     frame();
     frame();
     fireEvent.click(screen.getByRole('button', { name: '选择素材：穿过森林' }));
@@ -221,7 +224,7 @@ describe('React studio integration', () => {
   });
   it('ignores global shortcuts and canvas input while hidden, then resumes the same workspace', () => {
     saveWorkspaceWithMedia();
-    const { container, rerender } = render(<Studio onClose={vi.fn()} />);
+    const { container, rerender } = render(<Studio projectId="test" onClose={vi.fn()} />);
     frame();
     frame();
     fireEvent.change(screen.getByRole('textbox', { name: '让想法，先有一个画面。' }), {
@@ -232,7 +235,7 @@ describe('React studio integration', () => {
     const viewport = container.querySelector('.fo-viewport')!;
     const stage = container.querySelector('.fo-stage') as HTMLElement;
     const cameraBefore = stage.style.transform;
-    rerender(<Studio onClose={vi.fn()} active={false} />);
+    rerender(<Studio projectId="test" onClose={vi.fn()} active={false} />);
     expect((container.querySelector('#studio-root') as HTMLElement).hidden).toBe(true);
     fireEvent.keyDown(document, { key: 'z', ctrlKey: true });
     fireEvent.keyDown(document, { key: 'Delete' });
@@ -241,7 +244,7 @@ describe('React studio integration', () => {
     fireEvent(viewport, wheel);
     frame();
     expect(wheel.defaultPrevented).toBe(false);
-    rerender(<Studio onClose={vi.fn()} active />);
+    rerender(<Studio projectId="test" onClose={vi.fn()} active />);
     frame();
     frame();
     expect(screen.getAllByRole('button', { name: /^选择素材：/ })).toHaveLength(3);
@@ -266,7 +269,7 @@ describe('React studio integration', () => {
         }),
     );
     vi.stubGlobal('fetch', generate);
-    const { rerender } = render(<Studio onClose={vi.fn()} />);
+    const { rerender } = render(<Studio projectId="test" onClose={vi.fn()} />);
     frame();
     frame();
     fireEvent.click(screen.getByRole('button', { name: 'API 设置' }));
@@ -285,12 +288,12 @@ describe('React studio integration', () => {
     expect((screen.getByRole('button', { name: '生成图片' }) as HTMLButtonElement).disabled).toBe(
       true,
     );
-    rerender(<Studio onClose={vi.fn()} active={false} />);
+    rerender(<Studio projectId="test" onClose={vi.fn()} active={false} />);
     expect(options.signal?.aborted).toBe(true);
     await act(async () =>
       reply(new Response(JSON.stringify({ data: [{ url: 'https://media.example/late.png' }] }))),
     );
-    rerender(<Studio onClose={vi.fn()} active />);
+    rerender(<Studio projectId="test" onClose={vi.fn()} active />);
     frame();
     expect(screen.queryAllByRole('button', { name: /^选择素材：/ })).toHaveLength(0);
     expect(
@@ -302,7 +305,7 @@ describe('React studio integration', () => {
     );
   });
   it('sends a first generation without a key to the API settings and keeps the prompt', () => {
-    render(<Studio onClose={vi.fn()} />);
+    render(<Studio projectId="test" onClose={vi.fn()} />);
     frame();
     frame();
     expect(screen.getByRole('button', { name: '连接生成服务' })).toBeTruthy();
@@ -343,7 +346,7 @@ describe('React studio integration', () => {
       { id: 's2', cardId: 'lost', duration: 3 },
     ];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
-    render(<Studio onClose={vi.fn()} />);
+    render(<Studio projectId="test" onClose={vi.fn()} />);
     frame();
     frame();
     fireEvent.click(screen.getByRole('button', { name: '导出成片' }));
@@ -371,7 +374,7 @@ describe('React studio integration', () => {
       },
     ];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
-    render(<Studio onClose={vi.fn()} />);
+    render(<Studio projectId="test" onClose={vi.fn()} />);
     frame();
     frame();
     expect(screen.getByRole('button', { name: '镜头一致性：未设定' })).toBeTruthy();
