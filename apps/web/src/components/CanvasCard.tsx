@@ -37,6 +37,8 @@ type Props = {
   reference: boolean;
   /** Connected to the selection: its first frame, a video made from it, or its script's result. */
   linked?: boolean;
+  /** Drawn large enough to need the stored file instead of its thumbnail. */
+  original?: boolean;
   onSelect: (id: string) => void;
   onOpen: (id: string) => void;
   onDuration: (card: Card, duration: number) => void;
@@ -51,6 +53,7 @@ export const CanvasCard = memo(function CanvasCard({
   dragging,
   reference,
   linked,
+  original,
   onSelect,
   onOpen,
   onDuration,
@@ -97,7 +100,11 @@ export const CanvasCard = memo(function CanvasCard({
           </span>
         ) : (
           <>
-            <CardMedia card={card} onDuration={duration => onDuration(card, duration)} />
+            <CardMedia
+              card={card}
+              original={original}
+              onDuration={duration => onDuration(card, duration)}
+            />
             <span className="fo-media-marker">{card.kind === 'video' ? '▶' : '+'}</span>
           </>
         )}

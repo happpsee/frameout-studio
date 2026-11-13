@@ -14,6 +14,7 @@ import { useWorkflow } from '../hooks/useWorkflow';
 import { useExampleImport } from '../hooks/useExampleImport';
 import { useNotes } from '../hooks/useNotes';
 import { linkedIds } from '../lib/notes';
+import { thumbnails, wantsOriginal } from '../lib/thumbnails';
 import { CanvasNote } from './CanvasNote';
 import { CARD_CENTER, CARD_HEIGHT, CARD_WIDTH, clamp } from '../lib/canvas-camera';
 import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
@@ -308,6 +309,11 @@ export default function Studio({
     toast,
   });
   const linked = linkedIds(project, project.selected, notes.selected);
+  const original = wantsOriginal(canvas.camera.zoom, window.devicePixelRatio);
+  useEffect(() => {
+    // Off-screen cards too, so panning to them does not load their full files first.
+    project.cards.forEach(thumbnails.request);
+  }, [project.cards]);
   const selected = project.cards.find(card => card.id === project.selected);
   const hasSelection = Boolean(selected);
   const selectedJobStatus = selected?.job?.status;
@@ -748,6 +754,7 @@ export default function Studio({
                       dragging={dragging}
                       reference={referenceIds.has(card.id)}
                       linked={linked.cards.has(card.id)}
+                      original={original}
                       onSelect={selectCard}
                       onOpen={openCard}
                       onDuration={cardDuration}
