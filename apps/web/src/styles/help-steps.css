@@ -1,0 +1,55 @@
+/* "三步做出第一条片" in the help dialog, above the canvas shortcuts. */
+.fo-help-steps {
+  margin: 0 0 24px;
+  padding: 16px 16px 4px;
+  background: var(--fo-accent-soft);
+  border: 1px solid var(--fo-line);
+  border-radius: 6px;
+}
+.fo-help-steps h3,
+.fo-help-subheading {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fo-paper);
+}
+.fo-help-subheading {
+  margin-bottom: 4px;
+}
+.fo-help-steps ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: fo-help-step;
+}
+.fo-help-steps li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 0 12px 30px;
+  font-size: 11px;
+  line-height: 1.7;
+  counter-increment: fo-help-step;
+}
+.fo-help-steps li::before {
+  content: counter(fo-help-step);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--fo-accent);
+  border-radius: 50%;
+  color: var(--fo-accent);
+  font-size: 10px;
+  line-height: 18px;
+  text-align: center;
+}
+.fo-help-steps strong {
+  font-weight: 500;
+  color: var(--fo-text-2);
+}
+.fo-help-steps span {
+  color: var(--fo-text-7);
+}

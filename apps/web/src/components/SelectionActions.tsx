@@ -1,6 +1,7 @@
 import type { CSSProperties, RefObject } from 'react';
 import type { Card } from '../types';
 import { usableReference } from '../lib/consistency';
+import { failedImage } from '../lib/failed-image';
 import type { Regeneration } from '../lib/regenerate';
 import { jobEnded, pending } from './CanvasCard';
 import Icon from './Icon';
@@ -45,6 +46,8 @@ export default function SelectionActions({
 }: SelectionActionsProps) {
   const waiting = pending(card);
   const unavailable = waiting || card.missingMedia;
+  // A failed image can only be retried or deleted.
+  const failed = failedImage(card);
   return (
     <div
       ref={barRef}
@@ -55,15 +58,17 @@ export default function SelectionActions({
       <span className="fo-selected-name" title={card.prompt}>
         {card.name}
       </span>
-      <button
-        type="button"
-        className="fo-small-button"
-        disabled={busy || card.kind === 'video' || unavailable}
-        onClick={onGenerateVideo}
-      >
-        <Icon name="film" />
-        <span>图生视频</span>
-      </button>
+      {!failed && (
+        <button
+          type="button"
+          className="fo-small-button"
+          disabled={busy || card.kind === 'video' || unavailable}
+          onClick={onGenerateVideo}
+        >
+          <Icon name="film" />
+          <span>图生视频</span>
+        </button>
+      )}
       {regeneration && (
         <RegenerateButton regeneration={regeneration} busy={busy} onClick={onRegenerate} />
       )}
@@ -73,7 +78,7 @@ export default function SelectionActions({
           <span>继续查询</span>
         </button>
       )}
-      {card.kind === 'image' && (
+      {card.kind === 'image' && !failed && (
         <button
           type="button"
           className={`fo-small-button fo-reference-toggle${isReference ? ' is-active' : ''}`}
@@ -85,16 +90,18 @@ export default function SelectionActions({
           <span>{isReference ? '取消参考' : '设为参考'}</span>
         </button>
       )}
-      <button
-        type="button"
-        className="fo-small-button fo-add-shot"
-        disabled={unavailable}
-        onClick={onAddShot}
-      >
-        <Icon name="plus" />
-        <span>加入成片</span>
-      </button>
-      {card.provider && (
+      {!failed && (
+        <button
+          type="button"
+          className="fo-small-button fo-add-shot"
+          disabled={unavailable}
+          onClick={onAddShot}
+        >
+          <Icon name="plus" />
+          <span>加入成片</span>
+        </button>
+      )}
+      {card.provider && !failed && (
         <button
           type="button"
           className="fo-icon-button"
@@ -129,9 +136,11 @@ function RegenerateButton({
   onClick: () => void;
 }) {
   const label = regeneration.mode === 'video' ? '再来一条' : '再来一张';
-  const hint = regeneration.ok
-    ? `用同样的提示词${regeneration.source ? '和首帧' : ''}重新生成，会再计费一次`
-    : regeneration.reason;
+  const hint = !regeneration.ok
+    ? regeneration.reason
+    : regeneration.replaces
+      ? '用同样的提示词重新生成，结果替换这张失败的卡片，会再计费一次'
+      : `用同样的提示词${regeneration.source ? '和首帧' : ''}重新生成，会再计费一次`;
   return (
     <button
       type="button"

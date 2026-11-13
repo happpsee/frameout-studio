@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { regeneration } from './regenerate';
 import { preferenceOnly } from './project';
 import { defaults } from './preferences';
+import { failedImageCard } from './failed-image';
 import type { Card, VideoJob } from '../types';
 
 const image: Card = {
@@ -74,5 +75,19 @@ describe('regeneration', () => {
       reason: expect.stringContaining('避免重复付费'),
     });
     expect(regeneration(video('succeeded'), [])).toMatchObject({ ok: false });
+  });
+  it('retries a failed image in its place', () => {
+    const failed = failedImageCard(
+      '海边的灯塔，黄昏',
+      '内容被供应商的安全审核拒绝',
+      defaults('ark'),
+      { x: 0, y: 0 },
+    );
+    expect(regeneration(failed, [failed])).toEqual({
+      ok: true,
+      prompt: '海边的灯塔，黄昏',
+      mode: 'image',
+      replaces: true,
+    });
   });
 });

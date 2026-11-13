@@ -2,6 +2,7 @@ import { Fragment, useEffect, useRef } from 'react';
 import { closeOnBackdropClick } from '../lib/dialog';
 import { isDesktop } from '../lib/platform';
 import Icon from './Icon';
+import '../styles/help-steps.css';
 
 /** Each line of a shortcut description is rendered on its own row. */
 const SHORTCUTS: { action: string; keys: string[] }[] = [
@@ -16,6 +17,23 @@ const SHORTCUTS: { action: string; keys: string[] }[] = [
   { action: '撤销 / 重做', keys: ['⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z'] },
   { action: '删除素材', keys: ['选中后按 Delete / Backspace'] },
   { action: '适应画布', keys: ['按 0，或点击适应按钮'] },
+];
+
+/** The shortest path from an empty canvas to an exported film. */
+const FIRST_FILM_STEPS: { title: string; detail: string }[] = [
+  {
+    title: '连上火山方舟',
+    detail:
+      '点「API 设置」，选火山方舟，填入 API Key。Key 在火山方舟控制台的「API Key 管理」里创建，生成按次收费。',
+  },
+  {
+    title: '先出画面，再让它动',
+    detail: '在输入框写一句描述，生成图片。选中满意的一张，点「图生视频」。',
+  },
+  {
+    title: '排成片，导出',
+    detail: '选中素材点「加入成片」，在成片区排好顺序，「预览成片」看一遍，再「导出成片」。',
+  },
 ];
 
 interface HelpDialogProps {
@@ -58,6 +76,18 @@ export default function HelpDialog({ open, onClose, onShowIntro }: HelpDialogPro
         再把故事连起来。
       </h2>
       <p>画布用来探索和比较。只有加入下方成片区的镜头，才会按顺序播放。</p>
+      <section className="fo-help-steps" aria-labelledby="fo-help-steps-heading">
+        <h3 id="fo-help-steps-heading">三步做出第一条片</h3>
+        <ol>
+          {FIRST_FILM_STEPS.map(({ title, detail }) => (
+            <li key={title}>
+              <strong>{title}</strong>
+              <span>{detail}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+      <h3 className="fo-help-subheading">画布操作</h3>
       <dl>
         {SHORTCUTS.map(({ action, keys }) => (
           <div key={action}>
@@ -80,7 +110,7 @@ export default function HelpDialog({ open, onClose, onShowIntro }: HelpDialogPro
           {desktop
             ? '项目和本地素材自动保存到本机。供应商临时链接请及时下载。'
             : '素材保存在本浏览器或供应商临时链接，请及时下载。'}
-          成片区支持顺序预览，也可以导出为 MP4（暂不含声音）。
+          成片区支持顺序预览，也可以导出为 MP4，保留视频片段自带的声音。
         </span>
       </div>
       {desktop && (

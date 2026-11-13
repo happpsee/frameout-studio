@@ -3,3 +3,7 @@ release/
 .turbo/
 node_modules/
 pnpm-lock.yaml
+
+# Personal scratch files at the repo root; not part of the project.
+/index.js
+/index.html

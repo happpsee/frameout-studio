@@ -224,3 +224,26 @@ describe('workspace persistence and asynchronous media loading', () => {
     ]);
   });
 });
+
+describe('project rename', () => {
+  it('saves a trimmed name as one undo step and falls back when cleared', () => {
+    const { result } = renderHook(useWorkspace);
+    act(() => result.current.renameProject('  海边短片  '));
+    expect(result.current.project.title).toBe('海边短片');
+    expect(result.current.canUndo).toBe(true);
+    act(() => vi.advanceTimersByTime(400));
+    expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).title).toBe('海边短片');
+    act(() => result.current.renameProject(''));
+    expect(result.current.project.title).toBe(initialState().title);
+    act(() => result.current.undo());
+    expect(result.current.project.title).toBe('海边短片');
+    act(() => result.current.undo());
+    expect(result.current.project.title).toBe(initialState().title);
+  });
+
+  it('records nothing when the name does not change', () => {
+    const { result } = renderHook(useWorkspace);
+    act(() => result.current.renameProject(` ${initialState().title} `));
+    expect(result.current.canUndo).toBe(false);
+  });
+});

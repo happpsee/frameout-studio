@@ -4,6 +4,7 @@ import type { ProjectState, UpdateProject } from '../types';
 import {
   CHECKPOINTS_STORAGE_KEY,
   initialState,
+  normalizeProjectTitle,
   restoreProject,
   serializeCheckpoints,
   serializeProject,
@@ -80,6 +81,16 @@ export function useWorkspace() {
     setProject(value);
     renderHistory(n => n + 1);
   }, []);
+  /** Renames the project as one undo step; an unchanged name records nothing. */
+  const renameProject = useCallback(
+    (value: string) => {
+      const title = normalizeProjectTitle(value);
+      update(draft => {
+        draft.title = title;
+      });
+    },
+    [update],
+  );
   const createCheckpoint = useCallback(
     (name: string) => {
       if (projectRef.current.cards.some(card => card.sessionOnly))
@@ -270,6 +281,7 @@ export function useWorkspace() {
     canRedo: redoStack.current.length > 0,
     saveStatus,
     flush,
+    renameProject,
     createCheckpoint,
     restoreCheckpoint,
   };

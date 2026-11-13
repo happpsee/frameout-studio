@@ -9,17 +9,21 @@ import {
   Mp4OutputFormat,
   Output,
   QUALITY_HIGH,
+  type InputAudioTrack,
   type InputVideoTrack,
 } from 'mediabunny';
 import type { Card } from '../types';
 import { exportSupported } from './export-support';
+import { probeClipSound, SequenceAudio, type ClipSound, type ExportAudio } from './export-audio';
 
 // Renders the sequence the way the preview shows it (same fit, crop and tone, videos
 // from their first frame, holding the last frame) and encodes it as an MP4 with WebCodecs.
-// Like the preview, the export has no sound.
+// Video shots keep their clip's own sound (see export-audio); image shots are silent.
 
 export type ExportShot = { card: Card; duration: number };
 export type ExportSize = { width: number; height: number };
+export type ExportResult = { blob: Blob; audio: ExportAudio };
+export type { ExportAudio };
 export type ExportOptions = ExportSize & {
   fps?: number;
   signal?: AbortSignal;
@@ -93,6 +97,8 @@ type Prepared =
       input: Input;
       track: InputVideoTrack | null;
       last: number;
+      sound: ClipSound;
+      audio: InputAudioTrack | null;
     };
 class Unreadable extends Error {}
 class Undecodable extends Error {}
@@ -127,6 +133,7 @@ async function prepare(shot: ExportShot, signal?: AbortSignal): Promise<Prepared
     const track = await input.getPrimaryVideoTrack();
     if (!track) throw new Undecodable();
     const last = Math.max(0, (await input.computeDuration()) - 0.001);
+    const { track: audio, sound } = await probeClipSound(input);
     return {
       kind: 'video',
       shot,
@@ -134,6 +141,8 @@ async function prepare(shot: ExportShot, signal?: AbortSignal): Promise<Prepared
       input,
       track: (await track.canDecode()) ? track : null,
       last,
+      sound,
+      audio,
     };
   } catch {
     input.dispose();
@@ -185,7 +194,7 @@ async function* elementFrames(blob: Blob, times: number[]): AsyncGenerator<HTMLV
 export async function exportSequence(
   shots: ExportShot[],
   { width, height, fps = 30, signal, onProgress }: ExportOptions,
-): Promise<Blob> {
+): Promise<ExportResult> {
   if (!shots.length) throw new ExportError('成片里还没有可导出的镜头');
   if (!exportSupported())
     throw new ExportError('当前浏览器不支持视频编码，请使用最新版 Chrome、Edge 或桌面版');
@@ -257,42 +266,64 @@ export async function exportSequence(
     if (written % 10 === 0 || written === total) onProgress?.(written / total);
   };
 
-  try {
-    await output.start();
-    for (const item of prepared) {
-      const times = shotFrameTimes(item.shot.duration, fps);
-      if (item.kind === 'image') {
-        for (const _ of times) {
-          draw(item.bitmap, item.bitmap, item.shot.card);
-          await add();
-        }
-        continue;
-      }
-      // Past the clip's end the last frame is held, as in the preview.
-      const clipTimes = times.map(time => Math.min(time, item.last));
-      if (!item.track) {
-        for await (const video of elementFrames(item.blob, clipTimes)) {
-          draw(video, { width: video.videoWidth, height: video.videoHeight }, item.shot.card);
-          await add();
-        }
-        continue;
-      }
-      const sink = new CanvasSink(item.track, { poolSize: 2 });
-      let previous: HTMLCanvasElement | OffscreenCanvas | null = null;
-      for await (const frame of sink.canvasesAtTimestamps(clipTimes)) {
-        const image: HTMLCanvasElement | OffscreenCanvas | null = frame?.canvas ?? previous;
-        if (image) {
-          draw(image, image, item.shot.card);
-          previous = image;
-        } else {
-          context.fillStyle = '#000';
-          context.fillRect(0, 0, width, height);
-        }
+  const frames = async (item: Prepared) => {
+    const times = shotFrameTimes(item.shot.duration, fps);
+    if (item.kind === 'image') {
+      for (const _ of times) {
+        draw(item.bitmap, item.bitmap, item.shot.card);
         await add();
       }
+      return;
+    }
+    // Past the clip's end the last frame is held, as in the preview.
+    const clipTimes = times.map(time => Math.min(time, item.last));
+    if (!item.track) {
+      for await (const video of elementFrames(item.blob, clipTimes)) {
+        draw(video, { width: video.videoWidth, height: video.videoHeight }, item.shot.card);
+        await add();
+      }
+      return;
+    }
+    const sink = new CanvasSink(item.track, { poolSize: 2 });
+    let previous: HTMLCanvasElement | OffscreenCanvas | null = null;
+    for await (const frame of sink.canvasesAtTimestamps(clipTimes)) {
+      const image: HTMLCanvasElement | OffscreenCanvas | null = frame?.canvas ?? previous;
+      if (image) {
+        draw(image, image, item.shot.card);
+        previous = image;
+      } else {
+        context.fillStyle = '#000';
+        context.fillRect(0, 0, width, height);
+      }
+      await add();
+    }
+  };
+
+  try {
+    const { audio, kind: audioKind } = await SequenceAudio.attach(
+      output,
+      prepared.map(item => (item.kind === 'video' ? item.sound : 'none')),
+    );
+    await output.start();
+    for (const item of prepared) {
+      const start = written / fps;
+      await frames(item);
+      // The shot's sound follows its frames and spans exactly them.
+      await audio?.write(
+        item.kind === 'video'
+          ? { name: item.shot.card.name, track: item.audio, sound: item.sound }
+          : { name: item.shot.card.name, track: null, sound: 'none' },
+        start,
+        written / fps,
+        signal,
+      );
     }
     await output.finalize();
-    return new Blob([output.target.buffer!], { type: 'video/mp4' });
+    return {
+      blob: new Blob([output.target.buffer!], { type: 'video/mp4' }),
+      audio:
+        audioKind === 'kept' ? { kind: 'kept', silent: audio?.silent ?? [] } : { kind: audioKind },
+    };
   } catch (error) {
     if (output.state !== 'finalized' && output.state !== 'canceled')
       await output.cancel().catch(() => {});

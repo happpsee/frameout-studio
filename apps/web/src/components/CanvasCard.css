@@ -1,0 +1,33 @@
+/* A failed image card: the reason takes the place of the picture. */
+.fo-card.is-failed .fo-card-top > span:first-child {
+  color: var(--fo-danger);
+}
+.fo-failed-media {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 14px 18px;
+  text-align: center;
+  border: 1px dashed var(--fo-danger);
+  border-radius: 3px;
+  pointer-events: none;
+}
+.fo-failed-media strong {
+  color: var(--fo-danger);
+  font-size: 13px;
+  font-weight: 650;
+}
+.fo-failed-media span {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  color: var(--fo-text-3);
+  font-size: 11px;
+  line-height: 1.5;
+}

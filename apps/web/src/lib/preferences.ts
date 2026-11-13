@@ -6,7 +6,12 @@ import { rememberedKey } from './secrets';
 import { PREFERENCES_KEY, readStoredValue, writeStoredValue } from './desktop-storage';
 export { PREFERENCES_KEY } from './desktop-storage';
 export const providerIds: readonly Provider[] = PROVIDER_IDS;
-export function defaults(provider: Provider = 'openai'): AIConfig {
+/**
+ * Provider for someone who has not saved a choice yet. The interface is Chinese, and Volcano Ark
+ * works in mainland China and makes video; OpenAI does neither. Saved choices are never changed.
+ */
+export const DEFAULT_PROVIDER: Provider = 'ark';
+export function defaults(provider: Provider = DEFAULT_PROVIDER): AIConfig {
   const preset = PROVIDERS[provider];
   return {
     provider,
@@ -27,7 +32,7 @@ export function loadProfiles(): {
 } {
   try {
     const saved = JSON.parse(readStoredValue(PREFERENCES_KEY) || 'null');
-    if (!saved || saved.version !== 1) return { active: 'openai', profiles: {} };
+    if (!saved || saved.version !== 1) return { active: DEFAULT_PROVIDER, profiles: {} };
     const profiles: Partial<Record<Provider, AIConfig>> = {};
     for (const id of providerIds)
       if (saved.profiles?.[id])
@@ -37,9 +42,12 @@ export function loadProfiles(): {
           provider: id,
           key: rememberedKey(id),
         };
-    return { active: providerIds.includes(saved.active) ? saved.active : 'openai', profiles };
+    const active = providerIds.includes(saved.active)
+      ? saved.active
+      : (providerIds.find(id => profiles[id]) ?? DEFAULT_PROVIDER);
+    return { active, profiles };
   } catch {
-    return { active: 'openai', profiles: {} };
+    return { active: DEFAULT_PROVIDER, profiles: {} };
   }
 }
 export function saveProfile(config: AIConfig) {

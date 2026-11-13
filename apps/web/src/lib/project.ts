@@ -18,10 +18,22 @@ export const PENDING_MEDIA = placeholder('视频生成任务');
 export const uid = () => 'f-' + crypto.randomUUID();
 export const clamp = (value: number, min: number, max: number) =>
   Math.min(max, Math.max(min, value));
+export const DEFAULT_PROJECT_TITLE = '未命名项目';
+export const PROJECT_TITLE_MAX = 40;
+/** Label on cards added from a landing example; they are kept, unlike old auto-inserted samples. */
+export const EXAMPLE_LABEL = '示例素材';
+/** Trims and shortens a typed project name; an empty name falls back to the default. */
+export function normalizeProjectTitle(value: string): string {
+  const title = Array.from(value.replace(/\s+/g, ' ').trim())
+    .slice(0, PROJECT_TITLE_MAX)
+    .join('')
+    .trim();
+  return title || DEFAULT_PROJECT_TITLE;
+}
 export function initialState(): ProjectState {
   return {
     version: 1,
-    title: '未命名项目',
+    title: DEFAULT_PROJECT_TITLE,
     camera: { x: 70, y: 20, zoom: 0.8 },
     selected: null,
     sequence: [],
@@ -45,7 +57,7 @@ function safeSource(src: unknown): string {
   return /^(?:\/assets\/|https:\/\/|data:image\/|data:video\/|blob:)/i.test(src) ? src : '';
 }
 function isLegacySample(card: Card): boolean {
-  if (card.job) return false;
+  if (card.job || card.label === EXAMPLE_LABEL) return false;
   if (card.label === '演示图片' || card.label === '灵感样例') return true;
   if (
     card.motion &&

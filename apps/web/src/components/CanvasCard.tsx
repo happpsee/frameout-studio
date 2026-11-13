@@ -1,8 +1,10 @@
 import { memo } from 'react';
 import type { Card } from '../types';
 import { CARD_HEIGHT, CARD_WIDTH } from '../lib/canvas-camera';
+import { failedImage } from '../lib/failed-image';
 import { CardMedia } from './CardMedia';
 import Icon from './Icon';
+import './CanvasCard.css';
 
 export const pending = (card?: Card) => Boolean(card?.job && card.job.status !== 'succeeded');
 const statuses: Record<string, string> = {
@@ -50,20 +52,23 @@ export const CanvasCard = memo(function CanvasCard({
   onOpen,
   onDuration,
 }: Props) {
+  const failed = failedImage(card);
   return (
     <article
       data-id={card.id}
-      className={`fo-card${selected ? ' is-selected' : ''}${dragging ? ' is-dragging' : ''}${reference ? ' is-reference' : ''}`}
+      className={`fo-card${selected ? ' is-selected' : ''}${dragging ? ' is-dragging' : ''}${reference ? ' is-reference' : ''}${failed ? ' is-failed' : ''}`}
       style={{ left: x, top: y }}
     >
       <div className="fo-card-top">
         <span>
           <Icon name={card.kind === 'video' ? 'film' : 'image'} />
-          {pending(card)
-            ? '视频任务'
-            : card.missingMedia
-              ? '素材需重新导入'
-              : (card.label ?? (card.kind === 'video' ? '本地视频' : '画面'))}
+          {failed
+            ? card.label
+            : pending(card)
+              ? '视频任务'
+              : card.missingMedia
+                ? '素材需重新导入'
+                : (card.label ?? (card.kind === 'video' ? '本地视频' : '画面'))}
         </span>
         <span>
           {pending(card)
@@ -82,9 +87,18 @@ export const CanvasCard = memo(function CanvasCard({
         onClick={() => onSelect(card.id)}
         onDoubleClick={() => onOpen(card.id)}
       >
-        <CardMedia card={card} onDuration={duration => onDuration(card, duration)} />
-        <span className="fo-media-marker">{card.kind === 'video' ? '▶' : '+'}</span>
-        {pending(card) && <span className="fo-job-status">{videoStatus(card)}</span>}
+        {failed ? (
+          <span className="fo-failed-media">
+            <strong>{videoStatus(card)}</strong>
+            {card.job.error && <span>{card.job.error}</span>}
+          </span>
+        ) : (
+          <>
+            <CardMedia card={card} onDuration={duration => onDuration(card, duration)} />
+            <span className="fo-media-marker">{card.kind === 'video' ? '▶' : '+'}</span>
+          </>
+        )}
+        {pending(card) && !failed && <span className="fo-job-status">{videoStatus(card)}</span>}
         {reference && <span className="fo-reference-badge">参考</span>}
       </button>
       <div className="fo-card-bottom">

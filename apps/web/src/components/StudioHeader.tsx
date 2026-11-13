@@ -1,9 +1,12 @@
 import { isDesktop } from '../lib/platform';
 import Icon from './Icon';
+import ProjectTitle from './ProjectTitle';
 import ThemeToggle from './ThemeToggle';
 
 interface StudioHeaderProps {
   title: string;
+  /** Renames the project; without it the name is plain text. */
+  onRename?: (title: string) => void;
   saveStatus: string;
   /** Whether the sequence has shots to preview or export. */
   hasShots: boolean;
@@ -35,6 +38,7 @@ function Brand() {
 
 export default function StudioHeader({
   title,
+  onRename,
   saveStatus,
   hasShots,
   workflowOpen,
@@ -69,7 +73,7 @@ export default function StudioHeader({
       <div className="fo-project">
         <span className="fo-project-divider">/</span>
         <div>
-          <span className="fo-project-title">{title}</span>
+          <ProjectTitle title={title} onRename={onRename} />
           <span className="fo-save">
             <i />
             <span className="fo-save-label">{saveStatus}</span>

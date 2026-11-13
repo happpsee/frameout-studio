@@ -1,7 +1,9 @@
 import { useRef } from 'react';
 import Icon from './Icon';
 import { useLandingMotion } from '../hooks/useLandingMotion';
+import { requestExample } from '../lib/examples';
 import '../styles/landing-zh.css';
+import '../styles/landing-examples.css';
 
 interface LandingProps {
   onOpenStudio: () => void;
@@ -9,7 +11,7 @@ interface LandingProps {
 const ASSETS = '/assets/';
 const INSPIRATION_FRAMES = [
   {
-    id: 'forest',
+    id: 'forest' as const,
     image: 'forest-astronaut-960.webp',
     alt: '森林中的橙色头盔探索者',
     name: '森林来信',
@@ -17,7 +19,7 @@ const INSPIRATION_FRAMES = [
     tag: '科幻 / 自然',
   },
   {
-    id: 'ocean',
+    id: 'ocean' as const,
     image: 'still-ocean.webp',
     alt: '涌动的蓝绿色海浪',
     name: '潮汐之后',
@@ -25,7 +27,7 @@ const INSPIRATION_FRAMES = [
     tag: '情绪 / 纪录',
   },
   {
-    id: 'city',
+    id: 'city' as const,
     image: 'still-city.webp',
     alt: '夜色城市的光影',
     name: '夜游计划',
@@ -257,7 +259,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
               </div>
               <p className="hero-fit">
                 适合想自己挑画面、排镜头的创作者。开始前需要一个火山方舟或 OpenAI 的 API
-                Key，按次付费；导出的成片目前没有声音。
+                Key，按次付费；导出的成片保留视频自带的声音，暂不支持配乐和字幕。
               </p>
             </div>
             <div className="hero-art" id="hero-art">
@@ -426,7 +428,16 @@ export default function Landing({ onOpenStudio }: LandingProps) {
           </div>
           <div className="showcase-grid">
             {INSPIRATION_FRAMES.map(frame => (
-              <article className="showcase-card" key={frame.id}>
+              <button
+                type="button"
+                className="showcase-card"
+                key={frame.id}
+                aria-label={`打开示例「${frame.name}」`}
+                onClick={() => {
+                  requestExample(frame.id);
+                  onOpenStudio();
+                }}
+              >
                 <span className="showcase-image">
                   <img src={`${ASSETS}${frame.image}`} alt={frame.alt} loading="lazy" />
                   <span className="showcase-tag">{frame.tag}</span>
@@ -436,9 +447,11 @@ export default function Landing({ onOpenStudio }: LandingProps) {
                     {frame.name}
                     <small>{frame.note}</small>
                   </span>
-                  <span>影像参考</span>
+                  <span>
+                    打开示例 <Icon name="arrow-up-right" />
+                  </span>
                 </span>
-              </article>
+              </button>
             ))}
           </div>
         </section>

@@ -1,0 +1,5 @@
+/* A caveat under the green "exported" line, e.g. which shots lost their sound. */
+.fo-export-sound-note {
+  display: block;
+  color: var(--fo-text-3);
+}

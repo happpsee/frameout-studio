@@ -1,0 +1,17 @@
+.fo-work-panel .fo-plan-sequence {
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--fo-line-green-strong);
+  border-radius: 5px;
+  background: var(--fo-accent-soft-2);
+  color: var(--fo-accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+.fo-work-panel .fo-plan-sequence:disabled {
+  border-color: var(--fo-line-5);
+  background: none;
+  color: var(--fo-text-4);
+  cursor: default;
+}

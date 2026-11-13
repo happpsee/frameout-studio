@@ -18,6 +18,7 @@ import { CARD_CENTER } from '../lib/canvas-camera';
 import { PROVIDER_CAPABILITIES } from '@frameout/shared';
 import { submitFailure } from '../lib/provider-errors';
 import { regeneration } from '../lib/regenerate';
+import { failedImageCard, placeImageCard } from '../lib/failed-image';
 import { askNotificationPermission, useCompletionNotice } from './useCompletionNotice';
 
 // openSettings shows the API settings with a reason; without it, missing settings fall back to a toast.
@@ -39,6 +40,8 @@ export type GenerationRequest = {
   position?: { x: number; y: number };
   /** Place the new card beside this one (used by "再来一张"). */
   near?: Card;
+  /** Id of a failed image card the result takes the place of. */
+  replace?: string;
   onCard?: (id: string) => void;
 };
 function wait(ms: number, signal: AbortSignal): Promise<void> {
@@ -362,10 +365,7 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
           label: sources.length ? `AI 生成图片 · 参考 ${sources.length}` : 'AI 生成图片',
           generatedAt: new Date().toISOString(),
         };
-        update(draft => {
-          draft.cards.push(card);
-          draft.selected = card.id;
-        });
+        update(draft => placeImageCard(draft, card, request?.replace));
         request?.onCard?.(card.id);
         toast(warning ?? '图片已加入画布');
         notify('succeeded', '图片已加入画布');
@@ -425,6 +425,13 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
           });
         }
       }
+      // A failed image leaves a card with its prompt and reason, instead of only a passing toast.
+      if (!video && current(task)) {
+        const at = request?.position ?? position(request?.near);
+        const failed = failedImageCard(text, message, generationConfig, at);
+        update(draft => placeImageCard(draft, failed, request?.replace));
+        request?.onCard?.(failed.id);
+      }
       if (!task.controller.signal.aborted && mounted.current) {
         toast(message);
         notify('failed', message);
@@ -483,7 +490,8 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
       toast(plan.reason);
       return Promise.resolve();
     }
-    return generate(plan.source, { prompt: plan.prompt, mode: plan.mode, near: card });
+    const replace = plan.replaces ? card.id : undefined;
+    return generate(plan.source, { prompt: plan.prompt, mode: plan.mode, near: card, replace });
   }
   async function download(card: Card) {
     if (card.missingMedia || (card.job && card.job.status !== 'succeeded')) return;

@@ -3,6 +3,7 @@ import type { ProjectState, StepStatus } from '../types';
 import type { useWorkflow } from '../hooks/useWorkflow';
 import { workspaceDiff } from '../lib/workflow';
 import { referenceCards } from '../lib/consistency';
+import PlanToSequence from './PlanToSequence';
 
 type Props = {
   tab: 'workflow' | 'versions';
@@ -15,6 +16,8 @@ type Props = {
   restoreCheckpoint: (id: string) => void;
   toast: (message: string) => void;
   selectCard: (id: string) => void;
+  /** Appends cards to the sequence in order, as one undo step. */
+  addToSequence: (ids: string[]) => void;
 };
 const statusNames: Record<StepStatus, string> = {
   queued: '等待',
@@ -36,6 +39,7 @@ export default function WorkflowPanel({
   restoreCheckpoint,
   toast,
   selectCard,
+  addToSequence,
 }: Props) {
   const [text, setText] = useState('');
   const referenceCount = referenceCards(project).length;
@@ -233,6 +237,7 @@ export default function WorkflowPanel({
                     );
                   })}
                 </ol>
+                <PlanToSequence run={run} project={project} onAdd={addToSequence} toast={toast} />
                 {workflow.running ? (
                   <button type="button" className="fo-plan-start" onClick={workflow.pause}>
                     暂停计划

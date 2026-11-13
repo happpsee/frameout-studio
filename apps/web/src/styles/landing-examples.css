@@ -1,0 +1,22 @@
+/* The showcase tiles open their example on the canvas. */
+.showcase-card {
+  display: block;
+  width: 100%;
+  border: 0;
+  color: inherit;
+}
+.showcase-meta > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.showcase-meta > span:last-child svg {
+  width: 12px;
+  height: 12px;
+}
+.showcase-card:hover .showcase-meta > span:last-child,
+.showcase-card:focus-visible .showcase-meta > span:last-child {
+  color: var(--paper);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

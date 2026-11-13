@@ -1,7 +1,9 @@
 import type { Card, GenerationMode } from '../types';
+import { failedImage } from './failed-image';
 
 export type Regeneration =
-  | { ok: true; prompt: string; mode: GenerationMode; source?: Card }
+  /** `replaces`: the card is a failed image, and the new result takes its place. */
+  | { ok: true; prompt: string; mode: GenerationMode; source?: Card; replaces?: boolean }
   | { ok: false; mode: GenerationMode; reason: string };
 
 const FINISHED = ['succeeded', 'failed', 'rejected', 'cancelled'];
@@ -14,6 +16,7 @@ export function regeneration(card: Card, cards: Card[]): Regeneration | null {
   const prompt = (card.job?.prompt || card.prompt || '').trim();
   if (!prompt || !(card.provider || card.job)) return null;
   if (!card.job) return { ok: true, prompt, mode: 'image' };
+  if (failedImage(card)) return { ok: true, prompt, mode: 'image', replaces: true };
   const mode = 'video';
   if (!FINISHED.includes(card.job.status))
     return {

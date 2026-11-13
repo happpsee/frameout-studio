@@ -1,0 +1,36 @@
+/* The project name in the studio header doubles as a rename control. */
+.fo-project-title-button {
+  max-width: 18em;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dashed transparent;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+}
+.fo-project-title-button:hover {
+  border-bottom-color: var(--fo-muted);
+}
+.fo-project-title-button:focus-visible {
+  outline: 2px solid var(--fo-accent);
+  outline-offset: 3px;
+}
+.fo-project-title-input {
+  width: 16em;
+  max-width: 40vw;
+  margin: -3px -6px;
+  padding: 2px 5px;
+  background: var(--fo-field);
+  border: 1px solid var(--fo-accent);
+  border-radius: 4px;
+  color: var(--fo-paper);
+  font: inherit;
+  letter-spacing: inherit;
+  outline: none;
+}

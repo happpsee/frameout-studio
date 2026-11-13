@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { initialState, MISSING_MEDIA, restoreProject, serializeProject } from './project';
+import {
+  DEFAULT_PROJECT_TITLE,
+  initialState,
+  MISSING_MEDIA,
+  normalizeProjectTitle,
+  PROJECT_TITLE_MAX,
+  restoreProject,
+  serializeProject,
+} from './project';
 
 function projectWithCards() {
   return {
@@ -136,5 +144,13 @@ describe('project persistence compatibility', () => {
     expect(restored.cards).toHaveLength(3);
     expect(restored.camera.zoom).toBe(4);
     expect(restored.sequence).toEqual([{ id: 'valid', cardId: project.cards[0].id, duration: 1 }]);
+  });
+});
+
+describe('project name', () => {
+  it('trims, shortens and falls back to the default name', () => {
+    expect(normalizeProjectTitle('  海边   短片 ')).toBe('海边 短片');
+    expect(normalizeProjectTitle('   ')).toBe(DEFAULT_PROJECT_TITLE);
+    expect(Array.from(normalizeProjectTitle('长'.repeat(60)))).toHaveLength(PROJECT_TITLE_MAX);
   });
 });

@@ -11,6 +11,7 @@ import { useWorkspace } from '../hooks/useWorkspace';
 import { useGeneration } from '../hooks/useGeneration';
 import { useCanvas } from '../hooks/useCanvas';
 import { useWorkflow } from '../hooks/useWorkflow';
+import { useExampleImport } from '../hooks/useExampleImport';
 import { CARD_CENTER, CARD_HEIGHT, CARD_WIDTH, clamp } from '../lib/canvas-camera';
 import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { readStoredValue } from '../lib/desktop-storage';
@@ -78,6 +79,7 @@ export default function Studio({
     canRedo,
     saveStatus,
     flush,
+    renameProject,
     createCheckpoint,
     restoreCheckpoint,
   } = useWorkspace();
@@ -273,6 +275,16 @@ export default function Studio({
     onBackgroundDoubleClick: () => promptRef.current?.focus(),
   });
   const { cancelGesture, fit: fitCanvas, zoomBy, setTool } = canvas;
+  useExampleImport({
+    active: isActive,
+    projectRef,
+    update,
+    viewportRef,
+    camera: canvas.camera,
+    restoreCamera: canvas.restoreCamera,
+    setPrompt: generation.setPrompt,
+    toast,
+  });
   const selected = project.cards.find(card => card.id === project.selected);
   const hasSelection = Boolean(selected);
   const selectedJobStatus = selected?.job?.status;
@@ -634,6 +646,7 @@ export default function Studio({
           draft.selected = id;
         }, false)
       }
+      addToSequence={addToSequence}
     />
   );
 
@@ -647,6 +660,7 @@ export default function Studio({
       <div className="fo-app">
         <StudioHeader
           title={project.title}
+          onRename={renameProject}
           saveStatus={saveStatus}
           hasShots={project.sequence.length > 0}
           workflowOpen={panelTab !== null}

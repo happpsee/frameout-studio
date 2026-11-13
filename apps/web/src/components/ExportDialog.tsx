@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import type { ExportShot, ExportSize } from '../lib/export-video';
-import { exportSupported } from '../lib/export-support';
+import type { ExportAudio, ExportShot, ExportSize } from '../lib/export-video';
+import { exportAudioSupported, exportSupported } from '../lib/export-support';
 import {
   EXPORT_QUALITIES,
   EXPORT_RATIOS,
@@ -13,6 +13,7 @@ import {
 import Icon from './Icon';
 import Select from './Select';
 import { timeLabel } from './Sequence';
+import './ExportDialog.css';
 
 const SIZES: Record<ExportRatio, Record<ExportQuality, ExportSize>> = {
   '16:9': { '720p': { width: 1280, height: 720 }, '1080p': { width: 1920, height: 1080 } },
@@ -22,13 +23,20 @@ const SIZES: Record<ExportRatio, Record<ExportQuality, ExportSize>> = {
 type Phase =
   | { kind: 'idle'; message?: string }
   | { kind: 'running'; progress: number }
-  | { kind: 'done'; url: string; bytes: number; fileName: string }
+  | { kind: 'done'; url: string; bytes: number; fileName: string; sound: string }
   | { kind: 'error'; message: string };
 
 const fileSize = (bytes: number) =>
   bytes < 1024 * 1024
     ? `${Math.max(1, Math.round(bytes / 1024))} KB`
     : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+
+/** What the finished message says about sound; empty when there is nothing to point out. */
+export function soundNote(audio: ExportAudio, hasVideo: boolean): string {
+  if (audio.kind === 'unsupported') return '这个浏览器不能处理声音，成片没有声音。';
+  if (audio.kind === 'none') return hasVideo ? '视频片段都不带声音，成片没有声音。' : '';
+  return audio.silent.length ? `${audio.silent.join('、')} 的声音读不出来，这几段没有声音。` : '';
+}
 
 export default function ExportDialog({
   shots,
@@ -49,6 +57,7 @@ export default function ExportDialog({
   const total = shots.reduce((sum, shot) => sum + shot.duration, 0);
   const running = phase.kind === 'running';
   const supported = exportSupported();
+  const hasVideo = shots.some(shot => shot.card.kind === 'video');
   useEffect(() => {
     if (dialog.current && !dialog.current.open) dialog.current.showModal();
   }, []);
@@ -82,7 +91,7 @@ export default function ExportDialog({
     try {
       // Loaded on demand: the encoder library is large and only needed here.
       const { exportSequence } = await import('../lib/export-video');
-      const blob = await exportSequence(shots, {
+      const { blob, audio } = await exportSequence(shots, {
         ...SIZES[ratio][quality],
         signal: current.signal,
         onProgress: progress => setPhase({ kind: 'running', progress }),
@@ -90,7 +99,13 @@ export default function ExportDialog({
       if (current.signal.aborted) return;
       url.current = URL.createObjectURL(blob);
       const fileName = exportFileName(title);
-      setPhase({ kind: 'done', url: url.current, bytes: blob.size, fileName });
+      setPhase({
+        kind: 'done',
+        url: url.current,
+        bytes: blob.size,
+        fileName,
+        sound: soundNote(audio, hasVideo),
+      });
       download(url.current, fileName);
     } catch (error) {
       if (
@@ -164,7 +179,7 @@ export default function ExportDialog({
       </div>
       <p className="fo-export-note">
         按镜头顺序和时长渲染，画面与预览一致，MP4（H.264）每秒 30
-        帧。暂不包含声音。在本机完成，不上传素材。
+        帧。会保留视频片段自带的声音；图片镜头没有声音；暂不支持配乐和字幕。在本机完成，不上传素材。
       </p>
       {running && (
         <div
@@ -183,6 +198,7 @@ export default function ExportDialog({
       {phase.kind === 'done' && (
         <p className="fo-export-status" role="status" data-state="success">
           已导出 {phase.fileName} · {fileSize(phase.bytes)}
+          {phase.sound && <span className="fo-export-sound-note">{phase.sound}</span>}
         </p>
       )}
       {phase.kind === 'error' && (
@@ -194,6 +210,9 @@ export default function ExportDialog({
         <p className="fo-export-status" role="status">
           {phase.message}
         </p>
+      )}
+      {supported && hasVideo && !exportAudioSupported() && (
+        <p className="fo-export-status">这个浏览器不能处理声音，导出的成片会没有声音。</p>
       )}
       {!supported && (
         <p className="fo-export-status" role="alert" data-state="error">

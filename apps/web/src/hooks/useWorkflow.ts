@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, type MutableRefObject } from 'react';
 import type { ProjectState, UpdateProject, Workflow } from '../types';
 import type { useGeneration } from './useGeneration';
 import { createWorkflow, nextStep, recordEvent } from '../lib/workflow';
+import { failedImage } from '../lib/failed-image';
 import { PROVIDER_CAPABILITIES } from '@frameout/shared';
 
 type Options = {
@@ -116,8 +117,17 @@ export function useWorkflow(options: Options) {
 
   const retry = useCallback(
     (stepId: string) => {
-      const workflow = latest.current.projectRef.current.workflow;
+      const { projectRef, update } = latest.current;
+      const workflow = projectRef.current.workflow;
       if (!workflow || workflow.status === 'running' || executing.current) return;
+      // The new attempt goes where the failed image was, so the failed card makes way.
+      const output = workflow.steps.find(item => item.id === stepId)?.outputCardId;
+      const failed = projectRef.current.cards.find(card => card.id === output);
+      if (failedImage(failed))
+        update(draft => {
+          draft.cards = draft.cards.filter(card => card.id !== failed.id);
+          if (draft.selected === failed.id) draft.selected = null;
+        }, false);
       mutate(workflow.id, value => {
         const step = value.steps.find(item => item.id === stepId);
         if (!step || step.status === 'succeeded') return;
@@ -192,6 +202,7 @@ export function useWorkflow(options: Options) {
         if (step.outputCardId && !existing)
           throw new Error('之前的结果素材已不可用，请核对供应商后确认是否重新生成');
         if (existing && step.mode === 'image') {
+          if (failedImage(existing)) throw new Error(existing.job.error || '图片生成失败');
           if (existing.missingMedia) throw new Error('结果素材无法读取，请先恢复素材');
         } else if (existing?.job?.status === 'succeeded') {
           // Completion can be persisted before the scheduler records its result.
@@ -233,13 +244,14 @@ export function useWorkflow(options: Options) {
               !error &&
               card &&
               !card.missingMedia &&
-              (step.mode === 'image' || card.job?.status === 'succeeded');
+              (!card.job || card.job.status === 'succeeded');
             if (success) {
               current.status = 'succeeded';
               delete current.error;
               recordEvent(value, '步骤完成，结果已加入画布', step.id);
             } else {
-              current.status = 'paused';
+              // A failed image is on the canvas with its reason; the step waits for a retry.
+              current.status = failedImage(card) ? 'failed' : 'paused';
               current.error = error || card?.job?.error || '步骤已中断，请核对供应商后重试';
               value.status = 'paused';
               recordEvent(value, current.error, step.id);

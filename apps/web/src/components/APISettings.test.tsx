@@ -58,7 +58,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 function Harness({
-  initial = { ...defaults(), key: 'openai-memory-secret' },
+  initial = { ...defaults('openai'), key: 'openai-memory-secret' },
   onConfig = () => {},
 }: {
   initial?: AIConfig;
@@ -86,6 +86,23 @@ async function provider(user: ReturnType<typeof userEvent.setup>, label: string)
   await user.click(screen.getByRole('combobox', { name: '供应商' }));
   await user.click(screen.getByRole('option', { name: label }));
 }
+
+describe('default provider', () => {
+  it('starts new users on Volcano Ark but keeps a provider someone saved', () => {
+    expect(initialConfig().provider).toBe('ark');
+    expect(defaults().provider).toBe('ark');
+    localStorage.setItem(
+      PREFERENCES_KEY,
+      JSON.stringify({ version: 1, active: 'openai', profiles: { openai: defaults('openai') } }),
+    );
+    expect(initialConfig().provider).toBe('openai');
+    localStorage.setItem(
+      PREFERENCES_KEY,
+      JSON.stringify({ version: 1, active: 'gone', profiles: { openai: defaults('openai') } }),
+    );
+    expect(initialConfig().provider).toBe('openai');
+  });
+});
 
 describe('API settings provider profiles and cancellation', () => {
   it('retains provider keys during this mount while saved/refreshed profiles contain no keys', async () => {
@@ -203,7 +220,7 @@ describe('API settings provider profiles and cancellation', () => {
   });
 
   it('does not mutate the config object supplied by the parent when clearing keys', async () => {
-    const initial = { ...defaults(), key: 'parent-owned-memory-key' };
+    const initial = { ...defaults('openai'), key: 'parent-owned-memory-key' };
     const user = userEvent.setup();
     render(<Harness initial={initial} />);
     await user.click(screen.getByRole('button', { name: '清除本页所有密钥' }));
@@ -242,7 +259,7 @@ describe('API settings provider profiles and cancellation', () => {
       expect(startingProfile('ark').key).toBe('ark-remembered');
       const user = userEvent.setup();
       const onConfig = vi.fn();
-      render(<Harness initial={{ ...defaults(), key: '' }} onConfig={onConfig} />);
+      render(<Harness initial={{ ...defaults('openai'), key: '' }} onConfig={onConfig} />);
       const remember = () =>
         screen.getByRole<HTMLInputElement>('checkbox', { name: '在本机钥匙串中记住此 Key' });
       expect(remember().checked).toBe(false);

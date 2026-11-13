@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import Landing from './Landing';
+import { takeExampleRequest } from '../lib/examples';
 
 const disconnected = vi.fn();
 
@@ -46,11 +47,20 @@ describe('React landing navigation', () => {
     expect(onOpen.mock.calls).toEqual(entries.map(() => []));
   });
 
-  it('keeps reference imagery on the landing page without a sample import or video preview', () => {
-    render(<Landing onOpenStudio={() => {}} />);
+  it('opens each showcase example in the studio, without a video preview', () => {
+    const onOpen = vi.fn();
+    render(<Landing onOpenStudio={onOpen} />);
     const showcase = screen.getByRole('region', { name: /先从一个/ });
     expect(within(showcase).getByRole('img', { name: '夜色城市的光影' })).toBeTruthy();
-    expect(within(showcase).queryByRole('button')).toBeNull();
+    const examples = within(showcase).getAllByRole('button');
+    expect(examples.map(button => button.getAttribute('aria-label'))).toEqual([
+      '打开示例「森林来信」',
+      '打开示例「潮汐之后」',
+      '打开示例「夜游计划」',
+    ]);
+    fireEvent.click(examples[2]);
+    expect(onOpen).toHaveBeenCalledOnce();
+    expect(takeExampleRequest()?.id).toBe('city');
     expect(screen.queryByRole('button', { name: /观看.*动态预览/ })).toBeNull();
   });
 
@@ -58,7 +68,7 @@ describe('React landing navigation', () => {
     const { container } = render(<Landing onOpenStudio={() => {}} />);
     const fit = screen.getByText(/适合想自己挑画面、排镜头的创作者/);
     expect(fit.textContent).toMatch(/火山方舟或 OpenAI 的 API\s*Key，按次付费/);
-    expect(fit.textContent).toContain('导出的成片目前没有声音');
+    expect(fit.textContent).toContain('导出的成片保留视频自带的声音');
     expect(screen.getByRole('heading', { level: 1, name: '拍一场好戏。' })).toBeTruthy();
     // Only the brand and the "API" acronym stay in capitals.
     const text = (container.textContent ?? '').replace(/FRAMEOUT|API/g, '');

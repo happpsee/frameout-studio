@@ -4,6 +4,8 @@ import Icon from './Icon';
 import { timeLabel } from './Sequence';
 import { closeOnBackdropClick } from '../lib/dialog';
 import PromptCopy from './PromptCopy';
+import PreviewSoundButton from './PreviewSoundButton';
+import { loadPreviewMuted, playPreviewClip, savePreviewMuted } from '../lib/preview-sound';
 
 export type PreviewItem = { card: Card; duration: number };
 export default function PreviewDialog({
@@ -20,6 +22,8 @@ export default function PreviewDialog({
   const total = items.reduce((sum, item) => sum + item.duration, 0);
   const [time, setTime] = useState(0);
   const [playing, setPlaying] = useState(true);
+  // Video clips play with their own sound unless muted; images are silent.
+  const [muted, setMuted] = useState(loadPreviewMuted);
   let offset = 0;
   let index = 0;
   for (let i = 0; i < items.length; i++) {
@@ -56,7 +60,7 @@ export default function PreviewDialog({
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
-    video.current?.play().catch(() => {});
+    if (video.current) playPreviewClip(video.current, () => setMuted(true));
     return () => cancelAnimationFrame(frame);
   }, [playing, total]);
   useEffect(() => {
@@ -67,13 +71,16 @@ export default function PreviewDialog({
       element.currentTime = Number.isFinite(element.duration)
         ? Math.min(local, Math.max(0, element.duration - 0.01))
         : local;
-      if (playing) element.play().catch(() => {});
+      if (playing) playPreviewClip(element, () => setMuted(true));
       else element.pause();
     };
     if (element.readyState >= 1) seek();
     else element.addEventListener('loadedmetadata', seek, { once: true });
     return () => element.removeEventListener('loadedmetadata', seek);
   }, [card.id, playing, offset]);
+  useEffect(() => {
+    if (video.current) video.current.muted = muted;
+  }, [muted, card.id]);
   function seek(value: number) {
     timeRef.current = value;
     setTime(value);
@@ -116,7 +123,7 @@ export default function PreviewDialog({
             ref={video}
             src={card.src}
             poster={card.poster}
-            muted
+            muted={muted}
             playsInline
             preload="auto"
             style={{ objectPosition: card.crop, objectFit: card.provider ? 'contain' : 'cover' }}
@@ -182,6 +189,13 @@ export default function PreviewDialog({
         <span className="fo-preview-time">
           {timeLabel(time)} / {timeLabel(total)}
         </span>
+        <PreviewSoundButton
+          muted={muted}
+          onToggle={() => {
+            setMuted(!muted);
+            savePreviewMuted(!muted);
+          }}
+        />
       </div>
     </dialog>
   );
