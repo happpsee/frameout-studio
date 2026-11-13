@@ -16,6 +16,8 @@ import { useNotes } from '../hooks/useNotes';
 import { linkedIds } from '../lib/notes';
 import { thumbnails, wantsOriginal } from '../lib/thumbnails';
 import { CanvasNote } from './CanvasNote';
+import CardPrompt from './CardPrompt';
+import { cardPrompt, type PromptAction } from '../lib/card-prompt';
 import { CARD_CENTER, CARD_HEIGHT, CARD_WIDTH, clamp } from '../lib/canvas-camera';
 import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { readStoredValue } from '../lib/desktop-storage';
@@ -572,6 +574,8 @@ export default function Studio({
   }
   let selectionStyle: CSSProperties = {};
   let outside = false;
+  let selectedBox = { left: 0, top: 0, right: 0, bottom: 0 };
+  let barBottom: number | undefined;
   if (selectedPosition) {
     const left = canvas.camera.x + selectedPosition.x * canvas.camera.zoom;
     const top = canvas.camera.y + selectedPosition.y * canvas.camera.zoom;
@@ -591,7 +595,24 @@ export default function Studio({
       else y = clamp(325, 48, Math.max(48, layout.bottom - layout.selectionHeight));
     }
     selectionStyle = { left: x, top: y };
+    selectedBox = { left, top, right, bottom };
+    // The bar normally sits above the card; when it had to go below, the prompt goes under it.
+    if (y >= bottom) barBottom = y + layout.selectionHeight;
   }
+  const promptPlan =
+    selected && !canvas.selection.ids.length ? cardPrompt(selected, project.cards) : null;
+  const runPrompt = (card: Card, action: PromptAction, prompt: string) => {
+    if (action.kind === 'video') void generation.generate(card, { prompt, mode: 'video' });
+    else if (action.kind === 'redo')
+      void generation.generate(action.source, { prompt, mode: 'video', near: card });
+    else
+      void generation.generate(undefined, {
+        prompt,
+        mode: 'image',
+        near: card,
+        replace: action.replace ? card.id : undefined,
+      });
+  };
   const sceneStyle = {
     transform: `translate3d(${canvas.camera.x}px,${canvas.camera.y}px,0) scale(${canvas.camera.zoom})`,
   };
@@ -827,13 +848,37 @@ export default function Studio({
                   busy={active}
                   isReference={referenceIds.has(selected.id)}
                   regeneration={regeneration(selected, project.cards)}
-                  onGenerateVideo={() => void generation.generate(selected)}
+                  onGenerateVideo={() => {
+                    // With nothing in the main prompt box, the words belong under the card.
+                    const field = viewportRef.current?.querySelector<HTMLTextAreaElement>(
+                      '.fo-card-prompt textarea',
+                    );
+                    if (generation.prompt.trim() || !field) void generation.generate(selected);
+                    else {
+                      field.focus();
+                      toast('在卡片下方写下运镜或动作，再点图生视频');
+                    }
+                  }}
                   onRegenerate={() => void generation.regenerate(selected)}
                   onResume={() => void generation.resume(selected)}
                   onToggleReference={() => toggleReference(selected.id)}
                   onAddShot={() => addToSequence(selected.id)}
                   onDownload={() => void generation.download(selected)}
                   onRemove={removeSelected}
+                />
+              )}
+              {selected && promptPlan && (
+                <CardPrompt
+                  key={selected.id}
+                  card={selected}
+                  plan={promptPlan}
+                  box={selectedBox}
+                  zoom={canvas.camera.zoom}
+                  bounds={{ width: layout.width, bottom: layout.bottom }}
+                  barBottom={barBottom}
+                  busy={active}
+                  onRun={(action, text) => runPrompt(selected, action, text)}
+                  toast={toast}
                 />
               )}
               <SelectionMarquee rect={canvas.marquee} />

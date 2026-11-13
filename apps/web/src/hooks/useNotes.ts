@@ -12,7 +12,7 @@ import { CARD_WIDTH } from '../lib/canvas-camera';
 import type { useWorkflow } from './useWorkflow';
 
 /** Pressing these leaves the note selected: the note itself and the panels floating over the canvas. */
-const keepsSelection = '.fo-note,.fo-composer,.fo-canvas-tools,.fo-camera-tools';
+const keepsSelection = '.fo-note,.fo-composer,.fo-card-prompt,.fo-canvas-tools,.fo-camera-tools';
 type Options = {
   projectRef: RefObject<ProjectState>;
   update: UpdateProject;

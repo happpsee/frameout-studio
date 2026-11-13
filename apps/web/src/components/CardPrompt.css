@@ -1,0 +1,86 @@
+/* The selected card's prompt, shown under the card or resting at the bottom of the canvas. */
+.fo-card-prompt {
+  position: absolute;
+  z-index: 7;
+  width: 360px;
+  max-width: calc(100% - 24px);
+  padding: 8px;
+  border: 1px solid var(--fo-line-3);
+  border-radius: 8px;
+  background: var(--fo-raised);
+  box-shadow: 0 10px 30px var(--fo-shadow-4);
+  color: var(--fo-text-2);
+  font-size: 12px;
+}
+.fo-card-prompt.is-docked {
+  border-color: var(--fo-accent-muted);
+}
+.fo-card-prompt-name {
+  display: block;
+  margin: 0 2px 6px;
+  overflow: hidden;
+  color: var(--fo-text-5);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fo-card-prompt textarea {
+  display: block;
+  width: 100%;
+  max-height: 120px;
+  padding: 7px 9px;
+  border: 1px solid var(--fo-line);
+  border-radius: 5px;
+  background: var(--fo-field);
+  color: var(--fo-text-1);
+  font: inherit;
+  line-height: 1.6;
+  resize: none;
+}
+.fo-card-prompt textarea:focus {
+  outline: none;
+  border-color: var(--fo-line-4);
+}
+.fo-card-prompt textarea::placeholder {
+  color: var(--fo-text-dim);
+}
+.fo-card-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+.fo-card-prompt-actions > span {
+  margin-right: auto;
+  color: var(--fo-text-faint);
+  font-size: 11px;
+}
+.fo-card-prompt-actions button {
+  padding: 5px 11px;
+  border: 1px solid var(--fo-line-3);
+  border-radius: 4px;
+  background: none;
+  color: var(--fo-text-2);
+  font: inherit;
+  cursor: pointer;
+}
+.fo-card-prompt-actions button:hover:not(:disabled) {
+  background: var(--fo-hover);
+}
+.fo-card-prompt-actions button:disabled,
+.fo-card-prompt-actions button[aria-disabled='true'] {
+  opacity: 0.45;
+}
+.fo-card-prompt-actions button:disabled {
+  cursor: default;
+}
+.fo-card-prompt-actions .is-primary {
+  border-color: var(--fo-lime);
+  background: var(--fo-lime);
+  color: var(--fo-ink);
+  font-weight: 600;
+}
+.fo-card-prompt-actions .is-primary:hover:not(:disabled) {
+  background: var(--fo-lime);
+  filter: brightness(1.08);
+}
