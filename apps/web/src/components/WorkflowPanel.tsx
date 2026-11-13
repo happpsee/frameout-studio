@@ -75,7 +75,7 @@ export default function WorkflowPanel({
     >
       <header className="fo-work-panel-head">
         <div>
-          <span className="fo-eyebrow">CREATE WITH A PLAN</span>
+          <span className="fo-eyebrow">按计划生成</span>
           <h2>把镜头一步步做出来</h2>
         </div>
         <button ref={closeRef} type="button" aria-label="关闭创作流程" onClick={onClose}>

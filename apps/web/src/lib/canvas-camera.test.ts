@@ -7,11 +7,11 @@ afterEach(() => {
   vi.useRealTimers();
 });
 function harness() {
-  let time = 0,
-    id = 0;
+  let time = 0;
+  let id = 0;
   const frames = new Map<number, FrameRequestCallback>();
-  const render = vi.fn(),
-    rest = vi.fn();
+  const render = vi.fn();
+  const rest = vi.fn();
   const camera = createCamera({
     initial: { x: 70, y: 20, zoom: 0.8 },
     onRender: render,

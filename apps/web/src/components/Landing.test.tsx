@@ -54,6 +54,17 @@ describe('React landing navigation', () => {
     expect(screen.queryByRole('button', { name: /观看.*动态预览/ })).toBeNull();
   });
 
+  it('says who it is for and what to prepare, in Chinese rather than English display text', () => {
+    const { container } = render(<Landing onOpenStudio={() => {}} />);
+    const fit = screen.getByText(/适合想自己挑画面、排镜头的创作者/);
+    expect(fit.textContent).toMatch(/火山方舟或 OpenAI 的 API\s*Key，按次付费/);
+    expect(fit.textContent).toContain('导出的成片目前没有声音');
+    expect(screen.getByRole('heading', { level: 1, name: '拍一场好戏。' })).toBeTruthy();
+    // Only the brand and the "API" acronym stay in capitals.
+    const text = (container.textContent ?? '').replace(/FRAMEOUT|API/g, '');
+    expect(text).not.toMatch(/[A-Z]{3,}/);
+  });
+
   it('disconnects the scroll observer when leaving the page', () => {
     const { unmount } = render(<Landing onOpenStudio={() => {}} />);
     unmount();

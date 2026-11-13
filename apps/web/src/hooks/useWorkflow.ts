@@ -222,29 +222,30 @@ export function useWorkflow(options: Options) {
       } finally {
         executing.current = false;
         owned.current = false;
-        if (!mounted.current) return;
-        mutate(workflowId, value => {
-          const current = value.steps.find(item => item.id === step.id);
-          if (!current) return;
-          const card = latest.current.projectRef.current.cards.find(
-            item => item.id === current.outputCardId,
-          );
-          const success =
-            !error &&
-            card &&
-            !card.missingMedia &&
-            (step.mode === 'image' || card.job?.status === 'succeeded');
-          if (success) {
-            current.status = 'succeeded';
-            delete current.error;
-            recordEvent(value, '步骤完成，结果已加入画布', step.id);
-          } else {
-            current.status = 'paused';
-            current.error = error || card?.job?.error || '步骤已中断，请核对供应商后重试';
-            value.status = 'paused';
-            recordEvent(value, current.error, step.id);
-          }
-        });
+        if (mounted.current) {
+          mutate(workflowId, value => {
+            const current = value.steps.find(item => item.id === step.id);
+            if (!current) return;
+            const card = latest.current.projectRef.current.cards.find(
+              item => item.id === current.outputCardId,
+            );
+            const success =
+              !error &&
+              card &&
+              !card.missingMedia &&
+              (step.mode === 'image' || card.job?.status === 'succeeded');
+            if (success) {
+              current.status = 'succeeded';
+              delete current.error;
+              recordEvent(value, '步骤完成，结果已加入画布', step.id);
+            } else {
+              current.status = 'paused';
+              current.error = error || card?.job?.error || '步骤已中断，请核对供应商后重试';
+              value.status = 'paused';
+              recordEvent(value, current.error, step.id);
+            }
+          });
+        }
       }
     })();
   }, [options.project, options.enabled, options.generation.active, mutate]);

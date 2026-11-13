@@ -1,0 +1,196 @@
+/*
+ * Studio color tokens. Dark is the default; [data-theme='light'] on <html> (set by
+ * hooks/useTheme.ts) swaps in the light palette. The landing page keeps its own
+ * dark art palette in app.css and does not read these.
+ * New studio styles should use these tokens instead of hardcoded colors.
+ */
+:root {
+  /* Base */
+  --fo-ink: #151613; /* app background (header, studio shell) */
+  --fo-paper: #f5f5f0; /* primary text */
+  --fo-lime: #b5ff2a; /* brand fill: primary buttons, active toggles */
+  --fo-line: #373a32;
+  --fo-muted: #8b9080;
+  --fo-surface: #20221c;
+
+  /* Surfaces */
+  --fo-canvas: #1b1e17;
+  --fo-canvas-deep: #181b16;
+  --fo-canvas-dot: #3a4031;
+  --fo-canvas-vignette: #15161345;
+  --fo-panel: #1b1f16; /* dialogs, side panels */
+  --fo-panel-deep: #171a14;
+  --fo-panel-alt: #20231c;
+  --fo-menu: #20261b;
+  --fo-raised: #242820; /* floating toolbars, popovers */
+  --fo-raised-2: #22291c;
+  --fo-card: #272b22;
+  --fo-field: #171c13; /* inputs and select triggers */
+  --fo-field-hover: #1b2117;
+  --fo-media-bg: #2c3422;
+  --fo-thumb-bg: #151a11;
+  --fo-hover: #303a26;
+  --fo-selected: #36422a;
+  --fo-pressed: #414936;
+  --fo-pressed-strong: #566544;
+  --fo-accent-soft: #25301e;
+  --fo-accent-soft-2: #2e3c22;
+  --fo-accent-tint: #384c29;
+  --fo-warn-soft: #2d2919;
+  --fo-drop-overlay: #26371fd9;
+  --fo-scrim: #0b0f0ad9;
+
+  /* Lines */
+  --fo-line-2: #404637;
+  --fo-line-3: #4c573f;
+  --fo-line-4: #59674a;
+  --fo-line-5: #6a7559;
+  --fo-line-green: #465436;
+  --fo-line-green-strong: #627f43;
+  --fo-line-focus: #89947b;
+  --fo-focus-ring: #9ba48e26;
+  --fo-focus-inset: #a9b39a;
+  --fo-card-outline: #4d554240;
+  --fo-warn-line: #c79b45;
+
+  /* Text, strongest to faintest */
+  --fo-text-1: #e8ecdf;
+  --fo-text-2: #d3dcc7;
+  --fo-text-3: #c4ceb7;
+  --fo-text-4: #b6bfa7;
+  --fo-text-5: #a8b59a;
+  --fo-text-6: #9aa68a;
+  --fo-text-7: #879a74;
+  --fo-text-faint: #7d8a6b;
+  --fo-text-dim: #67765a;
+  --fo-text-dimmer: #55594d; /* decorative only: dividers, arrows */
+  --fo-green-1: #d4e8bb;
+  --fo-green-2: #b2c996;
+  --fo-warn: #dcbc80;
+  --fo-danger: #f4a690;
+
+  /* Accent: --fo-accent is for text, outlines and borders; --fo-lime-mark for small dots and bars */
+  --fo-accent: #b5ff2a;
+  --fo-accent-muted: #b5ff2a9e;
+  --fo-accent-a00: #b5ff2a00;
+  --fo-accent-a03: #b5ff2a03;
+  --fo-accent-a08: #b5ff2a13;
+  --fo-accent-a25: #b5ff2a42;
+  --fo-accent-a50: #b5ff2a80;
+  --fo-lime-hover: #c8ff68;
+  --fo-lime-active: #9fe91e;
+  --fo-lime-mark: #b5ff2a;
+  --fo-on-lime: #151613; /* text on --fo-lime */
+  --fo-on-lime-ring: #35402b;
+
+  /* Shadows */
+  --fo-shadow-1: #0002;
+  --fo-shadow-2: #0003;
+  --fo-shadow-3: #0004;
+  --fo-shadow-4: #0005;
+  --fo-shadow-5: #0007;
+  --fo-shadow-6: #0009;
+
+  /* Same in both themes: paper notes, the selection bar, toasts and labels over media */
+  --fo-note-bg: #d7d9be;
+  --fo-note-text: #262d1e;
+  --fo-note-pin: #bfd39c99;
+  --fo-toast-bg: #dcebc7;
+  --fo-toast-text: #25301b;
+  --fo-toast-line: #afc78c;
+  --fo-sheet-bg: #f0f3e9;
+  --fo-sheet-text: #22271c;
+  --fo-sheet-text-2: #30382a;
+  --fo-sheet-icon: #747e68;
+  --fo-sheet-muted: #777d6e;
+  --fo-sheet-line: #c9cfbf;
+  --fo-sheet-hover: #d9dfcf;
+  --fo-sheet-accent: #d1f29e;
+  --fo-media-line: #fff8;
+  --fo-media-scrim: #15161344;
+  --fo-media-label: #10170cbb;
+  --fo-media-text: #d4e1c3;
+  --fo-media-black: #080d07;
+
+  --fo-color-scheme: dark;
+}
+:root[data-theme='light'] {
+  --fo-ink: #f4f5ef;
+  --fo-paper: #1b1e16;
+  --fo-line: #dcdfd3;
+  --fo-muted: #5c6552;
+  --fo-surface: #ffffff;
+
+  --fo-canvas: #eceee6;
+  --fo-canvas-deep: #e9ece2;
+  --fo-canvas-dot: #c5cab8;
+  --fo-canvas-vignette: #4a523c12;
+  --fo-panel: #f7f8f3;
+  --fo-panel-deep: #f0f2ea;
+  --fo-panel-alt: #eef0e8;
+  --fo-menu: #ffffff;
+  --fo-raised: #ffffff;
+  --fo-raised-2: #f1f4ea;
+  --fo-card: #ffffff;
+  --fo-field: #ffffff;
+  --fo-field-hover: #f6f8f1;
+  --fo-media-bg: #e2e7d7;
+  --fo-thumb-bg: #e2e7d7;
+  --fo-hover: #e9eddf;
+  --fo-selected: #e0e8cf;
+  --fo-pressed: #d9dfcc;
+  --fo-pressed-strong: #c8d2b4;
+  --fo-accent-soft: #eef5df;
+  --fo-accent-soft-2: #e5f0cd;
+  --fo-accent-tint: #d4e9ab;
+  --fo-warn-soft: #fbf2dd;
+  --fo-drop-overlay: #eef6dcd9;
+  --fo-scrim: #1d221a66;
+
+  --fo-line-2: #d3d8c8;
+  --fo-line-3: #c6ccb9;
+  --fo-line-4: #b5bca6;
+  --fo-line-5: #9ea690;
+  --fo-line-green: #c5d1b0;
+  --fo-line-green-strong: #8aa760;
+  --fo-line-focus: #7a8569;
+  --fo-focus-ring: #7a856933;
+  --fo-focus-inset: #6f7a5f;
+  --fo-card-outline: #4a523c1f;
+  --fo-warn-line: #c08a2a;
+
+  --fo-text-1: #1f2419;
+  --fo-text-2: #2b3223;
+  --fo-text-3: #374030;
+  --fo-text-4: #434b3a;
+  --fo-text-5: #4d5644;
+  --fo-text-6: #555f4b;
+  --fo-text-7: #5a6350;
+  --fo-text-faint: #5f6854;
+  --fo-text-dim: #646d59;
+  --fo-text-dimmer: #8a917e;
+  --fo-green-1: #2c5010;
+  --fo-green-2: #3b6420;
+  --fo-warn: #7d5410;
+  --fo-danger: #b2361d;
+
+  --fo-accent: #3d6b00;
+  --fo-accent-muted: #47701a;
+  --fo-accent-a00: #5c990000;
+  --fo-accent-a03: #5c99000a;
+  --fo-accent-a08: #5c99001f;
+  --fo-accent-a25: #5c990052;
+  --fo-accent-a50: #5c990099;
+  --fo-lime-hover: #a8f21c;
+  --fo-lime-active: #9be010;
+  --fo-lime-mark: #5c9900;
+
+  --fo-shadow-1: #2b311f14;
+  --fo-shadow-2: #2b311f1a;
+  --fo-shadow-3: #2b311f24;
+  --fo-shadow-4: #2b311f29;
+  --fo-shadow-5: #2b311f33;
+  --fo-shadow-6: #2b311f40;
+
+  --fo-color-scheme: light;
+}

@@ -1,0 +1,35 @@
+/*
+ * The landing's display face (Anton) only covers Latin letters. The big headlines are
+ * Chinese now, so name a Chinese fallback and add weight to keep the same heavy look.
+ */
+#landing .hero h1,
+#landing .hero-outline,
+#landing .cta-main h2,
+#landing .marquee-track {
+  font-family: Anton, var(--font-body);
+  font-weight: 800;
+}
+#landing .hero h1 {
+  letter-spacing: -0.02em;
+}
+#landing .cta-main h2 {
+  letter-spacing: -0.02em;
+}
+#landing .hero-outline {
+  letter-spacing: 0.04em;
+}
+
+/* Who it is for and what to prepare: plain and quiet, under the start button. */
+#landing .hero-fit {
+  max-width: 470px;
+  margin: 22px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.8;
+}
+@media (max-width: 580px) {
+  #landing .hero-fit {
+    font-size: 11px;
+    margin-top: 18px;
+  }
+}

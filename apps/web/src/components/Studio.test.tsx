@@ -131,6 +131,8 @@ describe('React studio integration', () => {
     expect(screen.queryAllByRole('button', { name: /^选择素材：/ })).toHaveLength(0);
     expect(screen.getByRole('button', { name: '添加本地素材' })).toBeTruthy();
     expect(screen.getByRole('button', { name: '生成图片' })).toBeTruthy();
+    // The web composer keeps the picture size next to the prompt.
+    expect(screen.getByRole('combobox', { name: '图片尺寸' })).toBeTruthy();
     fireEvent.keyDown(screen.getByRole('combobox', { name: '生成模式' }), { key: 'ArrowDown' });
     const modes = within(screen.getByRole('listbox', { name: '生成模式' }));
     expect(modes.getAllByRole('option')).toHaveLength(2);
@@ -227,8 +229,8 @@ describe('React studio integration', () => {
     });
     fireEvent.click(screen.getByRole('button', { name: '选择素材：穿过森林' }));
     fireEvent.click(screen.getByRole('button', { name: '加入成片' }));
-    const viewport = container.querySelector('.fo-viewport')!,
-      stage = container.querySelector('.fo-stage') as HTMLElement;
+    const viewport = container.querySelector('.fo-viewport')!;
+    const stage = container.querySelector('.fo-stage') as HTMLElement;
     const cameraBefore = stage.style.transform;
     rerender(<Studio onClose={vi.fn()} active={false} />);
     expect((container.querySelector('#studio-root') as HTMLElement).hidden).toBe(true);

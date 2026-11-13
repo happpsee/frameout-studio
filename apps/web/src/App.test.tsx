@@ -174,12 +174,12 @@ describe('workspace navigation', () => {
     render(<App />);
     frame();
     frame();
-    expect(screen.getByRole('button', { name: '展开镜头序列' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '展开成片' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '项目素材' }));
     fireEvent.click(screen.getByRole('button', { name: '定位素材：森林素材' }));
     frame();
     fireEvent.click(screen.getByRole('button', { name: '加入成片' }));
-    expect(screen.getByRole('button', { name: '收起镜头序列' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: '收起成片' })).toBeTruthy();
     expect(screen.getByText('1 个镜头 · 00:04')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '版本记录' }));
     expect(screen.getByRole('tabpanel', { name: '版本记录' })).toBeTruthy();

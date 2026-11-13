@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import Icon from './Icon';
 import { useLandingMotion } from '../hooks/useLandingMotion';
+import '../styles/landing-zh.css';
 
 interface LandingProps {
   onOpenStudio: () => void;
@@ -12,7 +13,7 @@ const INSPIRATION_FRAMES = [
     image: 'forest-astronaut-960.webp',
     alt: '森林中的橙色头盔探索者',
     name: '森林来信',
-    english: 'FOREST LETTERS',
+    note: '薄雾 · 森林',
     tag: '科幻 / 自然',
   },
   {
@@ -20,7 +21,7 @@ const INSPIRATION_FRAMES = [
     image: 'still-ocean.webp',
     alt: '涌动的蓝绿色海浪',
     name: '潮汐之后',
-    english: 'AFTER THE TIDE',
+    note: '浪花 · 蓝绿',
     tag: '情绪 / 纪录',
   },
   {
@@ -28,7 +29,7 @@ const INSPIRATION_FRAMES = [
     image: 'still-city.webp',
     alt: '夜色城市的光影',
     name: '夜游计划',
-    english: 'NIGHT WANDERER',
+    note: '夜色 · 城市',
     tag: '城市 / 漫游',
   },
 ];
@@ -78,7 +79,7 @@ function CanvasPreview({ onOpenStudio, phase }: LandingProps & { phase: number }
             </span>
           </div>
           <div className="preview-body">
-            <span className="preview-label">MOOD &amp; MOMENTS</span>
+            <span className="preview-label">氛围与瞬间</span>
             <div className="preview-group">
               <span>森林来信 / 视觉探索</span>
             </div>
@@ -154,7 +155,7 @@ function CanvasPreview({ onOpenStudio, phase }: LandingProps & { phase: number }
             <span>{PHASE_TEXT[phase]}</span>
           </div>
           <div className="motion-story-track" aria-hidden="true">
-            {['01 / EXPLORE', '02 / FRAME', '03 / SEQUENCE'].map((label, index) => (
+            {['01 / 探索', '02 / 定格', '03 / 成片'].map((label, index) => (
               <span className={phase === index ? 'active' : undefined} key={label}>
                 {label}
               </span>
@@ -197,16 +198,16 @@ export default function Landing({ onOpenStudio }: LandingProps) {
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-topline">
             <span>
-              <i className="status-dot" /> A PLAYGROUND FOR YOUR NEXT FILM
+              <i className="status-dot" /> 给下一部短片的试验场
             </span>
             <span>想象之外，自由之内。</span>
           </div>
           <div className="hero-layout">
             <div className="hero-copy">
               <div className="headline-wrap">
-                <h1 id="hero-title" aria-label="MAKE A SCENE.">
-                  <DisplayLine text="MAKE A" />
-                  <DisplayLine text="SCENE." className="lime-text" />
+                <h1 id="hero-title" aria-label="拍一场好戏。">
+                  <DisplayLine text="拍一场" />
+                  <DisplayLine text="好戏。" className="lime-text" />
                 </h1>
                 <span className="hero-sticker" aria-hidden="true">
                   <svg viewBox="0 0 110 110">
@@ -223,14 +224,14 @@ export default function Landing({ onOpenStudio }: LandingProps) {
                     />
                   </svg>
                   <span>
-                    STAY
+                    保持
                     <br />
-                    CURIOUS
+                    好奇
                   </span>
                 </span>
               </div>
               <p className="hero-outline" aria-hidden="true">
-                YOUR WAY.
+                随你拍。
               </p>
               <div className="hero-description">
                 <h2>
@@ -251,12 +252,16 @@ export default function Landing({ onOpenStudio }: LandingProps) {
                 <span className="hero-action-note">
                   自由探索 · 随时撤销
                   <br />
-                  <small>生成图片与视频 · 接入你的 API</small>
+                  <small>生成图片与视频 · 需要自备 API Key</small>
                 </span>
               </div>
+              <p className="hero-fit">
+                适合想自己挑画面、排镜头的创作者。开始前需要一个火山方舟或 OpenAI 的 API
+                Key，按次付费；导出的成片目前没有声音。
+              </p>
             </div>
             <div className="hero-art" id="hero-art">
-              <span className="art-coordinate coordinate-top">[ IDEA → FRAME ]</span>
+              <span className="art-coordinate coordinate-top">[ 想法 → 画面 ]</span>
               <div className="orbit-ring" aria-hidden="true" />
               <div className="art-cross cross-one" aria-hidden="true">
                 +
@@ -267,7 +272,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
               <div className="hero-photo-frame">
                 <div className="film-top">
                   <span>
-                    <i /> FRAME STUDY / 001
+                    <i /> 画面练习 / 001
                   </span>
                   <span>16:9</span>
                 </div>
@@ -285,17 +290,17 @@ export default function Landing({ onOpenStudio }: LandingProps) {
                     <div className={`viewfinder-corner ${position}`} key={position} />
                   ))}
                   <span className="image-caption">
-                    森林来信<span>FOREST LETTERS</span>
+                    森林来信<span>示例画面</span>
                   </span>
                 </div>
                 <div className="film-bottom">
-                  <span>EXT. FOREST — DAY</span>
+                  <span>日 / 外 / 森林</span>
                   <span>想法的第一个画面。 ↗</span>
                 </div>
               </div>
               <div className="floating-note">
                 <span className="note-pin" aria-hidden="true" />
-                <span>What if…</span>
+                <span>如果……</span>
                 <p>
                   森林里，
                   <br />
@@ -315,7 +320,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
                 <img src={`${ASSETS}still-ocean.webp`} alt="蓝绿色海浪" width="300" height="200" />
                 <span>潮汐之后</span>
               </div>
-              <span className="art-coordinate coordinate-bottom">DRAG IDEAS. MAKE STORIES.</span>
+              <span className="art-coordinate coordinate-bottom">拖动想法，连成故事。</span>
             </div>
           </div>
           <div className="hero-footer">
@@ -332,7 +337,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
               }}
             >
               <Icon name="undo" />
-              <span>重播开场 / REPLAY</span>
+              <span>重播开场</span>
             </button>
           </div>
         </section>
@@ -341,9 +346,9 @@ export default function Landing({ onOpenStudio }: LandingProps) {
           <div className="marquee-track">
             {[0, 1].map(index => (
               <span style={{ display: 'contents' }} key={index}>
-                <span>MORE ROOM FOR IDEAS</span>
+                <span>给想法多留点地方</span>
                 <span className="marquee-spark">✳</span>
-                <span className="outline-ink">LESS FRICTION TO CREATE</span>
+                <span className="outline-ink">创作少一点阻碍</span>
                 <span className="marquee-spark">✳</span>
               </span>
             ))}
@@ -353,7 +358,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
         <section className="canvas-section paper-section" id="how" aria-labelledby="canvas-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">THE WAY YOU THINK.</span>
+              <span className="eyebrow">照你的思路来</span>
               <h2 id="canvas-title">
                 思路自由，
                 <br />
@@ -374,7 +379,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
           <CanvasPreview onOpenStudio={onOpenStudio} phase={phase} />
           <div className="process-list">
             <article>
-              <span className="process-number">01 / EXPLORE</span>
+              <span className="process-number">01 / 探索</span>
               <h3>先有一个画面。</h3>
               <p>
                 写下一点想象，或放进一张参考。
@@ -383,7 +388,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
               </p>
             </article>
             <article>
-              <span className="process-number">02 / PLAY</span>
+              <span className="process-number">02 / 尝试</span>
               <h3>给它一点变化。</h3>
               <p>
                 试构图，换氛围，让画面动起来。
@@ -392,7 +397,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
               </p>
             </article>
             <article>
-              <span className="process-number">03 / MAKE</span>
+              <span className="process-number">03 / 成片</span>
               <h3>把镜头连成故事。</h3>
               <p>
                 挑选、排序、调整节奏。
@@ -406,7 +411,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
         <section className="showcase-section" id="showcase" aria-labelledby="showcase-title">
           <div className="section-heading">
             <div>
-              <span className="eyebrow">A FEW PLACES TO START.</span>
+              <span className="eyebrow">几个起点</span>
               <h2 id="showcase-title">
                 先从一个
                 <br />
@@ -429,7 +434,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
                 <span className="showcase-meta">
                   <span>
                     {frame.name}
-                    <small>{frame.english}</small>
+                    <small>{frame.note}</small>
                   </span>
                   <span>影像参考</span>
                 </span>
@@ -440,14 +445,14 @@ export default function Landing({ onOpenStudio }: LandingProps) {
 
         <section className="final-cta" aria-labelledby="cta-title">
           <div className="cta-topline">
-            <span>YOUR NEXT FRAME IS WAITING.</span>
+            <span>下一个画面，在等你。</span>
             <span>没有标准答案，只有你的版本。</span>
           </div>
           <div className="cta-main">
             <h2 id="cta-title">
-              LET IT
+              让它
               <br />
-              <span className="outline-ink">HAPPEN.</span>
+              <span className="outline-ink">发生。</span>
             </h2>
             <button className="cta-circle" onClick={() => onOpenStudio()} aria-label="打开创作画布">
               <Icon name="arrow-up-right" />
@@ -456,7 +461,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
           </div>
           <div className="cta-bottom">
             <span>把没说完的故事，交给画面。</span>
-            <span>SEE YOU ON THE CANVAS. ↗</span>
+            <span>画布上见。 ↗</span>
           </div>
         </section>
       </main>

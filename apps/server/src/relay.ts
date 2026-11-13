@@ -53,8 +53,15 @@ export class RelayError extends Error {
 
 class ClientDisconnect extends Error {}
 
-export function failure(status: number, code: string, message: string): Reply {
-  const body: ApiErrorBody = { error: { code, message } };
+export function failure(
+  status: number,
+  code: string,
+  message: string,
+  upstreamCode?: string,
+): Reply {
+  const body: ApiErrorBody = {
+    error: { code, message, ...(upstreamCode ? { upstreamCode } : {}) },
+  };
   return {
     status,
     headers: { ...SAFE_HEADERS, 'content-type': 'application/json' },
@@ -70,6 +77,7 @@ export function redactMessage(value: unknown, apiKey = ''): string {
       message = message.split(secret).join('[已隐藏]');
   }
   // Count code points, not UTF-16 units, so a cut never splits a character.
+  // eslint-disable-next-line no-control-regex -- strips control characters on purpose
   return [...message.replace(/[\x00-\x1f\x7f]/g, ' ').trim()].slice(0, 400).join('');
 }
 
@@ -263,15 +271,20 @@ async function forward(
   }
   if (!response.ok) {
     let message = '';
+    let upstreamCode = '';
     if (isObject(payload)) {
       const { error } = payload;
       message = redactMessage(isObject(error) ? error.message : payload.message, target.apiKey);
+      // Keep the provider's code (e.g. a safety-review code) so the client can explain it.
+      const code = isObject(error) ? (error.code ?? error.type) : payload.code;
+      if (typeof code === 'string' && /^[\w.-]{1,120}$/.test(code)) upstreamCode = code;
     }
     const status = response.status >= 400 && response.status <= 599 ? response.status : 502;
     return failure(
       status,
       `UPSTREAM_${response.status}`,
       message ? `供应商请求失败：${message}` : `供应商请求失败（HTTP ${response.status}）`,
+      upstreamCode,
     );
   }
   return {

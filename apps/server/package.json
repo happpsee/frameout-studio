@@ -7,11 +7,12 @@
     ".": "./src/lib.ts"
   },
   "scripts": {
-    "dev": "node --watch src/index.ts",
+    "dev": "node ../../tools/free-port.mts ${PORT:-8000} && node --watch src/index.ts",
     "build": "node scripts/build.ts",
     "start": "node dist/index.cjs",
     "typecheck": "tsc",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@frameout/shared": "workspace:*",

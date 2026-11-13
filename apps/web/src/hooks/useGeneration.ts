@@ -16,6 +16,9 @@ import { initialConfig, redact, saveProfile } from '../lib/preferences';
 import { desktopBridge } from '../lib/platform';
 import { CARD_CENTER } from '../lib/canvas-camera';
 import { PROVIDER_CAPABILITIES } from '@frameout/shared';
+import { submitFailure } from '../lib/provider-errors';
+import { regeneration } from '../lib/regenerate';
+import { askNotificationPermission, useCompletionNotice } from './useCompletionNotice';
 
 // openSettings shows the API settings with a reason; without it, missing settings fall back to a toast.
 type Options = {
@@ -34,6 +37,8 @@ export type GenerationRequest = {
   mode: GenerationMode;
   config?: AIConfig;
   position?: { x: number; y: number };
+  /** Place the new card beside this one (used by "再来一张"). */
+  near?: Card;
   onCard?: (id: string) => void;
 };
 function wait(ms: number, signal: AbortSignal): Promise<void> {
@@ -71,6 +76,7 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
   const urls = useRef(new Set<string>());
   // Encoded reference images by card and source, so a plan does not re-encode them for every shot.
   const encoded = useRef(new Map<string, Promise<string>>());
+  const notify = useCompletionNotice();
   const latest = useRef({ getProject, update, toast, openSettings });
   latest.current = { getProject, update, toast, openSettings };
   const needSettings = (notice: string) => {
@@ -103,12 +109,13 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
   }, []);
   useEffect(() => {
     mounted.current = true;
+    const createdUrls = urls.current;
     return () => {
       mounted.current = false;
       taskRef.current?.controller.abort();
       taskRef.current = null;
-      urls.current.forEach(url => URL.revokeObjectURL(url));
-      urls.current.clear();
+      createdUrls.forEach(url => URL.revokeObjectURL(url));
+      createdUrls.clear();
     };
   }, []);
   function current(task: ActiveTask) {
@@ -281,6 +288,7 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
           }
         }, false);
         toast(warning ?? '视频已加入画布 · 双击播放');
+        notify('succeeded', '视频已加入画布');
         return;
       }
       if (result.status === 'failed') {
@@ -314,8 +322,11 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
       needSettings('生成视频需要火山方舟或支持视频的兼容服务，请切换供应商。');
       return;
     }
+    if (video) askNotificationPermission();
     const task = start();
     if (!task) return;
+    // Set once the submission is handed to the client, so earlier failures are known not to be sent.
+    let sent = false;
     try {
       const client = createClient(generationConfig);
       // Shot consistency: shared notes go with every prompt; reference images with images where supported.
@@ -339,7 +350,7 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
         if (!current(task)) return;
         const card: Card = {
           id: uid(),
-          ...(request?.position ?? position()),
+          ...(request?.position ?? position(request?.near)),
           ...media,
           src: media.src!,
           name: text.slice(0, 18),
@@ -356,8 +367,8 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
           draft.selected = card.id;
         });
         request?.onCard?.(card.id);
-        setPrompt('');
         toast(warning ?? '图片已加入画布');
+        notify('succeeded', '图片已加入画布');
         return;
       }
       const firstFrame = await reference(source, task.controller.signal);
@@ -366,9 +377,10 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
       task.cardId = id;
       const card: Card = {
         id,
-        ...position(source),
+        ...position(request?.near ?? source),
         name: text.slice(0, 18) + ' · 视频',
         prompt: text,
+        sourceId: source?.id ?? '',
         src: source?.src || PENDING_MEDIA,
         kind: 'image',
         provider: generationConfig.provider,
@@ -386,6 +398,7 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
         draft.selected = id;
       });
       request?.onCard?.(id);
+      sent = true;
       const result = await client.submitVideo({
         prompt: prompted,
         reference: firstFrame,
@@ -394,25 +407,38 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
       if (mounted.current)
         patchJob(id, { id: result.id, status: current(task) ? result.status : 'paused' });
       if (!current(task)) return;
-      setPrompt('');
       await poll(id, client, task, result);
     } catch (error) {
       const message = redact(error instanceof Error ? error.message : error, generationConfig.key);
       if (mounted.current && ownsTask(task) && task.cardId) {
         const card = getProject().cards.find(c => c.id === task.cardId);
-        if (card?.job && !['failed', 'succeeded'].includes(card.job.status))
+        if (card?.job && !['failed', 'succeeded'].includes(card.job.status)) {
+          // Only an unclear submission (network error, timeout) may have reached the provider;
+          // a refusal or a local check leaves nothing to query, so the card says so plainly.
+          const aborted = task.controller.signal.aborted;
+          const outcome =
+            aborted || card.job.id ? 'unknown' : sent ? submitFailure(error) : 'not-sent';
           patchJob(task.cardId, {
-            status: 'paused',
-            error: task.controller.signal.aborted ? '已停止本页等待' : message,
+            status:
+              outcome === 'rejected' ? 'rejected' : outcome === 'not-sent' ? 'failed' : 'paused',
+            error: aborted ? '已停止本页等待' : message,
           });
+        }
       }
-      if (!task.controller.signal.aborted && mounted.current) toast(message);
+      if (!task.controller.signal.aborted && mounted.current) {
+        toast(message);
+        notify('failed', message);
+      }
     } finally {
       finish(task);
     }
   }
   async function resume(card: Card) {
     if (taskRef.current || !card.job) return;
+    if (!card.job.id && ['failed', 'rejected'].includes(card.job.status)) {
+      toast('这次提交没有成功，没有可查询的任务');
+      return;
+    }
     if (!card.job.id) {
       toast('没有取得任务号，请先在供应商后台核对，避免重复提交');
       return;
@@ -440,11 +466,24 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
         const latest = getProject().cards.find(c => c.id === card.id);
         if (latest?.job && !['failed', 'succeeded'].includes(latest.job.status))
           patchJob(card.id, { status: 'paused', error: message });
-        if (!task.controller.signal.aborted) toast(message);
+        if (!task.controller.signal.aborted) {
+          toast(message);
+          notify('failed', message);
+        }
       }
     } finally {
       finish(task);
     }
+  }
+  /** "再来一张": a new paid request with the card's prompt; never runs on its own. */
+  function regenerate(card: Card): Promise<void> {
+    const plan = regeneration(card, getProject().cards);
+    if (!plan) return Promise.resolve();
+    if (!plan.ok) {
+      toast(plan.reason);
+      return Promise.resolve();
+    }
+    return generate(plan.source, { prompt: plan.prompt, mode: plan.mode, near: card });
   }
   async function download(card: Card) {
     if (card.missingMedia || (card.job && card.job.status !== 'succeeded')) return;
@@ -477,6 +516,7 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
     generate,
     stop,
     resume,
+    regenerate,
     download,
   };
 }

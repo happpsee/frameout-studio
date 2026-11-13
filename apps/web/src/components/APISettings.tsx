@@ -12,7 +12,14 @@ import { canRememberKeys, rememberKey, rememberedKey } from '../lib/secrets';
 import { desktopBridge } from '../lib/platform';
 import Select from './Select';
 import Icon from './Icon';
+import ModelSection from './APIModelSection';
 import { closeOnBackdropClick } from '../lib/dialog';
+/** After a passing test: Ark still needs each model switched on in its console. */
+function connectedText(provider: Provider) {
+  return provider === 'ark'
+    ? '连接成功。还需要在火山方舟控制台开通所选模型；开通视频模型要求账户余额不少于 200 元（以方舟规则为准）。'
+    : '连接成功。具体模型权限以实际生成为准。';
+}
 /** notice explains why the dialog opened (for example, a generation without a key). */
 export default function APISettings({
   open,
@@ -93,7 +100,7 @@ export default function APISettings({
     try {
       await createClient(draft).testConnection({ signal: controller.signal });
       if (!controller.signal.aborted)
-        setStatus({ text: '连接成功。具体模型权限以实际生成为准。', kind: 'success' });
+        setStatus({ text: connectedText(draft.provider), kind: 'success' });
     } catch (error) {
       if (!controller.signal.aborted)
         setStatus({
@@ -136,10 +143,6 @@ export default function APISettings({
     }
   }
   const preset = PROVIDERS[draft.provider];
-  const options = (values: readonly (string | number)[], selected: string | number) =>
-    [...new Set([...values.map(String), String(selected)])]
-      .filter(Boolean)
-      .map(value => ({ value, label: value }));
   return (
     <dialog
       ref={dialog}
@@ -152,7 +155,7 @@ export default function APISettings({
       <form className="fo-api-form" onSubmit={event => void save(event)}>
         <header className="fo-api-head">
           <div>
-            <span className="fo-eyebrow">YOUR MODELS, YOUR IDEAS</span>
+            <span className="fo-eyebrow">模型由你挑选</span>
             <h2 id="fo-api-heading">连接你的生成服务</h2>
             <p>
               {keychain
@@ -268,75 +271,7 @@ export default function APISettings({
               )}
             </div>
           </section>
-          <section className="fo-api-section">
-            <strong className="fo-api-section-title">02 / 模型与画面参数</strong>
-            <div className="fo-api-grid">
-              <div className="fo-api-field">
-                <label htmlFor="image-model">图片模型</label>
-                <input
-                  id="image-model"
-                  value={draft.imageModel}
-                  onChange={event => patch('imageModel', event.target.value)}
-                />
-              </div>
-              <div className="fo-api-field">
-                <label>图片尺寸</label>
-                <Select
-                  label="图片尺寸"
-                  value={draft.imageSize}
-                  onChange={value => patch('imageSize', value)}
-                  options={options(preset.imageSizes, draft.imageSize)}
-                />
-              </div>
-              {preset.canVideo && (
-                <>
-                  <div className="fo-api-field">
-                    <label htmlFor="video-model">视频模型</label>
-                    <input
-                      id="video-model"
-                      value={draft.videoModel}
-                      onChange={event => patch('videoModel', event.target.value)}
-                    />
-                  </div>
-                  <div className="fo-api-field">
-                    <label>视频时长（秒）</label>
-                    <Select
-                      label="视频时长"
-                      value={String(draft.duration)}
-                      onChange={value => patch('duration', Number(value))}
-                      options={options(
-                        preset.videoDurations.length ? preset.videoDurations : [5],
-                        draft.duration,
-                      )}
-                    />
-                  </div>
-                  <div className="fo-api-field">
-                    <label>视频比例</label>
-                    <Select
-                      label="视频比例"
-                      value={draft.videoRatio}
-                      onChange={value => patch('videoRatio', value)}
-                      options={options(['16:9', '9:16', '1:1'], draft.videoRatio)}
-                    />
-                  </div>
-                  <div className="fo-api-field">
-                    <label>视频分辨率</label>
-                    <Select
-                      label="视频分辨率"
-                      value={draft.resolution}
-                      onChange={value => patch('resolution', value)}
-                      options={options(['720p', '1080p'], draft.resolution)}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-            <p className="fo-api-capability-note">
-              {draft.provider === 'openai'
-                ? '此配置用于图片生成。生成视频请使用火山方舟或支持视频协议的兼容服务。'
-                : preset.note}
-            </p>
-          </section>
+          <ModelSection draft={draft} patch={patch} />
           <div className="fo-api-connection">
             <button
               type="button"

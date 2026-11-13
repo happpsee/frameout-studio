@@ -5,21 +5,30 @@
   "packageManager": "pnpm@11.21.0",
   "scripts": {
     "build": "turbo run build",
+    "check": "pnpm format:check && eslint tools eslint.config.mjs && turbo run lint typecheck test",
+    "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "dev:web": "pnpm --filter @frameout/web dev",
     "dev:server": "pnpm --filter @frameout/server dev",
+    "dev:api": "pnpm --filter @frameout/api dev",
+    "dev:desktop": "pnpm --filter @frameout/desktop dev",
     "desktop": "turbo run build --filter=@frameout/desktop && pnpm --filter @frameout/desktop start",
     "build:desktop": "turbo run build --filter=@frameout/desktop && pnpm --filter @frameout/desktop package",
     "bench": "pnpm --filter @frameout/web bench",
-    "format": "prettier --write \"**/*.{ts,tsx,js,mjs,cjs,css}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,mjs,cjs,css}\""
+    "format": "prettier --write \"**/*.{ts,mts,tsx,js,mjs,cjs,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,mts,tsx,js,mjs,cjs,css}\""
   },
   "engines": {
     "node": ">=22.18.0"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "eslint": "10.14.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.14.0",
+    "prettier": "3.9.10",
     "turbo": "2.11.10",
-    "prettier": "3.9.10"
+    "typescript-eslint": "8.72.2"
   }
 }

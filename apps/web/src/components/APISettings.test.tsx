@@ -64,8 +64,8 @@ function Harness({
   initial?: AIConfig;
   onConfig?: (config: AIConfig) => void;
 }) {
-  const [open, setOpen] = useState(true),
-    [config, setConfig] = useState(initial);
+  const [open, setOpen] = useState(true);
+  const [config, setConfig] = useState(initial);
   return (
     <>
       <button onClick={() => setOpen(true)}>重新打开设置</button>
@@ -93,14 +93,14 @@ describe('API settings provider profiles and cancellation', () => {
     const onConfig = vi.fn();
     const { unmount } = render(<Harness onConfig={onConfig} />);
     expect(keyInput().value).toBe('openai-memory-secret');
-    await user.clear(screen.getByLabelText('图片模型'));
-    await user.type(screen.getByLabelText('图片模型'), 'my-image-model');
+    await user.click(screen.getByRole('combobox', { name: '图片模型' }));
+    await user.click(screen.getByRole('option', { name: /GPT Image 2/ }));
     await provider(user, '火山方舟');
     expect(keyInput().value).toBe('');
     await user.type(keyInput(), 'ark-memory-secret');
     await provider(user, 'OpenAI');
     expect(keyInput().value).toBe('openai-memory-secret');
-    expect(screen.getByLabelText<HTMLInputElement>('图片模型').value).toBe('my-image-model');
+    expect(screen.getByRole('combobox', { name: '图片模型' }).textContent).toContain('GPT Image 2');
     await provider(user, '火山方舟');
     expect(keyInput().value).toBe('ark-memory-secret');
     await user.click(screen.getByRole('button', { name: /保存配置/ }));
@@ -110,7 +110,7 @@ describe('API settings provider profiles and cancellation', () => {
     const saved = localStorage.getItem(PREFERENCES_KEY)!;
     expect(saved).not.toContain('openai-memory-secret');
     expect(saved).not.toContain('ark-memory-secret');
-    expect(JSON.parse(saved).profiles.openai.imageModel).toBe('my-image-model');
+    expect(JSON.parse(saved).profiles.openai.imageModel).toBe('gpt-image-2');
     expect(loadProfiles().profiles.ark?.key).toBe('');
     expect(initialConfig()).toMatchObject({ provider: 'ark', key: '' });
     await user.click(screen.getByRole('button', { name: '重新打开设置' }));
@@ -158,7 +158,8 @@ describe('API settings provider profiles and cancellation', () => {
   );
 
   it('ignores a connection response after switching the provider', async () => {
-    let signal!: AbortSignal, resolve!: (value: unknown) => void;
+    let signal!: AbortSignal;
+    let resolve!: (value: unknown) => void;
     mocked.connect.mockImplementation(({ signal: current }: { signal: AbortSignal }) => {
       signal = current;
       return new Promise(done => {
@@ -239,8 +240,8 @@ describe('API settings provider profiles and cancellation', () => {
     try {
       await loadRememberedKeys();
       expect(startingProfile('ark').key).toBe('ark-remembered');
-      const user = userEvent.setup(),
-        onConfig = vi.fn();
+      const user = userEvent.setup();
+      const onConfig = vi.fn();
       render(<Harness initial={{ ...defaults(), key: '' }} onConfig={onConfig} />);
       const remember = () =>
         screen.getByRole<HTMLInputElement>('checkbox', { name: '在本机钥匙串中记住此 Key' });
@@ -263,5 +264,56 @@ describe('API settings provider profiles and cancellation', () => {
       delete window.frameoutDesktop;
       await loadRememberedKeys();
     }
+  });
+
+  it('picks models from a list, keeps an unlisted saved model, and types them for compatible', async () => {
+    const user = userEvent.setup();
+    const onConfig = vi.fn();
+    render(
+      <Harness
+        initial={{ ...defaults('ark'), key: 'ark-key', imageModel: 'my-old-seedream' }}
+        onConfig={onConfig}
+      />,
+    );
+    const image = screen.getByRole('combobox', { name: '图片模型' });
+    expect(image.textContent).toBe('当前：my-old-seedream');
+    await user.click(image);
+    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual([
+      expect.stringContaining('Seedream 5.0 Pro'),
+      '当前：my-old-seedream',
+    ]);
+    await user.click(screen.getByRole('option', { name: /Seedream 5.0 Pro/ }));
+    expect(screen.getByRole('combobox', { name: '视频模型' }).textContent).toContain(
+      'Seedance 2.5',
+    );
+    await user.click(screen.getByRole('button', { name: /保存配置/ }));
+    expect(onConfig).toHaveBeenLastCalledWith(
+      expect.objectContaining({ imageModel: 'doubao-seedream-5-0-pro-260628' }),
+    );
+    await user.click(screen.getByRole('button', { name: '重新打开设置' }));
+    await provider(user, 'OpenAI 兼容接口');
+    expect(screen.getByLabelText<HTMLInputElement>('图片模型').tagName).toBe('INPUT');
+  });
+  it('leaves picture parameters to the composer on the web', async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    expect(screen.queryByRole('combobox', { name: '图片尺寸' })).toBeNull();
+    await provider(user, '火山方舟');
+    expect(screen.queryByRole('combobox', { name: '视频时长' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: '视频比例' })).toBeNull();
+    expect(screen.queryByRole('combobox', { name: '视频分辨率' })).toBeNull();
+    expect(screen.getByText(/尺寸、时长、比例在输入框旁边调整/)).toBeTruthy();
+  });
+  it('tells Ark users to switch on the model after a passing test', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={{ ...defaults('ark'), key: 'ark-key' }} />);
+    await user.click(screen.getByRole('button', { name: '测试连接' }));
+    const status = screen.getByRole('status').textContent;
+    expect(status).toContain('火山方舟控制台开通所选模型');
+    expect(status).toContain('200 元');
+    await provider(user, 'OpenAI');
+    await user.type(keyInput(), 'sk-openai');
+    await user.click(screen.getByRole('button', { name: '测试连接' }));
+    expect(screen.getByRole('status').textContent).toBe('连接成功。具体模型权限以实际生成为准。');
   });
 });

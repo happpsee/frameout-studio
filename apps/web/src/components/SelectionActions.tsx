@@ -1,8 +1,10 @@
 import type { CSSProperties, RefObject } from 'react';
 import type { Card } from '../types';
 import { usableReference } from '../lib/consistency';
-import { pending } from './CanvasCard';
+import type { Regeneration } from '../lib/regenerate';
+import { jobEnded, pending } from './CanvasCard';
 import Icon from './Icon';
+import './SelectionActions.css';
 
 interface SelectionActionsProps {
   card: Card;
@@ -13,7 +15,10 @@ interface SelectionActionsProps {
   /** A generation or a shot plan is running. */
   busy: boolean;
   isReference: boolean;
+  /** What "再来一张" would run; null hides it (the card was not generated). */
+  regeneration: Regeneration | null;
   onGenerateVideo: () => void;
+  onRegenerate: () => void;
   onResume: () => void;
   onToggleReference: () => void;
   onAddShot: () => void;
@@ -29,7 +34,9 @@ export default function SelectionActions({
   barRef,
   busy,
   isReference,
+  regeneration,
   onGenerateVideo,
+  onRegenerate,
   onResume,
   onToggleReference,
   onAddShot,
@@ -45,7 +52,9 @@ export default function SelectionActions({
       style={style}
       aria-hidden={outside}
     >
-      <span className="fo-selected-name">{card.name}</span>
+      <span className="fo-selected-name" title={card.prompt}>
+        {card.name}
+      </span>
       <button
         type="button"
         className="fo-small-button"
@@ -55,7 +64,10 @@ export default function SelectionActions({
         <Icon name="film" />
         <span>图生视频</span>
       </button>
-      {waiting && (
+      {regeneration && (
+        <RegenerateButton regeneration={regeneration} busy={busy} onClick={onRegenerate} />
+      )}
+      {waiting && !jobEnded(card) && (
         <button type="button" className="fo-small-button" disabled={busy} onClick={onResume}>
           <Icon name="clock" />
           <span>继续查询</span>
@@ -103,5 +115,35 @@ export default function SelectionActions({
         <Icon name="trash" />
       </button>
     </div>
+  );
+}
+
+/** A new paid request with the same prompt; unavailable reasons stay readable on hover and click. */
+function RegenerateButton({
+  regeneration,
+  busy,
+  onClick,
+}: {
+  regeneration: Regeneration;
+  busy: boolean;
+  onClick: () => void;
+}) {
+  const label = regeneration.mode === 'video' ? '再来一条' : '再来一张';
+  const hint = regeneration.ok
+    ? `用同样的提示词${regeneration.source ? '和首帧' : ''}重新生成，会再计费一次`
+    : regeneration.reason;
+  return (
+    <button
+      type="button"
+      className={`fo-small-button fo-regenerate${regeneration.ok ? '' : ' is-unavailable'}`}
+      disabled={busy}
+      aria-disabled={!regeneration.ok}
+      aria-label={`${label}：${hint}`}
+      title={hint}
+      onClick={onClick}
+    >
+      <Icon name="redo" />
+      <span>{label}</span>
+    </button>
   );
 }

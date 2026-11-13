@@ -10,7 +10,8 @@ export interface RelayEnvelope {
 
 /** Error body every non-2xx `/api` response uses. */
 export interface ApiErrorBody {
-  error: { code: string; message: string };
+  /** upstreamCode: the provider's own error code, passed through by the relay when it has one. */
+  error: { code: string; message: string; upstreamCode?: string };
 }
 
 export const RELAY_PATH = '/api/ai';

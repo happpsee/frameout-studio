@@ -10,7 +10,7 @@
 
 浏览器版和桌面版使用各自的数据目录。已有浏览器素材可先下载，再导入桌面版。桌面版当前维护一份自动保存的工作区。
 
-开发和打包前先完成下节的依赖安装。`pnpm desktop` 构建并运行桌面版源码。运行以下命令生成与当前 Mac 架构对应的本地应用，输出在 `apps/desktop/release/`。
+开发和打包前先完成下节的依赖安装。开发桌面版用 `pnpm dev:desktop`（见下节）；`pnpm desktop` 先完整构建，再以接近正式版的方式运行。运行以下命令生成与当前 Mac 架构对应的本地应用，输出在 `apps/desktop/release/`。
 
 ```bash
 pnpm build:desktop
@@ -18,7 +18,7 @@ pnpm build:desktop
 
 ## 本地启动
 
-需要 Node.js 22.18+（可直接运行 `.ts` 文件）、pnpm 11（版本见 `package.json` 的 `packageManager`）。在项目根目录运行：
+需要 Node.js 22.18+（可直接运行 `.ts` 文件）、pnpm 11（版本见 `package.json` 的 `packageManager`），以及 [uv](https://docs.astral.sh/uv/)（管理 `apps/api` 的 Python 3.12 环境和依赖）。在项目根目录运行：
 
 ```bash
 pnpm install --frozen-lockfile
@@ -32,6 +32,16 @@ pnpm dev:web
 ```
 
 前端：http://127.0.0.1:5173 ；后端：http://127.0.0.1:8000 。开发时 Vite 将 `/api` 代理到后端；`dev:server` 用 `node --watch` 直接运行 TypeScript 源码，修改后自动重启。
+
+开发桌面版时，在上面两个终端之外再运行：
+
+```bash
+pnpm dev:desktop
+```
+
+Electron 窗口直接加载 `dev:web` 的页面，改页面代码会热更新；改 `apps/desktop/src` 下的主进程或 preload 会自动重新打包并重启 Electron。`/api` 请求经 Vite 代理到 `dev:server`。开发时数据存放在 `apps/desktop/.dev-data/`，不碰正式版的项目；可用环境变量 `FRAMEOUT_USER_DATA_DIR` 改到别处，`FRAMEOUT_DEV_URL` 可指定其他页面地址。
+
+FastAPI 后端（`apps/api`）目前只有健康检查，账号、项目等接口从第 3 期起加入。需要时另开一个终端运行 `pnpm dev:api`，地址 http://127.0.0.1:8001 ，接口文档在 `/docs`。首次运行时 uv 会按 `apps/api/uv.lock` 自动创建虚拟环境。
 
 ## 构建后运行
 
@@ -66,6 +76,10 @@ apps/
     src/storage.ts / secrets.ts  本地文件读写与钥匙串加密的 Key
     scripts/build.ts   esbuild 打包 main、preload 和服务进程
     scripts/package.ts 打包 macOS 应用
+  api/                 @frameout/api：FastAPI 后端，只供 BFF 在内网调用
+    src/frameout_api/  应用代码
+    tests/             pytest 测试
+    scripts/export_openapi.py  导出接口契约到 dist/openapi.json，供 BFF 生成 TS 类型
 packages/
   shared/              @frameout/shared：串行队列、DesktopBridge 与 IPC 通道、/api/ai 请求格式与官方地址
 turbo.json             构建、类型检查、测试任务及缓存
@@ -124,12 +138,10 @@ pnpm-workspace.yaml    工作区与统一依赖版本（catalog）
 ## 验证
 
 ```bash
-pnpm typecheck
-pnpm test
-pnpm build
+pnpm check
 ```
 
-`pnpm test` 通过 Turborepo 运行所有包的 Vitest 测试（前端、后端、桌面存储与密钥、共享队列），未改动的包直接使用缓存结果。`pnpm bench` 用 200 个素材、8 个版本和 160 条计划记录的项目测量编辑、自动保存和画布渲染耗时，不包含在 `pnpm test` 中。
+`pnpm check` 依次跑格式检查（Prettier）、代码检查（TS 包用 ESLint，`apps/api` 用 ruff）、类型检查和全部测试，改完代码后必须通过。各项也可单独运行：`pnpm format:check`、`pnpm lint`、`pnpm typecheck`、`pnpm test`；Turborepo 对未改动的包直接使用缓存结果。`pnpm bench` 用 200 个素材、8 个版本和 160 条计划记录的项目测量编辑、自动保存和画布渲染耗时，不包含在 `pnpm test` 中。
 
 前端测试覆盖相机计算、手势取消与提交、双指转单指、历史操作、镜头排序与时长、浏览器媒体恢复、生成停止及续查、配置密钥隔离、下拉框键盘导航。后端测试覆盖协议校验、大小限制、错误脱敏、超时、断连取消、Cookie 隔离、Host 校验和静态文件（含软链接与路径穿越）。
 

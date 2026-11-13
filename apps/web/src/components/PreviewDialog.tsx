@@ -3,6 +3,7 @@ import type { Card } from '../types';
 import Icon from './Icon';
 import { timeLabel } from './Sequence';
 import { closeOnBackdropClick } from '../lib/dialog';
+import PromptCopy from './PromptCopy';
 
 export type PreviewItem = { card: Card; duration: number };
 export default function PreviewDialog({
@@ -28,6 +29,7 @@ export default function PreviewDialog({
   }
   const current = items[index];
   const card = current.card;
+  const prompt = (card.prompt || card.job?.prompt || '').trim();
   const timeRef = useRef(time);
   timeRef.current = time;
   useEffect(() => {
@@ -96,7 +98,7 @@ export default function PreviewDialog({
     >
       <div className="fo-preview-head">
         <div>
-          <span className="fo-eyebrow">SCREENING ROOM</span>
+          <span className="fo-eyebrow">预览</span>
           <h2 className="fo-preview-title" id="fo-preview-heading">
             {title}
           </h2>
@@ -135,6 +137,7 @@ export default function PreviewDialog({
         </span>
         <span>顺序预览</span>
       </div>
+      {prompt && <PromptCopy key={card.id} prompt={prompt} />}
       <div className="fo-preview-controls">
         <button
           type="button"

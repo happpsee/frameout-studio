@@ -1,0 +1,17 @@
+/* Multi-selection bar and shift-drag box. Colours come from .fo-selection-actions. */
+.fo-selection-actions.fo-multi-selection {
+  left: 50%;
+  top: 64px;
+  translate: -50% 0;
+}
+.fo-multi-selection .fo-selected-name {
+  max-width: none;
+}
+.fo-marquee {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  border: 1px solid var(--fo-accent);
+  background: var(--fo-accent-a08);
+  border-radius: 2px;
+}

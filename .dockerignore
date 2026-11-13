@@ -1,13 +1,33 @@
-.git
-.DS_Store
+# Dependencies
 **/node_modules
-**/.turbo
-**/release
+**/.venv
+
+# Build output
 **/dist
-**/.env
-**/.env.*
-!**/.env.example
-docs
+**/release
+**/.turbo
+
+# Test and tool caches
+**/coverage
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+
+# Generated media and local run output
+output
 **/*.tar
 **/*.tar.gz
 **/*.zip
+
+# Not needed in the image
+.git
+.claude
+docs
+**/.env
+**/.env.*
+!**/.env.example
+.DS_Store
+
+# Third-party projects cloned for reference
+reference

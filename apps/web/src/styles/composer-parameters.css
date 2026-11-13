@@ -1,0 +1,64 @@
+/* Web composer: image size or video duration / ratio / resolution beside the mode switch.
+   Colors come from the shared select trigger; only size and spacing are set here. */
+.fo-composer-top:has(.fo-composer-params, .fo-composer-param-note) {
+  flex-wrap: wrap;
+  row-gap: 6px;
+}
+.fo-composer-params {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  margin-left: auto;
+}
+.fo-studio .fo-composer-params + .fo-select[data-variant='compact'],
+.fo-studio .fo-composer-param-note + .fo-select[data-variant='compact'] {
+  margin-left: 0;
+}
+.fo-studio .fo-composer-params .fo-select {
+  flex: none;
+  width: auto;
+  max-width: 116px;
+}
+.fo-studio .fo-composer-params .fo-select-trigger {
+  min-height: 28px;
+  padding: 4px 7px;
+  gap: 6px;
+  font-size: 10px;
+  line-height: 18px;
+}
+.fo-studio .fo-composer-params .fo-select-chevron {
+  width: 12px;
+  height: 12px;
+}
+.fo-composer-param-note {
+  margin-left: auto;
+  padding: 4px 7px;
+  min-height: 28px;
+  border: 1px dashed var(--fo-line);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--fo-muted);
+  font-size: 10px !important;
+  cursor: pointer;
+}
+.fo-composer-param-note:hover:not(:disabled) {
+  color: var(--fo-paper);
+}
+/* On a phone the pickers take their own line under the label and mode switch. */
+@media (max-width: 540px) {
+  .fo-composer-params,
+  .fo-composer-param-note {
+    order: 3;
+    margin-left: 0;
+  }
+  .fo-studio .fo-composer-params + .fo-select[data-variant='compact'],
+  .fo-studio .fo-composer-param-note + .fo-select[data-variant='compact'] {
+    margin-left: auto;
+  }
+}
+@media (pointer: coarse) {
+  .fo-studio .fo-composer-params .fo-select-trigger {
+    min-height: 36px;
+  }
+}

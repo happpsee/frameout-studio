@@ -5,8 +5,8 @@
   max-height: calc(100dvh - 32px);
   padding: 0;
   overflow: hidden;
-  background: #1b1f16;
-  border: 1px solid #41473b;
+  background: var(--fo-panel);
+  border: 1px solid var(--fo-line-2);
   border-radius: 10px;
   color: var(--fo-paper);
 }
@@ -22,13 +22,13 @@
   justify-content: space-between;
   gap: 24px;
   padding: 28px 30px 23px;
-  border-bottom: 1px solid #3c4632;
+  border-bottom: 1px solid var(--fo-line-2);
   flex: none;
 }
 .fo-api-head .fo-eyebrow {
   font-size: 8px;
   letter-spacing: 1.8px;
-  color: var(--fo-lime);
+  color: var(--fo-accent);
 }
 .fo-api-head h2 {
   margin: 11px 0 8px !important;
@@ -42,7 +42,7 @@
   margin: 0;
   font-size: 11px;
   line-height: 1.8;
-  color: #a8b59a;
+  color: var(--fo-text-5);
 }
 .fo-api-dialog .fo-api-close {
   margin: -7px -9px 0 0;
@@ -53,7 +53,7 @@
   overflow: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
-  scrollbar-color: #586847 transparent;
+  scrollbar-color: var(--fo-line-4) transparent;
   min-height: 0;
 }
 .fo-api-section {
@@ -65,7 +65,7 @@
   font:
     9px/1.6 'Courier New',
     monospace;
-  color: #94ab77;
+  color: var(--fo-text-6);
   letter-spacing: 1.1px;
 }
 .fo-api-grid {
@@ -87,7 +87,7 @@
 .fo-api-label-row label {
   font-size: 11px;
   line-height: 1.5;
-  color: #d2ddc5;
+  color: var(--fo-text-2);
 }
 .fo-api-field > input,
 .fo-api-field > select,
@@ -95,9 +95,9 @@
   width: 100%;
   height: 42px;
   min-width: 0;
-  border: 1px solid #42483c;
-  background: #171c13;
-  color: #eff3e8;
+  border: 1px solid var(--fo-line-2);
+  background: var(--fo-field);
+  color: var(--fo-text-1);
   border-radius: 4px;
   padding: 10px 12px;
   font:
@@ -108,11 +108,11 @@
 }
 .fo-api-field > input::placeholder,
 .fo-api-key-row > input::placeholder {
-  color: #67765a;
+  color: var(--fo-text-dim);
 }
 .fo-api-field > input[readonly] {
-  background: #22291d;
-  color: #9da990;
+  background: var(--fo-raised-2);
+  color: var(--fo-text-6);
 }
 .fo-api-field > input:disabled,
 .fo-api-field > select:disabled {
@@ -120,7 +120,7 @@
   cursor: not-allowed;
 }
 .fo-api-field > small {
-  color: #879a74;
+  color: var(--fo-text-7);
   font-size: 10px;
   line-height: 1.8;
   overflow-wrap: anywhere;
@@ -133,7 +133,7 @@
 }
 .fo-api-key-state {
   font-size: 9px;
-  color: #8ba46c;
+  color: var(--fo-text-7);
 }
 .fo-api-key-row {
   display: flex;
@@ -150,21 +150,21 @@
   flex: none;
   min-width: 52px;
   padding: 8px 11px;
-  border: 1px solid #42483c;
+  border: 1px solid var(--fo-line-2);
   border-radius: 4px;
-  background: #2e3825;
+  background: var(--fo-hover);
   font-size: 10px;
-  color: #c1d3ad;
+  color: var(--fo-green-2);
 }
 .fo-api-dialog .fo-api-reveal:hover {
-  background: #414e34;
+  background: var(--fo-pressed);
 }
 .fo-api-capability-note {
   margin: 14px 0 0;
   padding: 12px 13px;
-  border-left: 2px solid #627f43;
-  background: #25301e;
-  color: #9eb887;
+  border-left: 2px solid var(--fo-line-green-strong);
+  background: var(--fo-accent-soft);
+  color: var(--fo-text-5);
   font-size: 10px;
   line-height: 1.9;
   overflow-wrap: anywhere;
@@ -179,34 +179,34 @@
   min-height: 38px;
   min-width: 99px;
   padding: 9px 14px;
-  border: 1px solid #718d52;
+  border: 1px solid var(--fo-line-green-strong);
   border-radius: 4px;
   background: transparent;
-  color: #d4e8bb;
+  color: var(--fo-green-1);
   font-size: 11px;
 }
 .fo-api-dialog .fo-api-test:not(:disabled):hover {
-  background: #344529;
-  border-color: #b5ff2a;
+  background: var(--fo-selected);
+  border-color: var(--fo-accent);
 }
 .fo-api-connection > span {
   font-size: 10px;
-  color: #839574;
+  color: var(--fo-text-7);
   line-height: 1.7;
 }
 .fo-api-status {
   min-height: 20px;
   margin: 10px 0 5px;
   font-size: 11px;
-  color: #9eae8d;
+  color: var(--fo-text-5);
   line-height: 1.8;
   overflow-wrap: anywhere;
 }
 .fo-api-status[data-state='success'] {
-  color: #b5e489;
+  color: var(--fo-green-1);
 }
 .fo-api-status[data-state='error'] {
-  color: #f1ab96;
+  color: var(--fo-danger);
 }
 .fo-api-footer {
   display: flex;
@@ -214,20 +214,20 @@
   align-items: center;
   gap: 16px;
   padding: 18px 30px;
-  border-top: 1px solid #3c4632;
-  background: #1e2519;
+  border-top: 1px solid var(--fo-line-2);
+  background: var(--fo-panel-alt);
   flex: none;
 }
 .fo-api-dialog .fo-api-clear {
   padding: 9px 0;
   background: transparent;
-  color: #96a786;
+  color: var(--fo-text-6);
   font-size: 10px;
   min-height: 38px;
   text-align: left;
 }
 .fo-api-dialog .fo-api-clear:hover {
-  color: #e7b19a;
+  color: var(--fo-danger);
 }
 .fo-api-footer .fo-primary-button {
   min-height: 40px;
@@ -315,11 +315,11 @@
   outline-offset: 0;
 }
 .fo-api-dialog :is(input, select):focus-visible {
-  border-color: #9ba48e !important;
-  box-shadow: inset 0 0 0 1px #9ba48e26;
+  border-color: var(--fo-line-focus) !important;
+  box-shadow: inset 0 0 0 1px var(--fo-focus-ring);
 }
 .fo-api-dialog button:focus-visible {
-  box-shadow: inset 0 0 0 1px #c3cbb3;
+  box-shadow: inset 0 0 0 1px var(--fo-focus-inset);
 }
 .fo-studio .fo-api-dialog[open] {
   animation: fo-api-arrive 0.16s ease-out;
@@ -341,9 +341,9 @@
 .fo-api-head .fo-api-notice {
   margin-top: 12px;
   padding: 9px 12px;
-  border-left: 2px solid var(--fo-lime);
-  background: #2a3320;
-  color: #e3f3c9;
+  border-left: 2px solid var(--fo-accent);
+  background: var(--fo-accent-soft);
+  color: var(--fo-green-1);
   font-size: 11px;
 }
 .fo-api-field small a {
@@ -351,7 +351,7 @@
   align-items: center;
   gap: 3px;
   margin: 0 6px 0 2px;
-  color: var(--fo-lime);
+  color: var(--fo-accent);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -365,11 +365,11 @@
   gap: 8px;
   margin-top: 9px;
   font-size: 11px;
-  color: #c4ceb7;
+  color: var(--fo-text-3);
   cursor: pointer;
 }
 .fo-api-remember input {
-  accent-color: var(--fo-lime);
+  accent-color: var(--fo-lime-mark);
   width: 14px;
   height: 14px;
   margin: 0;

@@ -40,24 +40,24 @@ export default memo(function Sequence({
     });
   }
   return (
-    <section className={`fo-timeline${collapsed ? ' is-collapsed' : ''}`} aria-label="成片镜头序列">
+    <section className={`fo-timeline${collapsed ? ' is-collapsed' : ''}`} aria-label="成片">
       <div className="fo-timeline-label">
         {onToggle ? (
           <button
             type="button"
             className="fo-timeline-toggle"
-            aria-label={collapsed ? '展开镜头序列' : '收起镜头序列'}
+            aria-label={collapsed ? '展开成片' : '收起成片'}
             aria-expanded={!collapsed}
             aria-controls="fo-timeline-track"
             onClick={onToggle}
           >
             <Icon name="chevron-down" />
-            <strong>镜头序列</strong>
+            <strong>成片</strong>
           </button>
         ) : (
           <div>
-            <span className="fo-eyebrow">THE CUT</span>
-            <strong>我的成片</strong>
+            <span className="fo-eyebrow">按顺序播放</span>
+            <strong>成片</strong>
           </div>
         )}
         <span className="fo-sequence-summary">

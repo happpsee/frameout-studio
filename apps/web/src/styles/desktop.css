@@ -141,8 +141,8 @@ html[data-desktop-platform='darwin']
 }
 .fo-desktop-rail {
   flex: 0 0 52px;
-  border-right: 1px solid #34392f;
-  background: #1c1f19;
+  border-right: 1px solid var(--fo-line);
+  background: var(--fo-panel);
 }
 .is-desktop .fo-canvas-tools {
   position: static;
@@ -164,12 +164,12 @@ html[data-desktop-platform='darwin']
   height: 36px;
 }
 .is-desktop .fo-canvas-tools .fo-icon-button.is-active {
-  background: #35422a;
-  color: #b5ff2a !important;
+  background: var(--fo-selected);
+  color: var(--fo-accent) !important;
 }
 .is-desktop .fo-viewport {
   min-height: 0;
-  background-color: #181b16;
+  background-color: var(--fo-canvas-deep);
 }
 .is-desktop .fo-canvas-intro {
   left: 18px;
@@ -178,7 +178,7 @@ html[data-desktop-platform='darwin']
 .is-desktop .fo-canvas-intro .fo-eyebrow {
   font: 11px var(--font-body);
   letter-spacing: 0;
-  color: #9ba48e;
+  color: var(--fo-text-6);
 }
 .is-desktop .fo-canvas-empty {
   top: 50%;
@@ -188,23 +188,23 @@ html[data-desktop-platform='darwin']
 .is-desktop .fo-canvas-empty h2 {
   font-size: 18px;
   font-weight: 500;
-  color: #cbd1c2;
+  color: var(--fo-text-3);
   margin: 16px 0 0;
 }
 .is-desktop .fo-canvas-empty p {
   font-size: 11px;
   line-height: 1.8;
-  color: #89927d;
+  color: var(--fo-text-7);
   margin: 10px auto 20px;
   max-width: 280px;
 }
 .fo-empty-symbol {
   display: inline-flex;
   padding: 14px;
-  color: #78866a;
-  border: 1px solid #3c4632;
+  color: var(--fo-text-faint);
+  border: 1px solid var(--fo-line-2);
   border-radius: 12px;
-  background: #242b1e;
+  background: var(--fo-raised-2);
 }
 .fo-empty-symbol svg {
   width: 25px;
@@ -214,9 +214,9 @@ html[data-desktop-platform='darwin']
   min-height: 34px;
   font-size: 11px !important;
   padding: 8px 13px;
-  background: #333e27;
-  border: 1px solid #596c41;
-  color: #d5e2c5 !important;
+  background: var(--fo-hover);
+  border: 1px solid var(--fo-line-green-strong);
+  color: var(--fo-green-2) !important;
 }
 .is-desktop .fo-camera-tools {
   right: 14px;
@@ -239,8 +239,8 @@ html[data-desktop-platform='darwin']
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  border-left: 1px solid #34392f;
-  background: #20231c;
+  border-left: 1px solid var(--fo-line);
+  background: var(--fo-panel-alt);
 }
 .fo-generation-sidebar > header {
   display: flex;
@@ -248,7 +248,7 @@ html[data-desktop-platform='darwin']
   justify-content: space-between;
   min-height: 46px;
   padding: 0 16px;
-  border-bottom: 1px solid #34392f;
+  border-bottom: 1px solid var(--fo-line);
   font-size: 12px;
 }
 .fo-generation-sidebar > header > span:first-child {
@@ -258,7 +258,7 @@ html[data-desktop-platform='darwin']
 }
 .fo-generation-sidebar > header > span:last-child {
   font: 10px var(--font-mono);
-  color: #818c75;
+  color: var(--fo-text-faint);
 }
 .fo-generation-sidebar > header svg {
   width: 15px;
@@ -286,7 +286,7 @@ html[data-desktop-platform='darwin']
 }
 .is-desktop .fo-composer-top > label {
   font-size: 11px;
-  color: #c6ceb9;
+  color: var(--fo-text-3);
 }
 .is-desktop .fo-prompt {
   flex-shrink: 0;
@@ -294,15 +294,15 @@ html[data-desktop-platform='darwin']
   height: 156px;
   min-height: 100px;
   padding: 11px;
-  border: 1px solid #424a37;
+  border: 1px solid var(--fo-line-2);
   border-radius: 5px;
-  background: #171b13;
+  background: var(--fo-field);
   font-size: 12px !important;
   line-height: 1.8;
   resize: vertical;
 }
 .is-desktop .fo-prompt::placeholder {
-  color: #6f7c63;
+  color: var(--fo-text-dim);
 }
 .fo-service-connection {
   display: flex;
@@ -313,8 +313,8 @@ html[data-desktop-platform='darwin']
   min-height: 36px;
   margin: 16px 0 0;
   padding: 8px 10px;
-  background: #292f22;
-  border: 1px solid #414d33 !important;
+  background: var(--fo-card);
+  border: 1px solid var(--fo-line-2) !important;
   border-radius: 5px;
   font-size: 11px !important;
 }
@@ -324,17 +324,17 @@ html[data-desktop-platform='darwin']
   gap: 7px;
 }
 .fo-service-connection > span:last-child {
-  color: #a3b58b;
+  color: var(--fo-text-5);
   font-size: 10px;
 }
 .fo-service-connection i {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #6d765f;
+  background: var(--fo-line-5);
 }
 .fo-service-connection i.is-connected {
-  background: #b5ff2a;
+  background: var(--fo-lime-mark);
 }
 .fo-service-connection svg {
   width: 13px !important;
@@ -354,7 +354,7 @@ html[data-desktop-platform='darwin']
   flex-direction: column;
   gap: 7px;
   margin: 0 0 12px;
-  color: #aeb99c;
+  color: var(--fo-text-5);
   font-size: 11px;
 }
 .fo-generation-parameters > input {
@@ -362,10 +362,10 @@ html[data-desktop-platform='darwin']
   min-height: 34px;
   margin: -5px 0 14px;
   padding: 7px 9px;
-  background: #191e14;
-  border: 1px solid #414a35;
+  background: var(--fo-field);
+  border: 1px solid var(--fo-line-2);
   border-radius: 4px;
-  color: #d8dfce;
+  color: var(--fo-text-2);
   font-size: 11px !important;
 }
 .fo-generation-parameters .fo-select {
@@ -376,9 +376,9 @@ html[data-desktop-platform='darwin']
   flex: 1;
   min-width: 0;
   min-height: 34px;
-  background: #191e14;
-  border: 1px solid #414a35;
-  color: #d8dfce;
+  background: var(--fo-field);
+  border: 1px solid var(--fo-line-2);
+  color: var(--fo-text-2);
   font-size: 11px;
 }
 .fo-parameter-row {
@@ -398,7 +398,7 @@ html[data-desktop-platform='darwin']
   gap: 12px;
   margin-top: auto;
   padding: 20px 0 2px;
-  background: #20231c;
+  background: var(--fo-panel-alt);
 }
 .is-desktop .fo-generation-state {
   max-width: none;
@@ -419,7 +419,7 @@ html[data-desktop-platform='darwin']
 }
 .is-desktop .fo-cancel-generation {
   min-height: 30px;
-  border: 1px solid #6a7559;
+  border: 1px solid var(--fo-line-5);
   border-radius: 4px;
 }
 .is-desktop .fo-generation-line {
@@ -433,7 +433,7 @@ html[data-desktop-platform='darwin']
   min-width: 0;
   max-width: none;
   border: 0;
-  border-right: 1px solid #3d4632;
+  border-right: 1px solid var(--fo-line-2);
   border-radius: 0;
   box-shadow: none;
 }
@@ -484,8 +484,8 @@ html[data-desktop-platform='darwin']
   flex-direction: column;
   min-height: 0;
   padding: 10px 14px 14px;
-  border-right: 1px solid #3d4632;
-  background: #1c2117;
+  border-right: 1px solid var(--fo-line-2);
+  background: var(--fo-panel);
 }
 .fo-assets-panel > header {
   display: flex;
@@ -500,7 +500,7 @@ html[data-desktop-platform='darwin']
 }
 .fo-assets-panel h2 > span {
   margin-left: 8px;
-  color: #839571;
+  color: var(--fo-text-faint);
   font: 10px var(--font-mono);
 }
 .fo-library-upload {
@@ -511,9 +511,9 @@ html[data-desktop-platform='darwin']
   min-height: 34px;
   flex-shrink: 0;
   padding: 8px 10px;
-  border: 1px solid #4d5b3e !important;
+  border: 1px solid var(--fo-line-3) !important;
   border-radius: 4px;
-  background: #2b3521;
+  background: var(--fo-accent-soft);
   font-size: 11px !important;
 }
 .fo-library-upload svg {
@@ -525,10 +525,10 @@ html[data-desktop-platform='darwin']
   min-height: 32px;
   margin-top: 12px;
   padding: 7px 9px;
-  background: #161b12;
-  border: 1px solid #3d4930;
+  background: var(--fo-field);
+  border: 1px solid var(--fo-line-2);
   border-radius: 4px;
-  color: #d7e1c9;
+  color: var(--fo-text-2);
   font-size: 11px;
 }
 .fo-library-grid {
@@ -543,13 +543,13 @@ html[data-desktop-platform='darwin']
   min-width: 0;
   padding: 0;
   text-align: left;
-  border: 1px solid #3b4730;
+  border: 1px solid var(--fo-line-2);
   border-radius: 4px;
-  background: #222a1b;
+  background: var(--fo-raised-2);
   overflow: hidden;
 }
 .fo-library-grid > button.is-selected {
-  border-color: #b5ff2a;
+  border-color: var(--fo-accent);
 }
 .fo-library-grid > button > span {
   display: block;
@@ -562,7 +562,7 @@ html[data-desktop-platform='darwin']
 .fo-library-thumb {
   position: relative;
   height: 68px;
-  background: #151a11;
+  background: var(--fo-thumb-bg);
 }
 .fo-library-thumb img,
 .fo-library-thumb video {
@@ -577,11 +577,11 @@ html[data-desktop-platform='darwin']
   font-size: 8px;
   padding: 2px 4px;
   border-radius: 2px;
-  background: #10170cbb;
-  color: #d4e1c3;
+  background: var(--fo-media-label);
+  color: var(--fo-media-text);
 }
 .fo-library-empty {
-  color: #8b9a7b;
+  color: var(--fo-text-7);
   font-size: 11px;
   line-height: 1.8;
   text-align: center;
@@ -594,7 +594,7 @@ html[data-desktop-platform='darwin']
   flex-direction: column;
   padding: 10px 14px;
   gap: 10px;
-  background: #1c2117;
+  background: var(--fo-panel);
 }
 .is-desktop .fo-timeline-label {
   display: flex;
@@ -611,7 +611,7 @@ html[data-desktop-platform='darwin']
   min-height: 24px;
   padding: 0;
   background: transparent;
-  color: #c1cdb2;
+  color: var(--fo-text-3);
 }
 .fo-timeline-toggle strong {
   font-size: 11px;
@@ -666,9 +666,9 @@ html[data-desktop-platform='darwin']
   width: 100%;
   padding: 10px 0;
   margin-bottom: 14px;
-  border-top: 1px solid #3d4d31 !important;
+  border-top: 1px solid var(--fo-line-2) !important;
   background: transparent;
-  color: #bed49f !important;
+  color: var(--fo-green-2) !important;
   font-size: 12px !important;
 }
 @media (max-width: 1150px) {

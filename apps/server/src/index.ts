@@ -9,6 +9,13 @@ if (!Number.isInteger(port) || port < 1 || port > 65535)
   throw new Error('PORT must be an integer between 1 and 65535');
 
 const server = http.createServer(createApp(settingsFromEnv()));
+server.on('error', (error: NodeJS.ErrnoException) => {
+  if (error.code !== 'EADDRINUSE') throw error;
+  console.error(
+    `端口 ${port} 已被占用。用 lsof -i :${port} 查看占用的进程，或设置 PORT 换一个端口。`,
+  );
+  process.exit(1);
+});
 server.listen(port, host, () => console.log(`帧外服务已启动：http://${host}:${port}`));
 
 function shutdown() {

@@ -364,8 +364,8 @@ describe('generation cancellation and retained video tasks', () => {
     expect(hook.getProject().cards[0].job?.error).toContain('[已隐藏]');
   });
   it('opens the settings instead of a toast when the key is missing', async () => {
-    const openSettings = vi.fn(),
-      toast = vi.fn();
+    const openSettings = vi.fn();
+    const toast = vi.fn();
     const hook = renderHook(() =>
       useGeneration({ getProject: initialState, update: vi.fn(), toast, openSettings }),
     );

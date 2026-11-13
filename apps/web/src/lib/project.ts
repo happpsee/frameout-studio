@@ -82,6 +82,7 @@ export function serializeWorkspace(project: WorkspaceSnapshot): WorkspaceSnapsho
         'mediaId',
         'remoteTemporary',
         'prompt',
+        'sourceId',
         'model',
         'mimeType',
         'requestId',
@@ -158,6 +159,8 @@ function restoreWorkspace(input: unknown): WorkspaceSnapshot {
         src: raw.mediaId ? MISSING_MEDIA : safeSource(raw.src),
         missingMedia: Boolean(raw.mediaId),
       } as Card;
+      if (typeof card.prompt !== 'string') delete card.prompt;
+      if (typeof card.sourceId !== 'string') delete card.sourceId;
       if (card.job) {
         card.job = {
           ...card.job,

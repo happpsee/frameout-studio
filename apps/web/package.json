@@ -4,12 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
+    "dev": "node ../../tools/free-port.mts 5173 && vite --host 127.0.0.1",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "bench": "vitest run --mode bench src/bench"
+    "bench": "vitest run --mode bench src/bench",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@frameout/shared": "workspace:*",

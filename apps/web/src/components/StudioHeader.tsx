@@ -1,5 +1,6 @@
 import { isDesktop } from '../lib/platform';
 import Icon from './Icon';
+import ThemeToggle from './ThemeToggle';
 
 interface StudioHeaderProps {
   title: string;
@@ -15,6 +16,9 @@ interface StudioHeaderProps {
   onExportVideo: () => void;
   onPreview: () => void;
 }
+
+/** The project file is not a backup: say so before people rely on it. */
+const EXPORT_PROJECT_NOTE = '只含画布布局和设置，不含图片和视频，目前也还不能导回来。';
 
 function Brand() {
   return (
@@ -83,6 +87,7 @@ export default function StudioHeader({
         </nav>
       )}
       <div className="fo-header-actions">
+        <ThemeToggle />
         {!desktop && (
           <>
             <button
@@ -107,11 +112,16 @@ export default function StudioHeader({
         <button
           type="button"
           className="fo-text-button fo-export-button"
-          aria-label="导出项目"
+          aria-label="导出项目文件"
+          aria-describedby="fo-export-project-note"
+          title={EXPORT_PROJECT_NOTE}
           onClick={onExportProject}
         >
           <Icon name="download" />
-          <span>导出项目</span>
+          <span>导出项目文件</span>
+          <span id="fo-export-project-note" hidden>
+            {EXPORT_PROJECT_NOTE}
+          </span>
         </button>
         <button
           type="button"

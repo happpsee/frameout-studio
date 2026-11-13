@@ -1,11 +1,20 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { ExportShot, ExportSize } from '../lib/export-video';
 import { exportSupported } from '../lib/export-support';
+import {
+  EXPORT_QUALITIES,
+  EXPORT_RATIOS,
+  exportFileName,
+  loadExportPreferences,
+  saveExportPreferences,
+  type ExportQuality,
+  type ExportRatio,
+} from '../lib/export-preferences';
 import Icon from './Icon';
 import Select from './Select';
 import { timeLabel } from './Sequence';
 
-const SIZES: Record<string, Record<string, ExportSize>> = {
+const SIZES: Record<ExportRatio, Record<ExportQuality, ExportSize>> = {
   '16:9': { '720p': { width: 1280, height: 720 }, '1080p': { width: 1920, height: 1080 } },
   '9:16': { '720p': { width: 720, height: 1280 }, '1080p': { width: 1080, height: 1920 } },
   '1:1': { '720p': { width: 720, height: 720 }, '1080p': { width: 1080, height: 1080 } },
@@ -13,16 +22,13 @@ const SIZES: Record<string, Record<string, ExportSize>> = {
 type Phase =
   | { kind: 'idle'; message?: string }
   | { kind: 'running'; progress: number }
-  | { kind: 'done'; url: string; bytes: number }
+  | { kind: 'done'; url: string; bytes: number; fileName: string }
   | { kind: 'error'; message: string };
 
 const fileSize = (bytes: number) =>
   bytes < 1024 * 1024
     ? `${Math.max(1, Math.round(bytes / 1024))} KB`
     : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-export function exportFileName(title: string) {
-  return `${(title.trim() || 'frameout').replace(/[\\/:*?"<>|]+/g, '-').slice(0, 80)}-成片.mp4`;
-}
 
 export default function ExportDialog({
   shots,
@@ -38,8 +44,7 @@ export default function ExportDialog({
   const dialog = useRef<HTMLDialogElement>(null);
   const controller = useRef<AbortController | null>(null);
   const url = useRef('');
-  const [ratio, setRatio] = useState('16:9');
-  const [quality, setQuality] = useState('1080p');
+  const [{ ratio, quality }, setPreferences] = useState(loadExportPreferences);
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const total = shots.reduce((sum, shot) => sum + shot.duration, 0);
   const running = phase.kind === 'running';
@@ -55,10 +60,15 @@ export default function ExportDialog({
     [],
   );
 
-  function download(href: string) {
+  function choose(change: { ratio?: ExportRatio; quality?: ExportQuality }) {
+    const next = { ratio, quality, ...change };
+    setPreferences(next);
+    saveExportPreferences(next);
+  }
+  function download(href: string, fileName: string) {
     const link = document.createElement('a');
     link.href = href;
-    link.download = exportFileName(title);
+    link.download = fileName;
     link.click();
   }
   async function start() {
@@ -79,8 +89,9 @@ export default function ExportDialog({
       });
       if (current.signal.aborted) return;
       url.current = URL.createObjectURL(blob);
-      setPhase({ kind: 'done', url: url.current, bytes: blob.size });
-      download(url.current);
+      const fileName = exportFileName(title);
+      setPhase({ kind: 'done', url: url.current, bytes: blob.size, fileName });
+      download(url.current, fileName);
     } catch (error) {
       if (
         current.signal.aborted ||
@@ -118,7 +129,7 @@ export default function ExportDialog({
     >
       <div className="fo-export-head">
         <div>
-          <span className="fo-eyebrow">FINAL CUT</span>
+          <span className="fo-eyebrow">最后一步</span>
           <h2 id="fo-export-heading">导出成片</h2>
         </div>
         <button type="button" className="fo-icon-button" aria-label="关闭导出" onClick={close}>
@@ -135,8 +146,8 @@ export default function ExportDialog({
           <Select
             label="导出画幅"
             value={ratio}
-            onChange={setRatio}
-            options={Object.keys(SIZES).map(value => ({ value, label: value }))}
+            onChange={value => choose({ ratio: value as ExportRatio })}
+            options={EXPORT_RATIOS.map(value => ({ value, label: value }))}
             disabled={running}
           />
         </label>
@@ -145,8 +156,8 @@ export default function ExportDialog({
           <Select
             label="导出清晰度"
             value={quality}
-            onChange={setQuality}
-            options={['720p', '1080p'].map(value => ({ value, label: value }))}
+            onChange={value => choose({ quality: value as ExportQuality })}
+            options={EXPORT_QUALITIES.map(value => ({ value, label: value }))}
             disabled={running}
           />
         </label>
@@ -171,7 +182,7 @@ export default function ExportDialog({
       )}
       {phase.kind === 'done' && (
         <p className="fo-export-status" role="status" data-state="success">
-          已导出 {exportFileName(title)} · {fileSize(phase.bytes)}
+          已导出 {phase.fileName} · {fileSize(phase.bytes)}
         </p>
       )}
       {phase.kind === 'error' && (
@@ -199,7 +210,11 @@ export default function ExportDialog({
             取消导出
           </button>
         ) : phase.kind === 'done' ? (
-          <button type="button" className="fo-text-button" onClick={() => download(phase.url)}>
+          <button
+            type="button"
+            className="fo-text-button"
+            onClick={() => download(phase.url, phase.fileName)}
+          >
             <Icon name="download" />
             <span>再次下载</span>
           </button>

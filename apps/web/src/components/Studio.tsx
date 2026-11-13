@@ -18,7 +18,8 @@ import { desktopBridge, isDesktop } from '../lib/platform';
 import { serializeProject, STORAGE_KEY } from '../lib/project';
 import APISettings from './APISettings';
 import Icon from './Icon';
-import { CanvasCard, pending, videoStatus, visibleCards } from './CanvasCard';
+import { CanvasCard, jobNote, pending, visibleCards } from './CanvasCard';
+import { regeneration } from '../lib/regenerate';
 import Sequence from './Sequence';
 import PreviewDialog, { type PreviewItem } from './PreviewDialog';
 import ExportDialog from './ExportDialog';
@@ -29,9 +30,11 @@ import AssetLibrary from './AssetLibrary';
 import StudioHeader from './StudioHeader';
 import CanvasTools, { type PanelTab } from './CanvasTools';
 import SelectionActions from './SelectionActions';
+import MultiSelectionBar, { SelectionMarquee } from './MultiSelectionBar';
 import ZoomControl from './ZoomControl';
 import Composer from './Composer';
 import HelpDialog from './HelpDialog';
+import BrowserStorageNotice from './BrowserStorageNotice';
 
 const uid = () => 'f-' + crypto.randomUUID();
 function clipDuration(card: Card) {
@@ -142,17 +145,32 @@ export default function Studio({
     enabled: isActive,
   });
   const active = generation.active || workflow.running || workflow.settling;
+  const { stop: stopGeneration } = generation;
+  const { pause: pauseWorkflow } = workflow;
   const generationActive = useRef(active);
   generationActive.current = active;
   const addToSequence = useCallback(
-    (id: string) => {
-      const card = projectRef.current.cards.find(c => c.id === id);
-      if (!card || card.missingMedia || pending(card)) return;
+    // Several ids are added in order as one undo step; unfinished media is skipped.
+    (ids: string | string[]) => {
+      const cards = [ids].flat().flatMap(id => {
+        const card = projectRef.current.cards.find(c => c.id === id);
+        return card && !card.missingMedia && !pending(card) ? [card] : [];
+      });
+      if (!cards.length) return;
       update(draft => {
-        draft.sequence.push({ id: uid(), cardId: id, duration: clamp(clipDuration(card), 1, 15) });
+        for (const card of cards)
+          draft.sequence.push({
+            id: uid(),
+            cardId: card.id,
+            duration: clamp(clipDuration(card), 1, 15),
+          });
       });
       setTimelineOpen(true);
-      toast('已加入成片 · 在下方拖动调整顺序');
+      toast(
+        cards.length > 1
+          ? `已加入成片 ${cards.length} 个镜头 · 在下方拖动调整顺序`
+          : '已加入成片 · 在下方拖动调整顺序',
+      );
     },
     [projectRef, update, toast],
   );
@@ -170,6 +188,16 @@ export default function Studio({
         x: ((rect?.width ?? 1000) / 2 - camera.x) / camera.zoom - CARD_CENTER.x,
         y: ((rect?.height ?? 600) / 2 - camera.y) / camera.zoom - CARD_CENTER.y,
       };
+      // Repeated pastes or uploads without a drop point must not hide earlier cards underneath.
+      if (!point)
+        while (
+          projectRef.current.cards.some(
+            card => Math.abs(card.x - origin.x) < 8 && Math.abs(card.y - origin.y) < 8,
+          )
+        ) {
+          origin.x += 35;
+          origin.y += 35;
+        }
       for (const [index, file] of valid.entries()) {
         const src = URL.createObjectURL(file);
         uploadedURLs.current.add(src);
@@ -228,12 +256,12 @@ export default function Studio({
   useEffect(
     () =>
       desktopBridge()?.onBeforeClose(async () => {
-        workflow.pause();
-        generation.stop();
+        pauseWorkflow();
+        stopGeneration();
         await Promise.all(pendingImports.current);
         await flush();
       }),
-    [flush, generation.stop, workflow.pause],
+    [flush, stopGeneration, pauseWorkflow],
   );
   const canvas = useCanvas({
     active: isActive,
@@ -244,7 +272,10 @@ export default function Studio({
     onFiles: importFiles,
     onBackgroundDoubleClick: () => promptRef.current?.focus(),
   });
+  const { cancelGesture, fit: fitCanvas, zoomBy, setTool } = canvas;
   const selected = project.cards.find(card => card.id === project.selected);
+  const hasSelection = Boolean(selected);
+  const selectedJobStatus = selected?.job?.status;
   const selectedPosition =
     selected && canvas.dragPosition?.id === selected.id ? canvas.dragPosition : selected;
   const removeSelected = useCallback(() => {
@@ -254,7 +285,7 @@ export default function Studio({
       toast('先停止本页等待，再删除素材');
       return;
     }
-    canvas.cancelGesture();
+    cancelGesture();
     update(draft => {
       draft.cards = draft.cards.filter(c => c.id !== id);
       draft.sequence = draft.sequence.filter(s => s.cardId !== id);
@@ -262,7 +293,7 @@ export default function Studio({
       if (draft.consistency)
         draft.consistency.references = draft.consistency.references.filter(ref => ref !== id);
     });
-  }, [projectRef, active, canvas.cancelGesture, update, toast]);
+  }, [projectRef, active, cancelGesture, update, toast]);
   // Stable callbacks let memoized cards and the sequence skip renders; they call the latest handlers.
   const cardActions = useRef<{
     openPreview: (card?: Card) => void;
@@ -331,25 +362,26 @@ export default function Studio({
 
   useEffect(() => {
     mounted.current = true;
+    const urls = uploadedURLs.current;
     return () => {
       mounted.current = false;
       clearTimeout(toastTimer.current);
-      uploadedURLs.current.forEach(url => URL.revokeObjectURL(url));
-      uploadedURLs.current.clear();
+      urls.forEach(url => URL.revokeObjectURL(url));
+      urls.clear();
     };
   }, []);
   useEffect(() => {
     if (!isActive || didInitialFit.current) return;
     const frame = requestAnimationFrame(() => {
-      canvas.fit(false);
+      fitCanvas(false);
       didInitialFit.current = true;
     });
     return () => cancelAnimationFrame(frame);
-  }, [isActive, canvas.fit]);
+  }, [isActive, fitCanvas]);
   useEffect(() => {
     if (isActive) return;
-    if (generationActive.current) generation.stop();
-    canvas.cancelGesture();
+    if (generationActive.current) stopGeneration();
+    cancelGesture();
     setSettingsOpen(false);
     setHelpOpen(false);
     setZoomOpen(false);
@@ -361,7 +393,7 @@ export default function Studio({
       studioRef.current?.contains(document.activeElement)
     )
       document.activeElement.blur();
-  }, [isActive, generation.stop, canvas.cancelGesture]);
+  }, [isActive, stopGeneration, cancelGesture]);
   useLayoutEffect(() => {
     if (!isActive) return;
     const measure = () => {
@@ -384,7 +416,7 @@ export default function Studio({
     if (selectionRef.current) observer.observe(selectionRef.current);
     if (composerRef.current) observer.observe(composerRef.current);
     return () => observer.disconnect();
-  }, [desktop, isActive, Boolean(selected), generation.mode, selected?.job?.status]);
+  }, [desktop, isActive, hasSelection, generation.mode, selectedJobStatus]);
   useEffect(() => {
     if (!isActive) return;
     const keydown = (event: KeyboardEvent) => {
@@ -398,26 +430,26 @@ export default function Studio({
       const mod = event.metaKey || event.ctrlKey;
       if (mod && event.key.toLowerCase() === 'z') {
         event.preventDefault();
-        canvas.cancelGesture();
+        cancelGesture();
         if (!active) {
           if (event.shiftKey) redo();
           else undo();
         }
       } else if (mod && event.key.toLowerCase() === 'y') {
         event.preventDefault();
-        canvas.cancelGesture();
+        cancelGesture();
         if (!active) redo();
       } else if (mod && ['+', '=', '-'].includes(event.key)) {
         event.preventDefault();
-        canvas.zoomBy(event.key === '-' ? 1 / 1.2 : 1.2);
+        zoomBy(event.key === '-' ? 1 / 1.2 : 1.2);
       } else if (event.key === '0') {
         event.preventDefault();
-        canvas.fit();
+        fitCanvas();
       } else if (['Delete', 'Backspace'].includes(event.key) && projectRef.current.selected) {
         event.preventDefault();
         removeSelected();
-      } else if (!mod && event.key.toLowerCase() === 'v') canvas.setTool('select');
-      else if (!mod && event.key.toLowerCase() === 'h') canvas.setTool('hand');
+      } else if (!mod && event.key.toLowerCase() === 'v') setTool('select');
+      else if (!mod && event.key.toLowerCase() === 'h') setTool('hand');
       else if (event.key === 'Escape') {
         setZoomOpen(false);
         update(draft => {
@@ -432,10 +464,10 @@ export default function Studio({
     active,
     undo,
     redo,
-    canvas.cancelGesture,
-    canvas.fit,
-    canvas.zoomBy,
-    canvas.setTool,
+    cancelGesture,
+    fitCanvas,
+    zoomBy,
+    setTool,
     projectRef,
     removeSelected,
     update,
@@ -495,7 +527,7 @@ export default function Studio({
     anchor.download = `${project.title || 'frameout'}-项目.json`;
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast('已导出项目结构；本地素材文件需另外保留');
+    toast('已导出项目文件：只含布局和设置，图片和视频请另外保存');
   }
   let selectionStyle: CSSProperties = {};
   let outside = false;
@@ -524,7 +556,7 @@ export default function Studio({
   };
   const taskNote =
     selected?.job && pending(selected)
-      ? `${videoStatus(selected)} · ${selected.job.id || '尚未取得任务号'}${selected.job.error ? ` · ${selected.job.error}` : ''}`
+      ? jobNote(selected)
       : selected?.remoteTemporary
         ? '供应商素材链接可能过期，请及时下载保存。'
         : '';
@@ -656,23 +688,25 @@ export default function Studio({
               }}
             >
               <div className="fo-canvas-intro">
-                <span className="fo-eyebrow">{desktop ? '画布' : 'YOUR CREATIVE SPACE'}</span>
+                <span className="fo-eyebrow">画布</span>
                 <span className="fo-canvas-count">{project.cards.length} 个素材</span>
+                <BrowserStorageNotice />
               </div>
               <div className="fo-stage" style={sceneStyle}>
                 {visibleCards(project.cards, canvas.camera, layout.width, layout.height, [
                   project.selected,
                   canvas.dragPosition?.id,
+                  ...canvas.selection.ids,
                 ]).map(card => {
-                  const dragging = canvas.dragPosition?.id === card.id;
-                  const position = dragging ? canvas.dragPosition! : card;
+                  const position = canvas.positionOf(card);
+                  const dragging = position !== card;
                   return (
                     <CanvasCard
                       key={card.id}
                       card={card}
                       x={position.x}
                       y={position.y}
-                      selected={selected?.id === card.id}
+                      selected={selected?.id === card.id || canvas.selection.ids.includes(card.id)}
                       dragging={dragging}
                       reference={referenceIds.has(card.id)}
                       onSelect={selectCard}
@@ -692,7 +726,7 @@ export default function Studio({
                       <h2>从第一个画面开始</h2>
                     </>
                   ) : (
-                    <span>MAKE A SCENE.</span>
+                    <span>从第一个画面开始。</span>
                   )}
                   <p>上传图片或视频，也可以输入提示词生成素材。</p>
                   <button
@@ -714,7 +748,9 @@ export default function Studio({
                   barRef={selectionRef}
                   busy={active}
                   isReference={referenceIds.has(selected.id)}
+                  regeneration={regeneration(selected, project.cards)}
                   onGenerateVideo={() => void generation.generate(selected)}
+                  onRegenerate={() => void generation.regenerate(selected)}
                   onResume={() => void generation.resume(selected)}
                   onToggleReference={() => toggleReference(selected.id)}
                   onAddShot={() => addToSequence(selected.id)}
@@ -722,6 +758,15 @@ export default function Studio({
                   onRemove={removeSelected}
                 />
               )}
+              <SelectionMarquee rect={canvas.marquee} />
+              <MultiSelectionBar
+                selection={canvas.selection}
+                cards={project.cards}
+                enabled={isActive}
+                busy={active}
+                toast={toast}
+                onAddShots={addToSequence}
+              />
 
               {!desktop && composer}
               <ZoomControl

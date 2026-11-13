@@ -436,6 +436,29 @@ test('bad upstream responses do not echo secrets', async () => {
   }
 });
 
+test('provider error codes pass through so the client can explain safety rejections', async () => {
+  const replies: Record<string, [unknown, string | undefined]> = {
+    ark: [
+      { error: { code: 'InputImageSensitiveContentDetected', message: 'blocked' } },
+      'InputImageSensitiveContentDetected',
+    ],
+    openai: [{ error: { type: 'moderation_blocked', message: 'blocked' } }, 'moderation_blocked'],
+    odd: [{ error: { code: 'has spaces <script>', message: 'x' } }, undefined],
+  };
+  for (const [kind, [body, expected]] of Object.entries(replies)) {
+    await withServer(
+      {},
+      async () => jsonResponse(400, JSON.stringify(body)),
+      async base => {
+        const response = await post(base, BASE);
+        assert.equal(response.status, 400, kind);
+        assert.equal(response.json().error.code, 'UPSTREAM_400', kind);
+        assert.equal(response.json().error.upstreamCode, expected, kind);
+      },
+    );
+  }
+});
+
 test('request limits check declared and actual size', async () => {
   await withServer({ requestLimit: 1000 }, noUpstream, async base => {
     const send = (body: string | Buffer, headers: http.OutgoingHttpHeaders) =>

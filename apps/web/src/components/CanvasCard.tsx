@@ -11,9 +11,20 @@ const statuses: Record<string, string> = {
   running: '正在生成',
   paused: '已停止本页等待',
   failed: '生成失败',
+  rejected: '被拒绝',
   cancelled: '任务已取消',
 };
 export const videoStatus = (card: Card) => statuses[card.job?.status ?? ''] ?? '等待查询';
+/** The task has ended without a video; querying it again cannot change that. */
+export const jobEnded = (card: Card) =>
+  ['failed', 'rejected', 'cancelled'].includes(card.job?.status ?? '');
+/** One line about a video task for the selected card: status, task id when one exists, reason. */
+export function jobNote(card: Card): string {
+  const job = card.job;
+  if (!job) return '';
+  const id = job.id || (jobEnded(card) ? '' : '尚未取得任务号');
+  return [videoStatus(card), id, job.error].filter(Boolean).join(' · ');
+}
 
 type Props = {
   card: Card;
@@ -77,7 +88,7 @@ export const CanvasCard = memo(function CanvasCard({
         {reference && <span className="fo-reference-badge">参考</span>}
       </button>
       <div className="fo-card-bottom">
-        <span>{card.name}</span>
+        <span title={card.prompt}>{card.name}</span>
         <span>
           {card.provider?.toUpperCase() ??
             (card.mediaId || card.sessionOnly ? 'LOCAL' : 'EXPLORATION')}

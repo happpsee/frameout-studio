@@ -27,13 +27,13 @@ select {
 }
 .fo-select-option:focus {
   outline: none;
-  background: #30392c;
+  background: var(--fo-hover);
 }
 .fo-select--duration {
   width: 90px;
 }
 .fo-api-dialog select {
-  color-scheme: dark;
+  color-scheme: var(--fo-color-scheme);
 }
 .fo-api-close {
   display: inline-flex;
@@ -61,7 +61,7 @@ select {
 .fo-api-key-row button {
   background: transparent;
   color: inherit;
-  border: 1px solid var(--fo-line, #414738);
+  border: 1px solid var(--fo-line);
   border-radius: 6px;
   padding: 6px 10px;
 }

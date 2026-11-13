@@ -80,7 +80,7 @@ export default function ConsistencyDialog({
     >
       <div className="fo-export-head">
         <div>
-          <span className="fo-eyebrow">CONTINUITY</span>
+          <span className="fo-eyebrow">前后一致</span>
           <h2 id="fo-consistency-heading">镜头一致性</h2>
         </div>
         <button

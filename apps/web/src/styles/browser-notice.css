@@ -1,0 +1,47 @@
+/* Sits under the canvas intro, which the canvas already ignores for pan and select gestures. */
+.fo-browser-notice {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: min(360px, calc(100vw - 140px));
+  padding: 9px 10px 9px 12px;
+  background: var(--fo-surface);
+  border: 1px solid var(--fo-line);
+  border-radius: 6px;
+  color: var(--fo-muted);
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: normal;
+  pointer-events: auto;
+}
+.fo-browser-notice p {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+.fo-browser-notice button {
+  flex: none;
+  padding: 1px 0;
+  background: transparent;
+  border: 0;
+  color: var(--fo-paper);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.fo-browser-notice button:focus-visible {
+  outline: 2px solid var(--fo-accent);
+  outline-offset: 2px;
+}
+@media (max-width: 540px) {
+  /* Clear the canvas tool column that starts below the intro on phones. */
+  .fo-browser-notice {
+    left: 40px;
+    width: calc(100vw - 72px);
+    font-size: 10px;
+  }
+}

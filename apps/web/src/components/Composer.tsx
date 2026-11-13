@@ -2,6 +2,7 @@ import type { RefObject } from 'react';
 import type { Card, GenerationMode } from '../types';
 import type { useGeneration } from '../hooks/useGeneration';
 import { isDesktop } from '../lib/platform';
+import ComposerParameters from './ComposerParameters';
 import { ConsistencyBar } from './ConsistencyDialog';
 import DesktopGenerationSettings from './DesktopGenerationSettings';
 import Icon from './Icon';
@@ -53,6 +54,15 @@ export default function Composer({
     >
       <div className="fo-composer-top">
         <label htmlFor="fo-prompt">{desktop ? '提示词' : '让想法，先有一个画面。'}</label>
+        {!desktop && (
+          <ComposerParameters
+            config={config}
+            video={mode === 'video'}
+            disabled={busy}
+            onChange={generation.setConfig}
+            onSettings={onSettings}
+          />
+        )}
         <Select
           className="fo-generation-mode"
           value={mode}

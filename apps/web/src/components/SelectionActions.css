@@ -1,0 +1,5 @@
+/* "再来一张" when it cannot run: still clickable so the reason can be shown. */
+.fo-small-button.fo-regenerate.is-unavailable {
+  opacity: 0.45;
+  cursor: help;
+}

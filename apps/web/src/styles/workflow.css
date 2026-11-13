@@ -7,11 +7,11 @@
   width: min(430px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
-  color: #e5e9dc;
-  background: #1b1f17;
-  border: 1px solid #596044;
+  color: var(--fo-text-1);
+  background: var(--fo-panel);
+  border: 1px solid var(--fo-line-4);
   border-radius: 12px;
-  box-shadow: 0 18px 80px #0009;
+  box-shadow: 0 18px 80px var(--fo-shadow-6);
 }
 .fo-work-panel button {
   cursor: pointer;
@@ -23,7 +23,7 @@
 .fo-work-panel button:focus-visible,
 .fo-work-panel input:focus-visible,
 .fo-work-panel textarea:focus-visible {
-  outline: 2px solid #b9ff43;
+  outline: 2px solid var(--fo-accent);
   outline-offset: 3px;
 }
 .fo-work-panel-head {
@@ -34,7 +34,7 @@
 }
 .fo-work-panel-head .fo-eyebrow {
   font-size: 9px;
-  color: #a8bb86;
+  color: var(--fo-text-5);
 }
 .fo-work-panel-head h2 {
   font-size: 19px;
@@ -44,7 +44,7 @@
 .fo-work-panel-head > button {
   border: 0;
   background: transparent;
-  color: #bac2ae;
+  color: var(--fo-text-4);
   width: 36px;
   height: 36px;
   font-size: 26px;
@@ -52,11 +52,11 @@
 .fo-work-tabs {
   display: flex;
   gap: 18px;
-  border-bottom: 1px solid #3c4333;
+  border-bottom: 1px solid var(--fo-line-2);
   padding: 0 22px;
 }
 .fo-work-tabs button {
-  color: #a9b19d;
+  color: var(--fo-text-5);
   border: 0;
   border-bottom: 2px solid transparent;
   background: none;
@@ -64,8 +64,8 @@
   font-size: 13px;
 }
 .fo-work-tabs button[aria-selected='true'] {
-  color: #c0ff52;
-  border-bottom-color: #c0ff52;
+  color: var(--fo-accent);
+  border-bottom-color: var(--fo-accent);
 }
 .fo-work-tabs span {
   font-size: 10px;
@@ -87,11 +87,11 @@
 .fo-version-form input {
   width: 100%;
   box-sizing: border-box;
-  background: #11150e;
-  border: 1px solid #50583f;
+  background: var(--fo-field);
+  border: 1px solid var(--fo-line-3);
   border-radius: 6px;
   padding: 11px;
-  color: #eef1e7;
+  color: var(--fo-text-1);
   font-size: 13px;
   line-height: 1.7;
   resize: vertical;
@@ -102,18 +102,18 @@
   gap: 8px;
   margin: 12px 0;
   font-size: 12px;
-  color: #bdc6b0;
+  color: var(--fo-text-4);
 }
 .fo-plan-check input {
-  accent-color: #b9ff43;
+  accent-color: var(--fo-lime-mark);
 }
 .fo-work-note {
   font-size: 11px;
   line-height: 1.7;
-  color: #b1baa4;
+  color: var(--fo-text-4);
 }
 .fo-run {
-  border-top: 1px solid #404735;
+  border-top: 1px solid var(--fo-line-2);
   margin-top: 22px;
   padding-top: 20px;
 }
@@ -129,7 +129,7 @@
   font-size: 15px;
 }
 .fo-run-heading > span {
-  color: #b9ff43;
+  color: var(--fo-accent);
   font-size: 12px;
   font-variant-numeric: tabular-nums;
 }
@@ -142,7 +142,7 @@
   display: flex;
   gap: 12px;
   padding: 13px 0;
-  border-bottom: 1px solid #333a2b;
+  border-bottom: 1px solid var(--fo-line);
 }
 .fo-step-number {
   flex: 0 0 24px;
@@ -150,18 +150,18 @@
   height: 24px;
   display: grid;
   place-items: center;
-  border: 1px solid #576046;
+  border: 1px solid var(--fo-line-4);
   border-radius: 50%;
-  color: #abb79a;
+  color: var(--fo-text-5);
   font-size: 10px;
 }
 [data-status='succeeded'] > .fo-step-number {
-  color: #c0ff52;
-  border-color: #a2c750;
+  color: var(--fo-accent);
+  border-color: var(--fo-lime-mark);
 }
 [data-status='running'] > .fo-step-number {
-  background: #b9ff43;
-  color: #151a10;
+  background: var(--fo-lime);
+  color: var(--fo-on-lime);
 }
 .fo-step-content {
   min-width: 0;
@@ -172,27 +172,27 @@
 }
 .fo-step-heading > span {
   font-size: 10px;
-  color: #c1ccad;
+  color: var(--fo-text-3);
 }
 .fo-step-content > p {
   font-size: 12px;
   line-height: 1.65;
-  color: #c1c8b8;
+  color: var(--fo-text-3);
   margin: 8px 0;
   overflow-wrap: anywhere;
 }
 .fo-step-content > small {
   display: block;
-  color: #a3b18d;
+  color: var(--fo-text-5);
   font-size: 10px;
 }
 .fo-step-content .fo-step-error {
-  color: #e5bf8b;
+  color: var(--fo-warn);
 }
 .fo-inline-button {
   border: 0;
   background: none;
-  color: #c1ed79;
+  color: var(--fo-green-1);
   font-size: 11px;
   padding: 8px 0;
   margin-right: 12px;
@@ -203,54 +203,54 @@
   padding: 12px;
   border: 0;
   border-radius: 5px;
-  background: #bbff49;
-  color: #152009;
+  background: var(--fo-lime);
+  color: var(--fo-on-lime);
   font-size: 13px;
   font-weight: 650;
 }
 .fo-plan-form .fo-plan-preview {
   padding: 9px 13px;
-  background: #303d20;
-  border: 1px solid #6e854a;
-  color: #d7efb2;
+  background: var(--fo-accent-soft-2);
+  border: 1px solid var(--fo-line-green-strong);
+  color: var(--fo-green-1);
   border-radius: 5px;
   font-size: 12px;
 }
 .fo-work-confirm {
   margin-top: 8px;
   padding: 12px;
-  border: 1px solid #717653;
+  border: 1px solid var(--fo-line-5);
   border-radius: 5px;
-  background: #2c3024;
+  background: var(--fo-card);
 }
 .fo-work-confirm p {
   margin: 0 0 9px;
   font-size: 12px;
   line-height: 1.7;
-  color: #d4d9c7;
+  color: var(--fo-text-2);
 }
 .fo-work-confirm button,
 .fo-version-form button {
-  border: 1px solid #738154;
-  background: #303a23;
-  color: #e2edce;
+  border: 1px solid var(--fo-line-green);
+  background: var(--fo-hover);
+  color: var(--fo-green-1);
   border-radius: 4px;
   padding: 8px 10px;
   font-size: 11px;
   margin-right: 6px;
 }
 .fo-run-events {
-  border-top: 1px solid #3b4330;
+  border-top: 1px solid var(--fo-line-2);
   padding-top: 14px;
   margin-top: 18px;
 }
 .fo-run-events summary {
   cursor: pointer;
   font-size: 12px;
-  color: #cad5ba;
+  color: var(--fo-text-3);
 }
 .fo-run-events summary > span {
-  color: #97a780;
+  color: var(--fo-text-6);
   margin-left: 8px;
 }
 .fo-run-events ol {
@@ -265,7 +265,7 @@
   line-height: 1.6;
 }
 .fo-run-events time {
-  color: #9ba88a;
+  color: var(--fo-text-6);
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
@@ -281,7 +281,7 @@
   margin: 0;
 }
 .fo-version-empty {
-  color: #bdc6b0;
+  color: var(--fo-text-4);
   font-size: 14px;
   line-height: 2;
   padding: 36px 0;
@@ -289,7 +289,7 @@
 .fo-version {
   margin-top: 18px;
   padding: 16px;
-  border: 1px solid #424c34;
+  border: 1px solid var(--fo-line-2);
   border-radius: 7px;
 }
 .fo-version h3 {
@@ -297,13 +297,13 @@
   margin: 0 0 5px;
 }
 .fo-version time {
-  color: #a2b18e;
+  color: var(--fo-text-5);
   font-size: 10px;
 }
 .fo-version > p {
   font-size: 12px;
   line-height: 1.8;
-  color: #bdc6b0;
+  color: var(--fo-text-4);
 }
 @media (max-width: 700px) {
   .fo-work-panel {

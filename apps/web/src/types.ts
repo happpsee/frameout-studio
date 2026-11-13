@@ -45,7 +45,10 @@ export interface Card {
   sessionOnly?: boolean;
   remoteTemporary?: boolean;
   job?: VideoJob;
+  /** Full prompt the card was generated from. */
   prompt?: string;
+  /** Generated video: id of the image card used as the first frame; '' for text-to-video. */
+  sourceId?: string;
   model?: string;
   mimeType?: string;
   requestId?: string;

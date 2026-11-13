@@ -1,15 +1,32 @@
-.DS_Store
-*.tar.gz
-*.zip
-
-dist/
+# Dependencies
 node_modules/
-.env
-.env.*
-!.env.example
+.venv/
+
+# Build output
+dist/
+release/
+.turbo/
+
+# Test and tool caches
 coverage/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
 # Generated media and local run output
 output/
-.turbo/
-release/
+*.tar.gz
+*.zip
+
+# Local settings
+.env
+.env.*
+!.env.example
+.DS_Store
+
+# Desktop development data (pnpm dev:desktop)
+.dev-data/
+
+# Third-party projects cloned for reference (not part of this repo)
+/reference/

@@ -1,6 +1,8 @@
 import type { AIConfig } from '../types';
 import { PROVIDERS } from '../lib/ai-client';
+import { hasModelList, parameterOptions } from '../lib/model-options';
 import Icon from './Icon';
+import ModelField from './ModelField';
 import Select from './Select';
 
 export default function DesktopGenerationSettings({
@@ -17,15 +19,18 @@ export default function DesktopGenerationSettings({
   onSettings: () => void;
 }) {
   const preset = PROVIDERS[config.provider];
-  const sizes = [...new Set([config.imageSize, ...preset.imageSizes])].map(value => ({
-    value,
-    label: value,
-  }));
-  const durations = [...new Set([String(config.duration), ...preset.videoDurations])].map(
-    value => ({ value, label: `${value} 秒` }),
-  );
+  const { sizes, durations, ratios, resolutions } = parameterOptions(config);
   const patch = <K extends keyof AIConfig>(key: K, value: AIConfig[K]) =>
     onChange({ ...config, [key]: value });
+  const model = {
+    id: 'fo-quick-model',
+    label: '生成模型',
+    provider: config.provider,
+    kind: video ? ('video' as const) : ('image' as const),
+    value: video ? config.videoModel : config.imageModel,
+    onChange: (value: string) => patch(video ? 'videoModel' : 'imageModel', value),
+    disabled: disabled || (video && !preset.canVideo),
+  };
   return (
     <>
       <button
@@ -45,13 +50,17 @@ export default function DesktopGenerationSettings({
       </button>
       <fieldset className="fo-generation-parameters" disabled={disabled}>
         <legend>生成参数</legend>
-        <label htmlFor="fo-quick-model">模型</label>
-        <input
-          id="fo-quick-model"
-          value={video ? config.videoModel : config.imageModel}
-          placeholder="填写模型名称"
-          onChange={event => patch(video ? 'videoModel' : 'imageModel', event.target.value)}
-        />
+        {hasModelList(config.provider) ? (
+          <label>
+            模型
+            <ModelField {...model} />
+          </label>
+        ) : (
+          <>
+            <label htmlFor="fo-quick-model">模型</label>
+            <ModelField {...model} />
+          </>
+        )}
         {video ? (
           <>
             <label>
@@ -70,7 +79,7 @@ export default function DesktopGenerationSettings({
                 <Select
                   label="生成视频画幅"
                   value={config.videoRatio}
-                  options={['16:9', '9:16', '1:1'].map(value => ({ value, label: value }))}
+                  options={ratios}
                   onChange={value => patch('videoRatio', value)}
                   disabled={disabled || !preset.canVideo}
                 />
@@ -80,7 +89,7 @@ export default function DesktopGenerationSettings({
                 <Select
                   label="生成视频分辨率"
                   value={config.resolution}
-                  options={['480p', '720p', '1080p'].map(value => ({ value, label: value }))}
+                  options={resolutions}
                   onChange={value => patch('resolution', value)}
                   disabled={disabled || !preset.canVideo}
                 />

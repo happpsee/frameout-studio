@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import type { Camera, ProjectState, UpdateProject } from '../types';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import type { Camera, Card, ProjectState, UpdateProject } from '../types';
 import {
   CARD_HEIGHT,
   CARD_WIDTH,
@@ -8,14 +8,19 @@ import {
   normalizeWheel,
   type CameraController,
 } from '../lib/canvas-camera';
+import { cardsInRect, rectBetween, visualOrder, type Rect } from '../lib/canvas-selection';
+import { useMultiSelection } from './useMultiSelection';
+import { useClipboardImport } from './useClipboardImport';
 
 const blocked =
   '.fo-composer,.fo-selection-actions,.fo-canvas-tools,.fo-camera-tools,.fo-canvas-intro';
 type Point = { x: number; y: number };
 type Drag = {
-  kind: 'card' | 'camera';
+  kind: 'card' | 'camera' | 'marquee';
   pointerId: number;
   id?: string;
+  /** Every card moved with `id` when it belongs to a multi-selection. */
+  group?: string[];
   start: Point;
   origin: Point;
   moved: boolean;
@@ -25,8 +30,8 @@ type Options = {
   viewportRef: RefObject<HTMLElement | null>;
   projectRef: RefObject<ProjectState>;
   update: UpdateProject;
-  addToSequence: (id: string) => void;
-  onFiles: (files: FileList, position: Point) => void;
+  addToSequence: (ids: string | string[]) => void;
+  onFiles: (files: FileList, position?: Point) => void;
   onBackgroundDoubleClick: () => void;
 };
 export function useCanvas(options: Options) {
@@ -43,7 +48,20 @@ export function useCanvas(options: Options) {
   const [dragPosition, setDragPosition] = useState<{ id: string; x: number; y: number } | null>(
     null,
   );
+  const [groupDrag, setGroupDrag] = useState<{ ids: string[]; dx: number; dy: number } | null>(
+    null,
+  );
+  /** Shift-drag selection box in viewport pixels. */
+  const [marquee, setMarquee] = useState<Rect | null>(null);
   const cancelGesture = useRef<() => void>(() => {});
+  const selection = useMultiSelection({
+    projectRef: options.projectRef,
+    update: options.update,
+    beforeRemove: () => cancelGesture.current(),
+  });
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+  useClipboardImport(latest);
   const cancelActiveGesture = useCallback(() => cancelGesture.current(), []);
   const restoreCamera = useCallback((value: Camera) => {
     controller.current?.set(value);
@@ -136,16 +154,59 @@ export function useCanvas(options: Options) {
     let pinch: { distance: number; zoom: number; world: Point } | null = null;
     let spaceHeld = false;
     let nextPosition: { id: string; x: number; y: number } | null = null;
+    let nextGroup: { ids: string[]; dx: number; dy: number } | null = null;
+    let nextMarquee: Rect | null = null;
     let frame = 0;
     const commitPosition = () => {
       frame = 0;
       setDragPosition(nextPosition);
+      setGroupDrag(nextGroup);
+      setMarquee(nextMarquee);
     };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(commitPosition);
+    };
+    function finishGroup(ids: string[], offset: { dx: number; dy: number }, dropY?: number) {
+      const moved = new Set(ids);
+      latest.current.update(draft => {
+        draft.cards.forEach(card => {
+          if (!moved.has(card.id)) return;
+          card.x += offset.dx;
+          card.y += offset.dy;
+        });
+      });
+      if (droppedOnTimeline(dropY)) {
+        const cards = latest.current.projectRef.current.cards.filter(card => moved.has(card.id));
+        latest.current.addToSequence(visualOrder(cards).map(card => card.id));
+      }
+    }
+    function selectInBox(box: Rect) {
+      const c = camera.get();
+      const world = {
+        left: (box.left - c.x) / c.zoom,
+        top: (box.top - c.y) / c.zoom,
+        width: box.width / c.zoom,
+        height: box.height / c.zoom,
+      };
+      selectionRef.current.add(cardsInRect(latest.current.projectRef.current.cards, world));
+    }
+    function droppedOnTimeline(dropY?: number) {
+      const timeline = viewport.parentElement
+        ?.querySelector('.fo-timeline')
+        ?.getBoundingClientRect();
+      return Boolean(
+        timeline && dropY !== undefined && dropY >= timeline.top && dropY <= timeline.bottom,
+      );
+    }
     function finish(cancelled = false, dropY?: number) {
       if (!drag) return;
       if (frame) cancelAnimationFrame(frame);
       frame = 0;
-      if (drag.kind === 'card' && drag.id && drag.moved && !cancelled && nextPosition) {
+      if (drag.kind === 'card' && drag.group && !cancelled) {
+        // A plain click on one card of a group selects just that card.
+        if (!drag.moved && drag.id) selectionRef.current.select(drag.id);
+        else if (drag.moved && nextGroup) finishGroup(drag.group, nextGroup, dropY);
+      } else if (drag.kind === 'card' && drag.id && drag.moved && !cancelled && nextPosition) {
         const final = nextPosition;
         const id = drag.id;
         latest.current.update(draft => {
@@ -155,15 +216,17 @@ export function useCanvas(options: Options) {
             card.y = final.y;
           }
         });
-        const timeline = viewport.parentElement
-          ?.querySelector('.fo-timeline')
-          ?.getBoundingClientRect();
-        if (timeline && dropY !== undefined && dropY >= timeline.top && dropY <= timeline.bottom)
-          latest.current.addToSequence(id);
+        if (droppedOnTimeline(dropY)) latest.current.addToSequence(id);
       }
+      if (drag.kind === 'marquee' && drag.moved && !cancelled && nextMarquee)
+        selectInBox(nextMarquee);
       if (drag.moved) suppressUntil.current = performance.now() + 300;
       nextPosition = null;
+      nextGroup = null;
+      nextMarquee = null;
       setDragPosition(null);
+      setGroupDrag(null);
+      setMarquee(null);
       drag = null;
       setPanning(false);
     }
@@ -231,23 +294,33 @@ export function useCanvas(options: Options) {
       const id = target.closest<HTMLElement>('.fo-card')?.dataset.id;
       const card = latest.current.projectRef.current.cards.find(c => c.id === id);
       const hand = spaceHeld || toolRef.current === 'hand' || event.button === 1;
-      if (card && !hand) {
-        latest.current.update(draft => {
-          draft.selected = card.id;
-        }, false);
+      if (card && !hand && event.shiftKey) {
+        selectionRef.current.toggle(card.id);
+        // Swallow the click that follows, which would select this card alone.
+        suppressUntil.current = performance.now() + 300;
+      } else if (card && !hand) {
+        const { ids } = selectionRef.current;
+        const group = ids.includes(card.id) ? ids : undefined;
+        if (!group) selectionRef.current.select(card.id);
         drag = {
           kind: 'card',
           pointerId: event.pointerId,
           id: card.id,
+          group,
           start: { x: event.clientX, y: event.clientY },
           origin: { x: card.x, y: card.y },
           moved: false,
         };
+      } else if (!hand && event.shiftKey) {
+        drag = {
+          kind: 'marquee',
+          pointerId: event.pointerId,
+          start: { x: event.clientX, y: event.clientY },
+          origin: viewportPoint(event.clientX, event.clientY),
+          moved: false,
+        };
       } else {
-        if (!hand)
-          latest.current.update(draft => {
-            draft.selected = null;
-          }, false);
+        if (!hand) selectionRef.current.select(null);
         const current = camera.get();
         drag = {
           kind: 'camera',
@@ -280,13 +353,20 @@ export function useCanvas(options: Options) {
       if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
       if (drag.kind === 'camera')
         camera.set({ ...camera.get(), x: drag.origin.x + dx, y: drag.origin.y + dy });
-      else if (drag.id) {
+      else if (drag.kind === 'marquee') {
+        nextMarquee = rectBetween(drag.origin, viewportPoint(event.clientX, event.clientY));
+        schedule();
+      } else if (drag.group) {
+        const zoom = camera.get().zoom;
+        nextGroup = { ids: drag.group, dx: dx / zoom, dy: dy / zoom };
+        schedule();
+      } else if (drag.id) {
         nextPosition = {
           id: drag.id,
           x: drag.origin.x + dx / camera.get().zoom,
           y: drag.origin.y + dy / camera.get().zoom,
         };
-        if (!frame) frame = requestAnimationFrame(commitPosition);
+        schedule();
       }
     };
     const end = (event: PointerEvent) => {
@@ -373,7 +453,10 @@ export function useCanvas(options: Options) {
         setSpace(true);
         event.preventDefault();
       }
-      if (event.key === 'Escape') reset();
+      if (event.key === 'Escape') {
+        reset();
+        selectionRef.current.clear();
+      }
     };
     const keyup = (event: KeyboardEvent) => {
       if (latest.current.active !== false && event.code === 'Space') {
@@ -422,6 +505,14 @@ export function useCanvas(options: Options) {
   useEffect(() => {
     if (options.active === false) cancelActiveGesture();
   }, [options.active, cancelActiveGesture]);
+  const grouped = useMemo(() => new Set(groupDrag?.ids), [groupDrag]);
+  /** Where a card is drawn: its live position while it is being dragged. */
+  const positionOf = (card: Card): { x: number; y: number } => {
+    if (dragPosition?.id === card.id) return dragPosition;
+    if (groupDrag && grouped.has(card.id))
+      return { x: card.x + groupDrag.dx, y: card.y + groupDrag.dy };
+    return card;
+  };
   return {
     camera,
     tool,
@@ -430,6 +521,9 @@ export function useCanvas(options: Options) {
     panning,
     fileDrop,
     dragPosition,
+    positionOf,
+    marquee,
+    selection,
     fit,
     zoomBy,
     zoomTo,

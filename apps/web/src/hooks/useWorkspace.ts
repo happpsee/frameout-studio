@@ -191,7 +191,8 @@ export function useWorkspace() {
           );
       };
       const failure = () => {
-        if (report && snapshot === projectRef.current) setSaveStatus('保存不可用 · 请导出项目');
+        if (report && snapshot === projectRef.current)
+          setSaveStatus('保存不可用 · 请先下载重要的图片和视频');
       };
       try {
         const write = saveProject();

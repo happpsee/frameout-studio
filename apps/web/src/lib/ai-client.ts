@@ -7,6 +7,7 @@ import {
   type RelayEnvelope,
 } from '@frameout/shared';
 import type { AIConfig, Provider } from '../types';
+import { moderationMessage } from './provider-errors';
 
 type ProviderPreset = {
   label: string;
@@ -180,6 +181,7 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
     });
   }
   const key = required(config.key, ' API Key', 2048);
+  // eslint-disable-next-line no-control-regex -- strips control characters on purpose
   if (/\s|[\x00-\x1f\x7f]/.test(key))
     throw new AIError('API Key 不能包含空格或换行', { code: 'CONFIG_KEY' });
   const fetchImpl = options.fetchImpl || globalThis.fetch;
@@ -196,18 +198,31 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
   const resolution = config.resolution || '720p';
 
   function redact(value: unknown): string {
-    return String(value || '')
-      .split(key)
-      .join('[已隐藏]')
-      .replace(/Bearer\s+[^\s,;"<>]+/gi, 'Bearer [已隐藏]')
-      .replace(/sk-[A-Za-z0-9_-]{8,}/g, '[已隐藏]')
-      .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '')
-      .slice(0, 350);
+    return (
+      String(value || '')
+        .split(key)
+        .join('[已隐藏]')
+        .replace(/Bearer\s+[^\s,;"<>]+/gi, 'Bearer [已隐藏]')
+        .replace(/sk-[A-Za-z0-9_-]{8,}/g, '[已隐藏]')
+        // eslint-disable-next-line no-control-regex -- strips control characters on purpose
+        .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g, '')
+        .slice(0, 350)
+    );
   }
 
   function upstreamError(status: number, body: ProviderJson, requestId: string) {
     const detail =
       typeof body?.error === 'string' ? body.error : body?.error?.message || body?.message || '';
+    const moderation = moderationMessage(
+      [body?.error?.code ?? body?.code, body?.error?.upstreamCode].filter(Boolean).join(' '),
+      detail,
+    );
+    if (moderation)
+      return new AIError(moderation, {
+        code: 'CONTENT_REJECTED',
+        status,
+        requestId: redact(requestId),
+      });
     const labels: Record<number, string> = {
       400: '请求参数不被模型接受',
       401: 'API Key 无效或已过期',
@@ -463,13 +478,11 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
       json?.content?.video_url || json?.output?.video_url || json?.video_url || json?.url || '',
     );
     const progress = Number(json?.progress);
+    const detail = typeof json.error === 'string' ? json.error : json?.error?.message;
     const error =
       status === 'failed'
-        ? redact(
-            typeof json.error === 'string'
-              ? json.error
-              : json?.error?.message || '视频任务未完成：' + rawStatus,
-          )
+        ? moderationMessage(json?.error?.code, detail) ||
+          redact(detail || '视频任务未完成：' + rawStatus)
         : '';
     return {
       id,

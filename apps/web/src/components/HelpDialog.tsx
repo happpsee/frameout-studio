@@ -9,6 +9,10 @@ const SHORTCUTS: { action: string; keys: string[] }[] = [
   { action: '缩放画布', keys: ['触控板捏合 · ⌘ / Ctrl + 滚轮', '⌘ / Ctrl ＋ / −，或点击比例'] },
   { action: '触屏操作', keys: ['单指拖动 · 双指平移与缩放'] },
   { action: '查看素材', keys: ['单击选择，双击预览'] },
+  {
+    action: '选择多个',
+    keys: ['⇧ Shift + 单击 · ⇧ Shift + 拖动空白处框选', '选中后可一起拖动、删除'],
+  },
   { action: '撤销 / 重做', keys: ['⌘ / Ctrl Z · ⇧ ⌘ / Ctrl Z'] },
   { action: '删除素材', keys: ['选中后按 Delete / Backspace'] },
   { action: '适应画布', keys: ['按 0，或点击适应按钮'] },
@@ -47,7 +51,7 @@ export default function HelpDialog({ open, onClose, onShowIntro }: HelpDialogPro
       >
         <Icon name="x" />
       </button>
-      <span className="fo-eyebrow">A LITTLE GUIDE</span>
+      <span className="fo-eyebrow">使用指南</span>
       <h2 id="fo-help-heading">
         把想法摊开，
         <br />

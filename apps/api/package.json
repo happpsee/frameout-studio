@@ -1,0 +1,13 @@
+{
+  "name": "@frameout/api",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node ../../tools/free-port.mts 8001 && uv run uvicorn frameout_api.main:app --host 127.0.0.1 --port 8001 --reload",
+    "build": "uv run python scripts/export_openapi.py",
+    "typecheck": "uv run mypy",
+    "test": "uv run pytest -q",
+    "format": "uv run ruff format .",
+    "lint": "uv run ruff check . && uv run ruff format --check ."
+  }
+}

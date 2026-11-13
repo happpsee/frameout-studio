@@ -471,3 +471,98 @@ test('参考图：方舟放在同一生成接口的 image 字段，OpenAI 改用
   );
   assert.equal(compatible.calls.length, 0);
 });
+
+const MODERATED = '内容被供应商的安全审核拒绝，请调整描述或参考图后再试';
+
+test('内容审核拒绝显示成中文的审核提示，不显示成参数错误', async () => {
+  const cases = [
+    // Ark, straight from the provider.
+    [
+      'ark',
+      { error: { code: 'InputTextSensitiveContentDetected', message: 'The request failed.' } },
+      MODERATED,
+    ],
+    // Through the backend relay only the provider's message survives.
+    [
+      'ark',
+      {
+        error: {
+          code: 'UPSTREAM_400',
+          message:
+            '供应商请求失败：The request failed because the output image may contain sensitive information.',
+        },
+      },
+      MODERATED,
+    ],
+    [
+      'ark',
+      {
+        error: {
+          code: 'InputImageSensitiveContentDetected.PrivacyInformation',
+          message: 'The request failed because the input image may contain real person.',
+        },
+      },
+      '图片可能含有真人人像，被供应商的安全审核拒绝，请换一张图后再试',
+    ],
+    [
+      'openai',
+      {
+        error: {
+          code: 'moderation_blocked',
+          message: 'Your request was rejected by the safety system.',
+        },
+      },
+      MODERATED,
+    ],
+    ['openai', { error: { code: 'content_policy_violation', message: 'Rejected.' } }, MODERATED],
+    // Through the backend relay the provider's code arrives as upstreamCode.
+    [
+      'ark',
+      {
+        error: {
+          code: 'UPSTREAM_400',
+          message: '供应商请求失败：The request failed.',
+          upstreamCode: 'InputImageSensitiveContentDetected',
+        },
+      },
+      MODERATED,
+    ],
+  ];
+  for (const [provider, body, message] of cases) {
+    const client = createClient(configuration(provider), captureFetch(reply(body, 400)));
+    await assert.rejects(client.generateImage({ prompt: '海边' }), error => {
+      assert.equal(error.message, message);
+      assert.equal(error.code, 'CONTENT_REJECTED');
+      assert.equal(error.status, 400);
+      return true;
+    });
+  }
+});
+
+test('其他 400 错误仍按参数错误处理', async () => {
+  const client = createClient(
+    configuration('ark'),
+    captureFetch(reply({ error: { code: 'InvalidParameter', message: 'size is invalid' } }, 400)),
+  );
+  await assert.rejects(client.generateImage({ prompt: '海边' }), error => {
+    assert.equal(error.code, 'UPSTREAM_ERROR');
+    assert.ok(error.message.startsWith('请求参数不被模型接受'));
+    return true;
+  });
+});
+
+test('视频任务因审核失败时返回中文的审核提示', async () => {
+  const mock = captureFetch(
+    reply({
+      id: 'cgt-fixture',
+      status: 'failed',
+      error: {
+        code: 'OutputVideoSensitiveContentDetected',
+        message: 'The request failed because the output video may contain sensitive information.',
+      },
+    }),
+  );
+  const result = await createClient(configuration('ark'), mock).getVideo({ id: 'cgt-fixture' });
+  assert.equal(result.status, 'failed');
+  assert.equal(result.error, MODERATED);
+});
