@@ -380,7 +380,7 @@
 }
 .fo-lobby .fo-lobby-card:hover .fo-lobby-card-menu > button,
 .fo-lobby .fo-lobby-card:focus-within .fo-lobby-card-menu > button,
-.fo-lobby .fo-lobby-card-menu.is-open > button {
+.fo-lobby .fo-lobby-card-menu > button[data-state='open'] {
   opacity: 1;
 }
 @media (hover: none) {
@@ -389,9 +389,6 @@
   }
 }
 .fo-lobby .fo-lobby-card-menu [role='menu'] {
-  position: absolute;
-  top: 38px;
-  right: 0;
   display: flex;
   flex-direction: column;
   min-width: 120px;
@@ -402,6 +399,9 @@
   box-shadow: 0 10px 30px var(--fo-shadow-4);
 }
 .fo-lobby .fo-lobby-card-menu [role='menuitem'] {
+  cursor: pointer;
+  user-select: none;
+  outline: none;
   padding: 8px 10px;
   font-size: 12px;
   text-align: left;
@@ -409,6 +409,7 @@
   background: transparent;
   border-radius: 4px;
 }
+.fo-lobby .fo-lobby-card-menu [role='menuitem'][data-highlighted],
 .fo-lobby .fo-lobby-card-menu [role='menuitem']:hover,
 .fo-studio.fo-lobby .fo-lobby-card-menu [role='menuitem']:focus-visible {
   background: var(--fo-hover);

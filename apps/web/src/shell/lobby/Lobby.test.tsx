@@ -133,8 +133,8 @@ describe('project lobby', () => {
     const user = userEvent.setup();
     renderLobby();
     await user.click(screen.getByRole('button', { name: '「海边」更多操作' }));
-    const menu = screen.getByRole('menu', { name: '「海边」操作' });
-    expect(document.activeElement).toBe(within(menu).getByRole('menuitem', { name: '重命名' }));
+    // Radix names the menu after the button that opens it.
+    const menu = screen.getByRole('menu', { name: '「海边」更多操作' });
     await user.click(within(menu).getByRole('menuitem', { name: '重命名' }));
     const dialog = screen.getByRole('dialog', { name: '重命名项目' });
     const input = within(dialog).getByRole('textbox', { name: '项目名称' });

@@ -1,4 +1,5 @@
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { getMedia } from '../../core/project/media-store';
 import type { ProjectSummary } from '../../core/project/projects';
 import Icon from '../../ui/Icon';
@@ -59,69 +60,22 @@ interface CardMenuProps {
   onDelete: () => void;
 }
 
+/** The "…" button on a card. Radix does the menu behaviour; lobby.css gives it its look. */
 function CardMenu({ title, onRename, onDelete }: CardMenuProps) {
-  const [open, setOpen] = useState(false);
-  const root = useRef<HTMLDivElement>(null);
-  const trigger = useRef<HTMLButtonElement>(null);
-  const menu = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    menu.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
-    const outside = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
-    };
-    document.addEventListener('pointerdown', outside);
-    return () => document.removeEventListener('pointerdown', outside);
-  }, [open]);
-
-  const close = () => {
-    setOpen(false);
-    trigger.current?.focus();
-  };
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === 'Escape' || event.key === 'Tab') {
-      if (event.key === 'Escape') event.preventDefault();
-      close();
-      return;
-    }
-    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return;
-    event.preventDefault();
-    const items = [
-      ...(menu.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []),
-    ];
-    const index = items.indexOf(document.activeElement as HTMLButtonElement);
-    const step = event.key === 'ArrowDown' ? 1 : -1;
-    items[(index + step + items.length) % items.length]?.focus();
-  };
-  const choose = (action: () => void) => () => {
-    setOpen(false);
-    action();
-  };
-
   return (
-    <div className={`fo-lobby-card-menu${open ? ' is-open' : ''}`} ref={root}>
-      <button
-        ref={trigger}
-        type="button"
-        className="fo-lobby-icon-button"
-        aria-label={`「${title}」更多操作`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen(value => !value)}
-      >
-        <Icon name="more" />
-      </button>
-      {open && (
-        <div role="menu" aria-label={`「${title}」操作`} ref={menu} onKeyDown={onKeyDown}>
-          <button type="button" role="menuitem" onClick={choose(onRename)}>
-            重命名
-          </button>
-          <button type="button" role="menuitem" className="is-danger" onClick={choose(onDelete)}>
+    <div className="fo-lobby-card-menu">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger className="fo-lobby-icon-button" aria-label={`「${title}」更多操作`}>
+          <Icon name="more" />
+        </DropdownMenu.Trigger>
+        {/* No portal: the menu stays inside the card, where the lobby's styles reach it. */}
+        <DropdownMenu.Content align="end" sideOffset={6}>
+          <DropdownMenu.Item onSelect={onRename}>重命名</DropdownMenu.Item>
+          <DropdownMenu.Item className="is-danger" onSelect={onDelete}>
             删除
-          </button>
-        </div>
-      )}
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
     </div>
   );
 }
