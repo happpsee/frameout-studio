@@ -24,7 +24,7 @@ import { CARD_CENTER, CARD_HEIGHT, CARD_WIDTH, clamp } from '../lib/canvas-camer
 import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { readStoredValue } from '../lib/desktop-storage';
 import { desktopBridge, isDesktop } from '../lib/platform';
-import { serializeProject } from '../lib/project';
+import { serializeProject, uid } from '../lib/project';
 import { projectDataKeys } from '../lib/projects';
 import APISettings from './APISettings';
 import Icon from './Icon';
@@ -47,7 +47,6 @@ import Composer from './Composer';
 import HelpDialog from './HelpDialog';
 import BrowserStorageNotice from './BrowserStorageNotice';
 
-const uid = () => 'f-' + crypto.randomUUID();
 function clipDuration(card: Card) {
   const duration = card.duration;
   return card.kind === 'video' &&

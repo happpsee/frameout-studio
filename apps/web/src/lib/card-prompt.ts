@@ -14,7 +14,7 @@ export type PromptAction =
 export type CardPromptPlan = { text: string; placeholder: string; actions: PromptAction[] };
 
 /** Below this zoom a card is too small to hang a panel on; the panel rests at the bottom. */
-export const DOCK_ZOOM = 0.45;
+const DOCK_ZOOM = 0.45;
 
 /**
  * What the prompt panel under a selected card offers, or null when it has nothing to offer:

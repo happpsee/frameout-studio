@@ -4,7 +4,7 @@ export const EXPORT_RATIOS = ['16:9', '9:16', '1:1'] as const;
 export const EXPORT_QUALITIES = ['720p', '1080p'] as const;
 export type ExportRatio = (typeof EXPORT_RATIOS)[number];
 export type ExportQuality = (typeof EXPORT_QUALITIES)[number];
-export interface ExportPreferences {
+interface ExportPreferences {
   ratio: ExportRatio;
   quality: ExportQuality;
 }

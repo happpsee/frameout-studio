@@ -534,7 +534,6 @@ export function useCanvas(options: Options) {
     fit,
     zoomBy,
     zoomTo,
-    toWorld,
     restoreCamera,
     cancelGesture: cancelActiveGesture,
   };

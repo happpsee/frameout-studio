@@ -9,7 +9,7 @@ export const providerIds: readonly Provider[] = PROVIDER_IDS;
  * Provider for someone who has not saved a choice yet. The interface is Chinese, and Volcano Ark
  * works in mainland China and makes video; OpenAI does neither. Saved choices are never changed.
  */
-export const DEFAULT_PROVIDER: Provider = 'ark';
+const DEFAULT_PROVIDER: Provider = 'ark';
 export function defaults(provider: Provider = DEFAULT_PROVIDER): AIConfig {
   const preset = PROVIDERS[provider];
   return {

@@ -2,46 +2,6 @@
 :root {
   --motion-ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
-.motion-curtain {
-  position: fixed;
-  inset: 0;
-  z-index: 180;
-  pointer-events: none;
-  overflow: hidden;
-  display: grid;
-  align-items: center;
-  padding: 6vw;
-  background: var(--lime);
-  color: var(--ink);
-  transform-origin: 50% 0;
-}
-.motion-curtain-inner {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 30px;
-}
-.motion-curtain-title {
-  font-family: var(--font-display);
-  font-size: clamp(60px, 13vw, 200px);
-  line-height: 0.97;
-  letter-spacing: -0.03em;
-}
-.motion-curtain-title > span {
-  display: block;
-  overflow: hidden;
-}
-.motion-curtain-title b {
-  display: block;
-  font-weight: 400;
-}
-.motion-curtain-aside {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 1px;
-  line-height: 1.7;
-  padding-bottom: 12px;
-}
 .motion-line {
   overflow: hidden;
   display: block;
@@ -367,33 +327,6 @@ body[data-studio] .motion-scroll-line {
 .has-motion .button:hover svg {
   transform: translate(3px, -3px);
 }
-.motion-wipe {
-  position: fixed;
-  inset: 0;
-  z-index: 170;
-  pointer-events: none;
-  display: flex;
-}
-.motion-wipe > div {
-  flex: 1;
-  background: var(--lime);
-  transform: translateY(105%);
-}
-.motion-wipe > div:last-child {
-  background: var(--ink);
-}
-.motion-wipe-label {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-family: var(--font-display);
-  font-size: clamp(45px, 9vw, 150px);
-  letter-spacing: -2px;
-  color: var(--paper);
-  mix-blend-mode: difference;
-  opacity: 0;
-}
 @media (max-width: 800px) {
   .motion-stage {
     height: 165vh;
@@ -424,19 +357,6 @@ body[data-studio] .motion-scroll-line {
   }
 }
 @media (max-width: 580px) {
-  .motion-curtain {
-    padding: 7vw;
-  }
-  .motion-curtain-inner {
-    display: block;
-  }
-  .motion-curtain-title {
-    font-size: 18vw;
-  }
-  .motion-curtain-aside {
-    margin-top: 30px;
-    font-size: 8px;
-  }
   .motion-replay {
     font-size: 7px;
   }
@@ -486,8 +406,6 @@ body[data-studio] .motion-scroll-line {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .motion-curtain,
-  .motion-wipe,
   .motion-scroll-line {
     display: none !important;
   }

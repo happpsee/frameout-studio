@@ -3,7 +3,7 @@ import type { Card, Provider } from '../types';
 import { MAX_NOTES, MAX_REFERENCES, supportsReferences } from '../lib/consistency';
 import Icon from './Icon';
 
-export function referenceNote(provider: Provider) {
+function referenceNote(provider: Provider) {
   if (provider === 'openai')
     return 'OpenAI 通过图片编辑接口参照这些图；gpt-image-1.5 会尽量保留人物面部特征。';
   if (provider === 'ark') return '火山方舟 Seedream 会把这些图作为多图参考。';

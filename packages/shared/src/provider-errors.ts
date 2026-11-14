@@ -30,10 +30,7 @@ export function submitFailure(error: unknown): SubmitFailure {
   if (!error || typeof error !== 'object') return 'unknown';
   const { code, status } = error as { code?: unknown; status?: unknown };
   if (code === 'CONTENT_REJECTED') return 'rejected';
-  if (
-    typeof code === 'string' &&
-    (code.startsWith('CONFIG_') || code === 'VIDEO_UNAVAILABLE' || code === 'UNSUPPORTED')
-  )
+  if (typeof code === 'string' && (code.startsWith('CONFIG_') || code === 'VIDEO_UNAVAILABLE'))
     return 'not-sent';
   if (code === 'UPSTREAM_ERROR' && typeof status === 'number' && status >= 400 && status < 500)
     return 'rejected';

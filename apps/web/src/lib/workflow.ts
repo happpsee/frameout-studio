@@ -1,11 +1,9 @@
-import type { AIConfig, ProjectState, Workflow, WorkflowStep, WorkspaceSnapshot } from '../types';
+import type { AIConfig, Workflow, WorkflowStep, WorkspaceSnapshot } from '../types';
+import { scriptShots } from './notes';
 import { preferenceOnly, uid } from './project';
 
 export function createWorkflow(text: string, withVideo: boolean, config: AIConfig): Workflow {
-  const prompts = text
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean);
+  const prompts = scriptShots(text);
   if (!prompts.length || prompts.length > 8) throw new Error('请输入 1 到 8 个镜头，每行一个');
   const steps: WorkflowStep[] = [];
   for (const prompt of prompts) {
@@ -135,9 +133,4 @@ export function workspaceDiff(current: WorkspaceSnapshot, previous: WorkspaceSna
     changed: changed.length,
     sequenceChanged: JSON.stringify(current.sequence) !== JSON.stringify(previous.sequence),
   };
-}
-
-export function workspaceOnly(project: ProjectState): WorkspaceSnapshot {
-  const { version, title, camera, selected, cards, sequence, notes } = project;
-  return { version, title, camera, selected, cards, sequence, notes };
 }

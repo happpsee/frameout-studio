@@ -12,7 +12,7 @@ import {
   subscribeProjects,
 } from '../lib/projects';
 
-export type Route = { view: 'intro' } | { view: 'lobby' } | { view: 'studio'; projectId: string };
+type Route = { view: 'intro' } | { view: 'lobby' } | { view: 'studio'; projectId: string };
 interface Resolved {
   route: Route;
   /** Shown over the project list when an address could not be opened. */
@@ -21,14 +21,14 @@ interface Resolved {
   replace?: string;
 }
 
-export const MISSING_PROJECT_NOTICE = '没有找到这个项目，已回到项目列表';
-export const DELETED_PROJECT_NOTICE = '这个项目已删除，可在「已删除项目」里恢复';
-export const UNREADABLE_PROJECT_NOTICE = '项目读取失败，请检查应用数据目录后重试';
+const MISSING_PROJECT_NOTICE = '没有找到这个项目，已回到项目列表';
+const DELETED_PROJECT_NOTICE = '这个项目已删除，可在「已删除项目」里恢复';
+const UNREADABLE_PROJECT_NOTICE = '项目读取失败，请检查应用数据目录后重试';
 const STUDIO_HASH = /^#studio\/(.*)$/;
 const LOBBY: Route = { view: 'lobby' };
 const INTRO: Route = { view: 'intro' };
 
-export const routeHash = (route: Route) =>
+const routeHash = (route: Route) =>
   route.view === 'studio'
     ? `#studio/${route.projectId}`
     : route.view === 'lobby'
@@ -51,7 +51,7 @@ function defaultProjectId(): string {
 }
 
 /** Where a web address leads. History state tells a visited introduction from the project list. */
-export function routeFromLocation(hash: string, state?: unknown): Resolved {
+function routeFromLocation(hash: string, state?: unknown): Resolved {
   if (hash === '#intro') return { route: INTRO };
   if (hash === '#projects') return { route: LOBBY };
   if (hash === '#studio') {

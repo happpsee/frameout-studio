@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { isDesktop } from '../lib/platform';
 import Icon from './Icon';
 
-export type CanvasTool = 'select' | 'hand';
+type CanvasTool = 'select' | 'hand';
 export type PanelTab = 'workflow' | 'versions';
 
 interface ToolButtonProps {

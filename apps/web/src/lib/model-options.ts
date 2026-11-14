@@ -4,7 +4,7 @@ import { PROVIDERS } from '@frameout/shared';
 import type { AIConfig, Provider } from '../types';
 
 export type ModelKind = 'image' | 'video';
-export type Option = { value: string; label: string };
+type Option = { value: string; label: string };
 type KnownModel = { id: string; name: string; note: string };
 
 const KNOWN_MODELS: Readonly<Record<Provider, Record<ModelKind, readonly KnownModel[]>>> = {

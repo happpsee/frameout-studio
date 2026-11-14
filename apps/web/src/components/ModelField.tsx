@@ -11,7 +11,6 @@ export default function ModelField({
   value,
   onChange,
   disabled,
-  className,
 }: {
   id: string;
   label: string;
@@ -20,13 +19,11 @@ export default function ModelField({
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
-  className?: string;
 }) {
   if (!hasModelList(provider))
     return (
       <input
         id={id}
-        className={className}
         aria-label={label}
         value={value}
         placeholder="填写服务商提供的模型名称"
@@ -36,7 +33,7 @@ export default function ModelField({
     );
   return (
     <Select
-      className={`fo-model-select ${className || ''}`}
+      className="fo-model-select"
       label={label}
       value={value}
       options={modelOptions(provider, kind, value)}

@@ -72,10 +72,8 @@
   /* Accent: --fo-accent is for text, outlines and borders; --fo-lime-mark for small dots and bars */
   --fo-accent: #b5ff2a;
   --fo-accent-muted: #b5ff2a9e;
-  --fo-accent-a00: #b5ff2a00;
   --fo-accent-a03: #b5ff2a03;
   --fo-accent-a08: #b5ff2a13;
-  --fo-accent-a25: #b5ff2a42;
   --fo-accent-a50: #b5ff2a80;
   --fo-lime-hover: #c8ff68;
   --fo-lime-active: #9fe91e;
@@ -92,9 +90,6 @@
   --fo-shadow-6: #0009;
 
   /* Same in both themes: paper notes, the selection bar, toasts and labels over media */
-  --fo-note-bg: #d7d9be;
-  --fo-note-text: #262d1e;
-  --fo-note-pin: #bfd39c99;
   --fo-toast-bg: #dcebc7;
   --fo-toast-text: #25301b;
   --fo-toast-line: #afc78c;
@@ -176,10 +171,8 @@
 
   --fo-accent: #3d6b00;
   --fo-accent-muted: #47701a;
-  --fo-accent-a00: #5c990000;
   --fo-accent-a03: #5c99000a;
   --fo-accent-a08: #5c99001f;
-  --fo-accent-a25: #5c990052;
   --fo-accent-a50: #5c990099;
   --fo-lime-hover: #a8f21c;
   --fo-lime-active: #9be010;

@@ -7,9 +7,9 @@ import { placeholder, preferenceOnly, uid } from './project';
 // and project save/load keeps the job, its status and its reason. The label tells it apart
 // from a video task, because the job fields kept on save have no room for the kind.
 export const FAILED_IMAGE_LABEL = '图片生成失败';
-export const FAILED_IMAGE_MEDIA = placeholder('图片生成失败');
+const FAILED_IMAGE_MEDIA = placeholder('图片生成失败');
 
-export type FailedImage = Card & { job: VideoJob };
+type FailedImage = Card & { job: VideoJob };
 
 export const failedImage = (card?: Card): card is FailedImage =>
   Boolean(card?.job && card.label === FAILED_IMAGE_LABEL);

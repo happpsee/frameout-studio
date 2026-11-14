@@ -156,13 +156,6 @@
   width: 14px;
   height: 14px;
 }
-.fo-studio .fo-select-empty {
-  padding: 12px 11px;
-  color: var(--fo-text-6);
-  font:
-    12px/18px Arial,
-    sans-serif;
-}
 
 .fo-studio .fo-select[data-variant='compact'] {
   width: 106px;

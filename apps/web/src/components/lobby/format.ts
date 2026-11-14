@@ -2,7 +2,7 @@ import type { ProjectSummary } from '../../lib/projects';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
-export const DAY = 24 * HOUR;
+const DAY = 24 * HOUR;
 /** How long a deleted project stays restorable. */
 export const TRASH_DAYS = 30;
 
@@ -16,7 +16,7 @@ export function greeting(hour: number): string {
 }
 
 /** 00:12 or 1:02:03. */
-export function formatDuration(seconds: number): string {
+function formatDuration(seconds: number): string {
   const total = Math.max(0, Math.round(seconds));
   const pad = (value: number) => String(value).padStart(2, '0');
   const hours = Math.floor(total / 3600);

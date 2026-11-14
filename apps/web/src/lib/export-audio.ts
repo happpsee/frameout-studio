@@ -15,7 +15,7 @@ import { exportAudioSupported } from './export-support';
 // decoded sound is held in memory at a time.
 
 export const AUDIO_RATE = 48000;
-export const AUDIO_CHANNELS = 2;
+const AUDIO_CHANNELS = 2;
 // Silence is written in pieces of at most this many seconds.
 const SILENCE_PIECE = 5;
 

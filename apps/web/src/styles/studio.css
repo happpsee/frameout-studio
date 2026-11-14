@@ -269,74 +269,6 @@
   border-left: 1px solid var(--fo-line-2);
   padding-left: 15px;
 }
-.fo-mood-group {
-  position: absolute;
-  left: 130px;
-  top: 80px;
-  width: 960px;
-  height: 360px;
-  border: 1px solid var(--fo-accent-a25);
-  border-radius: 12px;
-  pointer-events: none;
-}
-.fo-mood-group > span:first-child {
-  position: absolute;
-  top: -25px;
-  left: 0;
-  color: var(--fo-accent-muted);
-  font-size: 11px;
-  letter-spacing: 1.4px;
-}
-.fo-mood-group i {
-  font-style: normal;
-  color: var(--fo-text-dim);
-  margin: 0 9px;
-}
-.fo-group-caption {
-  position: absolute;
-  right: 0;
-  top: -25px;
-  color: var(--fo-text-faint);
-  font-size: 10px;
-  letter-spacing: 0.5px;
-}
-.fo-canvas-note {
-  position: absolute;
-  left: 1140px;
-  top: 105px;
-  width: 174px;
-  padding: 25px 16px 15px;
-  background: var(--fo-note-bg);
-  color: var(--fo-note-text);
-  transform: rotate(7deg);
-  box-shadow: 4px 7px 0 var(--fo-shadow-1);
-  pointer-events: auto;
-}
-.fo-canvas-note > span:not(.fo-note-pin) {
-  font-size: 29px;
-  line-height: 1.4;
-  font-family: KaiTi, 'STKaiti', serif;
-  letter-spacing: 4px;
-  display: block;
-}
-.fo-canvas-note small {
-  font:
-    7px 'Courier New',
-    monospace;
-  letter-spacing: 0.7px;
-  margin-top: 18px;
-  display: block;
-  white-space: nowrap;
-}
-.fo-note-pin {
-  width: 35px;
-  height: 10px;
-  position: absolute;
-  top: -5px;
-  left: 63px;
-  background: var(--fo-note-pin);
-  transform: rotate(-8deg);
-}
 .fo-card {
   position: absolute;
   width: 270px;
@@ -441,10 +373,6 @@
 .tone-warm img,
 .tone-warm video {
   filter: saturate(0.85) sepia(0.18) brightness(1.1);
-}
-.fo-media.is-motion img,
-.fo-preview-screen.is-motion img {
-  animation: fo-kenburns 6s ease-in-out infinite alternate;
 }
 .fo-card-bottom {
   height: 36px;
@@ -588,20 +516,6 @@
   font-size: 11px;
   color: var(--fo-text-2);
   letter-spacing: 0.5px;
-}
-.fo-demo-badge {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 8px;
-  color: var(--fo-text-4);
-  white-space: nowrap;
-}
-.fo-demo-badge i {
-  background: var(--fo-lime-mark);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
 }
 .fo-prompt {
   display: block;
@@ -1186,14 +1100,6 @@
 .fo-help-dialog > .fo-primary-button {
   width: 100%;
 }
-@keyframes fo-kenburns {
-  from {
-    transform: scale(1.02) translateX(-1%);
-  }
-  to {
-    transform: scale(1.16) translateX(1.5%);
-  }
-}
 @keyframes fo-generating {
   0% {
     width: 0;
@@ -1467,9 +1373,6 @@
   .fo-composer-top label {
     font-size: 11px;
   }
-  .fo-demo-badge {
-    font-size: 8px;
-  }
   .fo-prompt {
     font-size: 16px !important;
     height: 30px;
@@ -1676,23 +1579,8 @@
     min-width: 40px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .fo-studio *,
-  .fo-studio *:before,
-  .fo-studio *:after {
-    animation: none !important;
-    transition: none !important;
-    scroll-behavior: auto !important;
-  }
-}
 
 /* A calm arrival, then immediate canvas control. Camera and drag coordinates stay unanimated. */
-.fo-card.is-entering {
-  animation: fo-card-arrive 0.64s cubic-bezier(0.16, 1, 0.3, 1) var(--fo-entry-delay, 0ms) backwards;
-}
-.fo-card.is-dragging {
-  animation: none !important;
-}
 .fo-card:not(.is-dragging):hover {
   outline-color: var(--fo-accent-a50);
   box-shadow: 0 14px 36px var(--fo-shadow-4);
@@ -1749,9 +1637,6 @@
   border-color: var(--fo-line-focus);
   box-shadow: 0 12px 30px var(--fo-shadow-3);
 }
-.fo-composer.is-busy .fo-demo-badge i {
-  animation: fo-busy-pulse 0.55s ease-in-out 2 alternate;
-}
 .fo-generate-button {
   transition:
     background 0.18s,
@@ -1786,9 +1671,6 @@
     border-color 0.2s,
     box-shadow 0.2s;
 }
-.fo-seq-item.is-entering {
-  animation: fo-shot-arrive 0.42s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
 .fo-seq-item:hover {
   background: var(--fo-hover);
   border-color: var(--fo-line-green-strong);
@@ -1817,16 +1699,6 @@
 .fo-viewport.is-file-drop .fo-file-drop-hint {
   animation: fo-drop-arrive 0.2s ease-out backwards;
 }
-@keyframes fo-card-arrive {
-  from {
-    opacity: 0;
-    transform: translateY(32px) rotate(-2deg) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @keyframes fo-chrome-arrive {
   from {
     opacity: 0;
@@ -1845,16 +1717,6 @@
   to {
     opacity: 1;
     translate: 0 0;
-  }
-}
-@keyframes fo-shot-arrive {
-  from {
-    opacity: 0;
-    transform: translateX(24px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: none;
   }
 }
 @keyframes fo-dialog-arrive {
@@ -1891,16 +1753,6 @@
   }
   to {
     transform: scaleX(1);
-  }
-}
-@keyframes fo-busy-pulse {
-  from {
-    opacity: 0.35;
-    box-shadow: 0 0 0 0 var(--fo-accent-a25);
-  }
-  to {
-    opacity: 1;
-    box-shadow: 0 0 0 4px var(--fo-accent-a00);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2142,9 +1994,6 @@
   line-height: 22px;
   overflow: auto;
   font-size: 12px !important;
-}
-.fo-composer-top .fo-demo-badge {
-  font-size: 8px;
 }
 .fo-generation-state {
   overflow: hidden;

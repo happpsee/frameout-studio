@@ -7,12 +7,12 @@ import { CARD_WIDTH } from './canvas-camera';
  * card a `<video>` element. A thumbnail is made once per media file and kept for the session;
  * the original is shown again when the canvas is zoomed in far enough to need it.
  */
-export const THUMB_WIDTH = 540;
+const THUMB_WIDTH = 540;
 /** An image this narrow is already cheap; a thumbnail would not help. */
 const SMALL_ENOUGH = 720;
 const VIDEO_TIMEOUT = 8000;
 
-export type Thumbnail = { src: string; duration?: number };
+type Thumbnail = { src: string; duration?: number };
 type Maker = (card: Card) => Promise<Thumbnail | null>;
 
 /** The card needs the original: it is drawn wider than a thumbnail can fill sharply. */

@@ -10,8 +10,6 @@ export interface VideoJob {
   error?: string;
   prompt: string;
   config: Omit<AIConfig, 'key'>;
-  duration?: number;
-  startedAt?: number;
   progress?: number;
 }
 export interface Card {
@@ -92,7 +90,7 @@ export interface WorkflowStep {
   outputCardId?: string;
   error?: string;
 }
-export interface WorkflowEvent {
+interface WorkflowEvent {
   id: string;
   at: number;
   message: string;

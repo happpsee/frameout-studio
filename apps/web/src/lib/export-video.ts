@@ -22,20 +22,18 @@ import { probeClipSound, SequenceAudio, type ClipSound, type ExportAudio } from 
 
 export type ExportShot = { card: Card; duration: number };
 export type ExportSize = { width: number; height: number };
-export type ExportResult = { blob: Blob; audio: ExportAudio };
+type ExportResult = { blob: Blob; audio: ExportAudio };
 export type { ExportAudio };
-export type ExportOptions = ExportSize & {
+type ExportOptions = ExportSize & {
   fps?: number;
   signal?: AbortSignal;
   onProgress?: (fraction: number) => void;
 };
 
 export class ExportError extends Error {
-  readonly shots: string[];
-  constructor(message: string, shots: string[] = []) {
+  constructor(message: string) {
     super(message);
     this.name = 'ExportError';
-    this.shots = shots;
   }
 }
 
@@ -230,7 +228,7 @@ export async function exportSequence(
       undecodable.length &&
         `${undecodable.join('、')} 的格式无法解码，请转成 MP4（H.264）后重新导入`,
     ].filter(Boolean);
-    throw new ExportError(reasons.join('；') + '。', [...unreadable, ...undecodable]);
+    throw new ExportError(reasons.join('；') + '。');
   }
 
   const canvas = document.createElement('canvas');

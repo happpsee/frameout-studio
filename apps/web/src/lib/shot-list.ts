@@ -3,7 +3,7 @@ import { visualOrder } from './canvas-selection';
 
 /** One line of the list view: a card, and the videos made from it. */
 export type ShotRow = { card: Card; takes: Card[] };
-export type ShotSection = {
+type ShotSection = {
   id: string;
   title: string;
   /** The script this section belongs to; absent for cards made outside any script. */

@@ -37,7 +37,7 @@ type VideoResult = { id: string; status: string; src?: string; error?: string; p
 type VideoClient = {
   getVideo: (options: { id: string; signal: AbortSignal }) => Promise<VideoResult>;
 };
-export type GenerationRequest = {
+type GenerationRequest = {
   prompt: string;
   mode: GenerationMode;
   config?: AIConfig;

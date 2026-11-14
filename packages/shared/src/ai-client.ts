@@ -186,11 +186,7 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
   if (/\s|[\x00-\x1f\x7f]/.test(key))
     throw new AIError('API Key 不能包含空格或换行', { code: 'CONFIG_KEY' });
   const fetchImpl = options.fetchImpl || globalThis.fetch;
-  if (typeof fetchImpl !== 'function')
-    throw new AIError('当前浏览器不支持网络请求', { code: 'UNSUPPORTED' });
   const proxyPath = options.proxyPath || RELAY_PATH;
-  if (!/^\/(?!\/)[A-Za-z0-9/_-]+$/.test(proxyPath))
-    throw new AIError('后端转发路径无效', { code: 'CONFIG_TRANSPORT' });
   const imageModel = config.imageModel || preset.defaultImageModel;
   const videoModel = config.videoModel || preset.defaultVideoModel;
   const imageSize = config.imageSize || preset.imageSizes[0];
@@ -222,7 +218,7 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
       return new AIError(moderation, {
         code: 'CONTENT_REJECTED',
         status,
-        requestId: redact(requestId),
+        requestId,
       });
     const labels: Record<number, string> = {
       400: '请求参数不被模型接受',
@@ -235,7 +231,7 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
     return new AIError(message + (detail ? '：' + redact(detail) : ''), {
       code: 'UPSTREAM_ERROR',
       status,
-      requestId: redact(requestId),
+      requestId,
     });
   }
 
@@ -250,14 +246,10 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
     const abort = () => controller.abort();
     if (signal) signal.addEventListener('abort', abort, { once: true });
     let timedOut = false;
-    const timeoutMs =
-      options.timeoutMs !== undefined && Number.isFinite(options.timeoutMs) && options.timeoutMs > 0
-        ? options.timeoutMs
-        : timeout;
     const timer = setTimeout(() => {
       timedOut = true;
       controller.abort();
-    }, timeoutMs);
+    }, options.timeoutMs || timeout);
     try {
       // `cache` is a browser fetch option that Node's fetch types leave out.
       const init: RequestInit & { cache?: 'no-store' } = {
@@ -314,7 +306,6 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
           code: 'TIMEOUT',
         });
       if (error instanceof AIError) throw error;
-      if (error instanceof Error && error.name === 'AbortError') throw abortError();
       throw new AIError(
         transport === 'direct'
           ? '连接失败。请检查网络、Base URL 和服务的跨域配置。'
@@ -346,12 +337,10 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
     const models =
       provider === 'ark'
         ? undefined
-        : Array.isArray(json?.data)
-          ? json.data
-              .map((item: ProviderJson) => redact(item?.id))
-              .filter(Boolean)
-              .slice(0, 200)
-          : undefined;
+        : json.data
+            .map((item: ProviderJson) => redact(item?.id))
+            .filter(Boolean)
+            .slice(0, 200);
     return {
       ok: true,
       message: '鉴权连接成功；所选模型的生成权限以实际请求为准。',
@@ -430,7 +419,7 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
   }
 
   function requireVideo() {
-    if (!preset.canVideo || new URL(baseUrl).hostname.toLowerCase() === 'api.openai.com') {
+    if (!preset.canVideo || new URL(baseUrl).hostname === 'api.openai.com') {
       throw new AIError('此配置不提供 OpenAI 视频调用，请选择火山方舟或提供视频服务的兼容接口', {
         code: 'VIDEO_UNAVAILABLE',
       });
@@ -451,7 +440,7 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
         ? value.data
         : value;
     const id = String(json?.id || json?.task_id || fallbackId || '');
-    if (!id || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,255}$/.test(id))
+    if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,255}$/.test(id))
       throw new AIError('供应商未返回有效的视频任务 ID', { code: 'INVALID_RESPONSE', requestId });
     const statusMap: Record<string, VideoStatus> = {
       queued: 'queued',

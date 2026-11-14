@@ -22,12 +22,6 @@ const paths: Record<string, ReactNode> = {
       <path d="m21 16-6-6L5 21" />
     </>
   ),
-  video: (
-    <>
-      <rect x="3" y="5" width="13" height="14" rx="2" />
-      <path d="m16 10 5-3v10l-5-3" />
-    </>
-  ),
   film: (
     <>
       <rect x="3" y="3" width="18" height="18" rx="1" />
@@ -37,17 +31,10 @@ const paths: Record<string, ReactNode> = {
   upload: <path d="M12 16V3m-5 5 5-5 5 5M4 16v5h16v-5" />,
   download: <path d="M12 3v13m-5-5 5 5 5-5M4 16v5h16v-5" />,
   maximize: <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" />,
-  fit: (
-    <>
-      <path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" />
-      <rect x="8" y="8" width="8" height="8" />
-    </>
-  ),
   hand: (
     <path d="M8 12V5a2 2 0 0 1 4 0v7-8a2 2 0 0 1 4 0v8-6a2 2 0 0 1 4 0v8c0 4-3 7-7 7h-1c-2 0-4-1-5-3l-4-5a2 2 0 0 1 3-2l2 2Z" />
   ),
   cursor: <path d="m4 3 15 10-7 2-3 7L4 3Z" />,
-  move: <path d="M12 2v20M2 12h20M8 6l4-4 4 4M8 18l4 4 4-4M6 8l-4 4 4 4m12-8 4 4-4 4" />,
   undo: <path d="M4 5v6h6M4 11a8 8 0 1 1 2 8" />,
   redo: <path d="M20 5v6h-6m6 0a8 8 0 1 0-2 8" />,
   trash: <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7" />,
@@ -93,12 +80,9 @@ const paths: Record<string, ReactNode> = {
       <path d="M12 6v6l4 2" />
     </>
   ),
-  grip: <path d="M9 5v.1M15 5v.1M9 12v.1M15 12v.1M9 19v.1M15 19v.1" strokeWidth="3" />,
-  save: <path d="M4 3h13l4 4v14H3V3h1Zm3 0v6h10V3M7 21v-8h10v8" />,
   tidy: <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" />,
   text: <path d="M5 6h14M5 11h14M5 16h9" />,
   list: <path d="M9 6h11M9 12h11M9 18h11M4 6h.1M4 12h.1M4 18h.1" />,
-  home: <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3V10Z" />,
 };
 
 /** React SVGs keep the existing icon styling without injecting markup. */

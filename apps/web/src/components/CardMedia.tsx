@@ -4,12 +4,10 @@ import { thumbnails } from '../lib/thumbnails';
 
 export function CardMedia({
   card,
-  className,
   original = false,
   onDuration,
 }: {
   card: Card;
-  className?: string;
   /** Show the stored file even when a thumbnail exists: the card is drawn large. */
   original?: boolean;
   onDuration?: (duration: number) => void;
@@ -31,7 +29,6 @@ export function CardMedia({
   const stillOnly = !original && Boolean(thumbnail);
   return card.kind === 'video' && !card.missingMedia && !stillOnly ? (
     <video
-      className={className}
       src={card.src}
       poster={poster}
       muted
@@ -46,7 +43,6 @@ export function CardMedia({
     />
   ) : (
     <img
-      className={className}
       src={stillOnly ? thumbnail!.src : card.src}
       alt={card.name}
       draggable={false}

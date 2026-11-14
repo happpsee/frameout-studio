@@ -1,7 +1,7 @@
 import { useLayoutEffect, useSyncExternalStore } from 'react';
 import { THEME_KEY, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
 
-export type Theme = 'dark' | 'light';
+type Theme = 'dark' | 'light';
 export type ThemePreference = Theme | 'system';
 
 const PREFERENCES: readonly ThemePreference[] = ['dark', 'light', 'system'];
@@ -29,13 +29,13 @@ function systemPrefersLight(): boolean {
   return systemQuery()?.matches === true;
 }
 
-export function resolveTheme(preference: ThemePreference, systemLight: boolean): Theme {
+function resolveTheme(preference: ThemePreference, systemLight: boolean): Theme {
   if (preference === 'system') return systemLight ? 'light' : 'dark';
   return preference;
 }
 
 /** The studio palette in studio.css switches on this attribute. */
-export function applyTheme(theme: Theme): void {
+function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
 }
 

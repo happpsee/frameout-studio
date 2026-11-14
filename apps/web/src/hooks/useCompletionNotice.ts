@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 
-export type CompletionOutcome = 'succeeded' | 'failed';
+type CompletionOutcome = 'succeeded' | 'failed';
 const TITLES: Record<CompletionOutcome, string> = {
   succeeded: '✓ 生成完成 · 帧外',
   failed: '生成失败 · 帧外',

@@ -2,6 +2,7 @@ import type { AIConfig, Card, ProjectCheckpoint, ProjectState, WorkspaceSnapshot
 import { restoreWorkflow } from './workflow';
 import { normalizeConsistency, validRole } from './consistency';
 import { restoreNotes } from './notes';
+import { clamp } from './canvas-camera';
 
 const legacySampleSources = new Set([
   '/assets/forest-astronaut.png',
@@ -16,8 +17,6 @@ export const placeholder = (text: string) =>
 export const MISSING_MEDIA = placeholder('素材暂不可用');
 export const PENDING_MEDIA = placeholder('视频生成任务');
 export const uid = () => 'f-' + crypto.randomUUID();
-export const clamp = (value: number, min: number, max: number) =>
-  Math.min(max, Math.max(min, value));
 export const DEFAULT_PROJECT_TITLE = '未命名项目';
 export const PROJECT_TITLE_MAX = 40;
 /** Label on cards added from a landing example; they are kept, unlike old auto-inserted samples. */

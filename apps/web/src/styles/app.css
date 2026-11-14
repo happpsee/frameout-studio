@@ -201,8 +201,7 @@ select:focus-visible {
 .eyebrow,
 .process-number,
 .cta-topline,
-.cta-bottom,
-.hero-footnote {
+.cta-bottom {
   font-family: var(--font-mono);
 }
 .hero-topline {
@@ -590,10 +589,6 @@ select:focus-visible {
 .scroll-cue svg {
   height: 17px;
   width: 17px;
-}
-.hero-footnote {
-  font-size: 8px;
-  color: #737a67;
 }
 .marquee {
   background: var(--lime);
@@ -1126,29 +1121,6 @@ select:focus-visible {
   height: 16px;
   width: 16px;
 }
-.site-toast {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translate(-50%, 20px);
-  opacity: 0;
-  pointer-events: none;
-  background: var(--paper);
-  color: var(--ink);
-  padding: 13px 22px;
-  border-radius: 4px;
-  box-shadow: 0 5px 24px #0003;
-  z-index: 300;
-  font-size: 12px;
-  transition:
-    opacity 0.2s,
-    transform 0.2s;
-  max-width: calc(100% - 32px);
-}
-.site-toast.visible {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
 body[data-studio='true'] {
   overflow: hidden;
 }
@@ -1251,9 +1223,6 @@ body[data-studio='true'] {
   }
   .coordinate-bottom {
     bottom: 7px;
-  }
-  .hero-footnote {
-    display: none;
   }
   .hero-footer {
     height: 65px;
@@ -2172,11 +2141,6 @@ body[data-studio='true'] {
     margin: 0;
     font-size: 9px;
     gap: 13px;
-  }
-  .site-toast {
-    font-size: 11px;
-    width: max-content;
-    text-align: center;
   }
 }
 #landing {

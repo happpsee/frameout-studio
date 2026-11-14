@@ -69,7 +69,7 @@ export function restoreNotes(input: unknown): Note[] {
     }));
 }
 
-export type ShotProgress = { status: StepStatus; cardId?: string };
+type ShotProgress = { status: StepStatus; cardId?: string };
 /**
  * Where each shot of a script stands in the plan made from it: the image step, or the video
  * step once the image is done. Undefined when the plan belongs to another script or none.
