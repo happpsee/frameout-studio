@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeConsistency, referenceCards, supportsReferences, withNotes } from './consistency';
+import {
+  nextRole,
+  normalizeConsistency,
+  referenceCards,
+  supportsReferences,
+  withNotes,
+  withReferenceRoles,
+} from './consistency';
 import { restoreProject, serializeProject, initialState } from './project';
 import type { Card } from '../types';
 
@@ -49,6 +56,34 @@ describe('shot consistency settings', () => {
       supportsReferences('ark'),
       supportsReferences('compatible'),
     ]).toEqual([true, true, false]);
+  });
+  it('tells the model what each tagged reference is for, numbered as sent', () => {
+    const references = [
+      image('a', { role: 'character' }),
+      image('b'),
+      image('c', { role: 'style' }),
+    ];
+    expect(withReferenceRoles('雨夜回头', references)).toBe(
+      '雨夜回头\n\n参考图 1：角色，保持长相、发型和服装一致；参考图 3：只参考画风和色调',
+    );
+    expect(withReferenceRoles('雨夜回头', [image('a')])).toBe('雨夜回头');
+  });
+  it('steps a reference through the roles and back to unset', () => {
+    const seen = [];
+    let role = nextRole();
+    while (role) {
+      seen.push(role);
+      role = nextRole(role);
+    }
+    expect(seen).toEqual(['character', 'scene', 'prop', 'style']);
+  });
+  it('keeps a role through save and reload, and drops an unknown one', () => {
+    const project = {
+      ...initialState(),
+      cards: [image('a', { role: 'scene' }), image('b', { role: 'villain' as Card['role'] })],
+    };
+    const restored = restoreProject(JSON.parse(JSON.stringify(serializeProject(project))));
+    expect(restored.cards.map(card => card.role)).toEqual(['scene', undefined]);
   });
   it('round-trips with the project and drops references to removed or session-only cards', () => {
     const project = {

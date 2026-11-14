@@ -1,5 +1,5 @@
 import { PROVIDER_CAPABILITIES } from '@frameout/shared';
-import type { Card, Consistency, ProjectState, Provider } from '../types';
+import type { Card, Consistency, ProjectState, Provider, ReferenceRole } from '../types';
 
 export const MAX_REFERENCES = 4;
 export const MAX_NOTES = 1000;
@@ -29,6 +29,37 @@ export function referenceCards(project: Pick<ProjectState, 'cards' | 'consistenc
   return (project.consistency?.references ?? [])
     .map(id => project.cards.find(card => card.id === id))
     .filter(usableReference);
+}
+
+export const REFERENCE_ROLES: Record<ReferenceRole, { label: string; guide: string }> = {
+  character: { label: '角色', guide: '角色，保持长相、发型和服装一致' },
+  scene: { label: '场景', guide: '场景，保持环境和光线一致' },
+  prop: { label: '道具', guide: '道具，保持外形一致' },
+  style: { label: '风格', guide: '只参考画风和色调' },
+};
+const ROLE_ORDER: (ReferenceRole | undefined)[] = [
+  undefined,
+  'character',
+  'scene',
+  'prop',
+  'style',
+];
+/** The next choice when the role button is pressed; after the last one it is unset again. */
+export const nextRole = (role?: ReferenceRole) =>
+  ROLE_ORDER[(ROLE_ORDER.indexOf(role) + 1) % ROLE_ORDER.length];
+export const validRole = (role: unknown): role is ReferenceRole =>
+  typeof role === 'string' && role in REFERENCE_ROLES;
+
+/**
+ * Tells the model what each reference image is for, in the order the images are sent.
+ * Says nothing when no reference has a role, so untagged projects send the prompt as before.
+ */
+export function withReferenceRoles(prompt: string, references: Card[]): string {
+  if (!references.some(card => card.role)) return prompt;
+  const lines = references.map((card, index) =>
+    card.role ? `参考图 ${index + 1}：${REFERENCE_ROLES[card.role].guide}` : '',
+  );
+  return `${prompt}\n\n${lines.filter(Boolean).join('；')}`;
 }
 
 export function withNotes(prompt: string, notes = ''): string {

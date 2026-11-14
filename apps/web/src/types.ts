@@ -13,6 +13,7 @@ export interface AIConfig {
   resolution: string;
   transport: 'proxy' | 'direct';
 }
+export type ReferenceRole = 'character' | 'scene' | 'prop' | 'style';
 export interface VideoJob {
   id: string;
   provider: Provider;
@@ -49,6 +50,8 @@ export interface Card {
   prompt?: string;
   /** Generated video: id of the image card used as the first frame; '' for text-to-video. */
   sourceId?: string;
+  /** What a reference image is a reference for; told to the model with the image. */
+  role?: ReferenceRole;
   /** Id of the script note whose shot plan made this card. */
   noteId?: string;
   model?: string;

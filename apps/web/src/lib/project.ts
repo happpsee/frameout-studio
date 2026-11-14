@@ -1,6 +1,6 @@
 import type { AIConfig, Card, ProjectCheckpoint, ProjectState, WorkspaceSnapshot } from '../types';
 import { restoreWorkflow } from './workflow';
-import { normalizeConsistency } from './consistency';
+import { normalizeConsistency, validRole } from './consistency';
 import { restoreNotes } from './notes';
 
 const legacySampleSources = new Set([
@@ -95,6 +95,7 @@ export function serializeWorkspace(project: WorkspaceSnapshot): WorkspaceSnapsho
         'remoteTemporary',
         'prompt',
         'sourceId',
+        'role',
         'noteId',
         'model',
         'mimeType',
@@ -177,6 +178,7 @@ function restoreWorkspace(input: unknown): WorkspaceSnapshot {
       if (typeof card.prompt !== 'string') delete card.prompt;
       if (typeof card.sourceId !== 'string') delete card.sourceId;
       if (typeof card.noteId !== 'string') delete card.noteId;
+      if (!validRole(card.role)) delete card.role;
       if (card.job) {
         card.job = {
           ...card.job,

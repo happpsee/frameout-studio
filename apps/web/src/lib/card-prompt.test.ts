@@ -75,14 +75,25 @@ describe('promptPosition', () => {
     expect(promptPosition({ card: box, zoom: 1, size, bounds, barBottom: 480 }).top).toBe(490);
   });
 
-  it('rests at the bottom when the card is tiny, out of view, or too low', () => {
+  it('stands beside a card that is too low to fit under, right side first', () => {
+    const low = { left: 400, top: 400, right: 670, bottom: 619 };
+    expect(promptPosition({ card: low, zoom: 1, size, bounds })).toEqual({
+      docked: false,
+      left: 680,
+      top: 400,
+    });
+    const lowRight = { left: 900, top: 400, right: 1170, bottom: 619 };
+    expect(promptPosition({ card: lowRight, zoom: 1, size, bounds }).left).toBe(530);
+  });
+
+  it('rests at the bottom when the card is tiny, out of view, or hemmed in', () => {
     const rest = { docked: true, left: 420, top: 580 };
     expect(promptPosition({ card: box, zoom: 0.3, size, bounds })).toEqual(rest);
     const away = { left: 1300, top: 200, right: 1570, bottom: 419 };
     expect(promptPosition({ card: away, zoom: 1, size, bounds })).toEqual(rest);
-    // Too low to fit underneath, but in view: it rests in the card's own column.
-    const low = { left: 400, top: 400, right: 670, bottom: 619 };
-    expect(promptPosition({ card: low, zoom: 1, size, bounds })).toEqual({ ...rest, left: 355 });
+    // A large card that leaves no room below or on either side.
+    const wide = { left: 200, top: 300, right: 1000, bottom: 690 };
+    expect(promptPosition({ card: wide, zoom: 3, size, bounds })).toEqual(rest);
   });
 
   it('stays inside the canvas at its edges', () => {

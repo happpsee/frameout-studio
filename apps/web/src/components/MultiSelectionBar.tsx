@@ -3,6 +3,7 @@ import type { Card } from '../types';
 import type { MultiSelection } from '../hooks/useMultiSelection';
 import type { Rect } from '../lib/canvas-selection';
 import { visualOrder } from '../lib/canvas-selection';
+import type { ArrangeMode } from '../lib/canvas-layout';
 import { pending } from './CanvasCard';
 import Icon from './Icon';
 import './MultiSelectionBar.css';
@@ -16,7 +17,14 @@ interface MultiSelectionBarProps {
   busy: boolean;
   toast: (message: string) => void;
   onAddShots: (ids: string[]) => void;
+  onArrange: (ids: string[], mode: ArrangeMode) => void;
 }
+
+const ARRANGE: { mode: ArrangeMode; label: string; icon: string }[] = [
+  { mode: 'grid', label: '宫格排列', icon: 'grid' },
+  { mode: 'row', label: '横向排列', icon: 'arrow-right' },
+  { mode: 'column', label: '纵向排列', icon: 'arrow-down' },
+];
 
 const ignoredTargets =
   '.fo-work-panel,input,textarea,select,[role="combobox"],[role="listbox"],[contenteditable="true"]';
@@ -29,6 +37,7 @@ export default function MultiSelectionBar({
   busy,
   toast,
   onAddShots,
+  onArrange,
 }: MultiSelectionBarProps) {
   const count = selection.ids.length;
   const chosen = cards.filter(card => selection.ids.includes(card.id));
@@ -67,6 +76,18 @@ export default function MultiSelectionBar({
         <Icon name="plus" />
         <span>加入成片</span>
       </button>
+      {ARRANGE.map(({ mode, label, icon }) => (
+        <button
+          key={mode}
+          type="button"
+          className="fo-icon-button"
+          aria-label={label}
+          title={label}
+          onClick={() => onArrange(selection.ids, mode)}
+        >
+          <Icon name={icon} />
+        </button>
+      ))}
       <button type="button" className="fo-small-button" disabled={busy} onClick={remove}>
         <Icon name="trash" />
         <span>删除</span>

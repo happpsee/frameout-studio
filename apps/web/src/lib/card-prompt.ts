@@ -55,8 +55,8 @@ export function cardPrompt(card: Card, cards: Card[]): CardPromptPlan | null {
 
 type Box = { left: number; top: number; right: number; bottom: number };
 /**
- * Where the panel goes, in viewport pixels: under the card, or resting at the bottom of the
- * canvas when the card is tiny, out of view, or too low for the panel to fit beneath it.
+ * Where the panel goes, in viewport pixels: under the card; beside it when there is no room
+ * underneath; resting at the bottom of the canvas when the card is tiny, out of view, or hemmed in.
  */
 export function promptPosition(options: {
   card: Box;
@@ -74,12 +74,15 @@ export function promptPosition(options: {
   const under = Math.max(card.bottom, options.barBottom ?? 0) + 10;
   const offscreen =
     card.right < 0 || card.left > bounds.width || card.bottom < 0 || card.top > bounds.bottom;
-  const docked = zoom < DOCK_ZOOM || offscreen || under > restY;
-  // A card that is in view keeps the panel in its own column, so it still reads as that card's.
-  const beside = zoom >= DOCK_ZOOM && !offscreen;
-  return {
-    docked,
-    left: clampX(((beside ? card.left + card.right : bounds.width) - size.width) / 2),
-    top: docked ? restY : under,
-  };
+  if (zoom < DOCK_ZOOM || offscreen)
+    return { docked: true, left: clampX((bounds.width - size.width) / 2), top: restY };
+  if (under <= restY)
+    return { docked: false, left: clampX((card.left + card.right - size.width) / 2), top: under };
+  // No room underneath: stand beside the card rather than on top of it.
+  const top = Math.min(Math.max(48, card.top), restY);
+  if (card.right + 10 + size.width + 12 <= bounds.width)
+    return { docked: false, left: card.right + 10, top };
+  if (card.left - 10 - size.width >= 12)
+    return { docked: false, left: card.left - 10 - size.width, top };
+  return { docked: true, left: clampX((card.left + card.right - size.width) / 2), top: restY };
 }

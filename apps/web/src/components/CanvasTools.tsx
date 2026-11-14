@@ -41,6 +41,7 @@ interface CanvasToolsProps {
   onTool: (tool: CanvasTool) => void;
   onUpload: () => void;
   onAddNote: (kind: 'text' | 'script') => void;
+  onTidy: () => void;
   assetsOpen: boolean;
   onToggleAssets: () => void;
   panelTab: PanelTab | null;
@@ -120,6 +121,12 @@ export default function CanvasTools(props: CanvasToolsProps) {
         label="添加脚本"
         title="添加脚本：每行一个镜头，可整组生成"
         onClick={() => props.onAddNote('script')}
+      />
+      <ToolButton
+        icon="tidy"
+        label="整理画布"
+        title="整理画布：脚本和它的结果排在一起 · ⌥ ⇧ F"
+        onClick={props.onTidy}
       />
       {desktopPanels}
       <ToolButton

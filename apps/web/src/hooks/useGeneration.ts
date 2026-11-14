@@ -11,7 +11,13 @@ import { createClient } from '../lib/ai-client';
 import { PENDING_MEDIA, preferenceOnly, uid } from '../lib/project';
 import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { GENERATION_MODE_KEY, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
-import { encodeReference, referenceCards, supportsReferences, withNotes } from '../lib/consistency';
+import {
+  encodeReference,
+  referenceCards,
+  supportsReferences,
+  withNotes,
+  withReferenceRoles,
+} from '../lib/consistency';
 import { initialConfig, redact, saveProfile } from '../lib/preferences';
 import { desktopBridge } from '../lib/platform';
 import { CARD_CENTER } from '../lib/canvas-camera';
@@ -344,7 +350,7 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
           : [];
         if (!current(task)) return;
         const result = await client.generateImage({
-          prompt: prompted,
+          prompt: withReferenceRoles(prompted, sources),
           references,
           signal: task.controller.signal,
         });

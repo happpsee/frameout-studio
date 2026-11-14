@@ -14,6 +14,8 @@ import { useWorkflow } from '../hooks/useWorkflow';
 import { useExampleImport } from '../hooks/useExampleImport';
 import { useNotes } from '../hooks/useNotes';
 import { linkedIds } from '../lib/notes';
+import { arrange, tidy, type ArrangeMode } from '../lib/canvas-layout';
+import { nextRole } from '../lib/consistency';
 import { thumbnails, wantsOriginal } from '../lib/thumbnails';
 import { CanvasNote } from './CanvasNote';
 import CardPrompt from './CardPrompt';
@@ -394,6 +396,26 @@ export default function Studio({
     },
     [projectRef, update, toast, generation.config.provider],
   );
+  const arrangeCards = (ids: string[], mode: ArrangeMode) => {
+    const positions = arrange(
+      projectRef.current.cards.filter(card => ids.includes(card.id)),
+      mode,
+    );
+    update(draft => {
+      for (const card of draft.cards) Object.assign(card, positions.get(card.id));
+    });
+  };
+  const tidyCanvas = useCallback(() => {
+    const placed = tidy(projectRef.current);
+    if (!placed.cards.size && !placed.notes.size) return;
+    cancelGesture();
+    update(draft => {
+      for (const card of draft.cards) Object.assign(card, placed.cards.get(card.id));
+      for (const note of draft.notes ?? []) Object.assign(note, placed.notes.get(note.id));
+    });
+    fitCanvas();
+    toast('已整理画布 · 可以撤销');
+  }, [projectRef, update, cancelGesture, fitCanvas, toast]);
   const guardedUndo = () => {
     canvas.cancelGesture();
     if (!active) undo();
@@ -485,6 +507,9 @@ export default function Studio({
       } else if (mod && ['+', '=', '-'].includes(event.key)) {
         event.preventDefault();
         zoomBy(event.key === '-' ? 1 / 1.2 : 1.2);
+      } else if (event.altKey && event.shiftKey && event.code === 'KeyF') {
+        event.preventDefault();
+        tidyCanvas();
       } else if (event.key === '0') {
         event.preventDefault();
         fitCanvas();
@@ -514,6 +539,7 @@ export default function Studio({
     projectRef,
     removeSelected,
     update,
+    tidyCanvas,
   ]);
 
   // Shots the preview and export can play: skips missing or unfinished media.
@@ -662,6 +688,7 @@ export default function Studio({
       onTool={canvas.setTool}
       onUpload={() => fileInput.current?.click()}
       onAddNote={notes.add}
+      onTidy={tidyCanvas}
       assetsOpen={assetsOpen}
       onToggleAssets={() => {
         setPanelTab(null);
@@ -862,6 +889,15 @@ export default function Studio({
                   onRegenerate={() => void generation.regenerate(selected)}
                   onResume={() => void generation.resume(selected)}
                   onToggleReference={() => toggleReference(selected.id)}
+                  onCycleRole={() =>
+                    update(draft => {
+                      const card = draft.cards.find(item => item.id === selected.id);
+                      if (!card) return;
+                      const role = nextRole(card.role);
+                      if (role) card.role = role;
+                      else delete card.role;
+                    })
+                  }
                   onAddShot={() => addToSequence(selected.id)}
                   onDownload={() => void generation.download(selected)}
                   onRemove={removeSelected}
@@ -889,6 +925,7 @@ export default function Studio({
                 busy={active}
                 toast={toast}
                 onAddShots={addToSequence}
+                onArrange={arrangeCards}
               />
 
               {!desktop && composer}

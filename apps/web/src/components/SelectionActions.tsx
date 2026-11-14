@@ -1,6 +1,6 @@
 import type { CSSProperties, RefObject } from 'react';
 import type { Card } from '../types';
-import { usableReference } from '../lib/consistency';
+import { REFERENCE_ROLES, usableReference } from '../lib/consistency';
 import { failedImage } from '../lib/failed-image';
 import type { Regeneration } from '../lib/regenerate';
 import { jobEnded, pending } from './CanvasCard';
@@ -22,6 +22,8 @@ interface SelectionActionsProps {
   onRegenerate: () => void;
   onResume: () => void;
   onToggleReference: () => void;
+  /** Steps a reference through 角色 / 场景 / 道具 / 风格 / unset. */
+  onCycleRole?: () => void;
   onAddShot: () => void;
   onDownload: () => void;
   onRemove: () => void;
@@ -40,6 +42,7 @@ export default function SelectionActions({
   onRegenerate,
   onResume,
   onToggleReference,
+  onCycleRole,
   onAddShot,
   onDownload,
   onRemove,
@@ -88,6 +91,16 @@ export default function SelectionActions({
         >
           <Icon name="copy" />
           <span>{isReference ? '取消参考' : '设为参考'}</span>
+        </button>
+      )}
+      {isReference && onCycleRole && (
+        <button
+          type="button"
+          className="fo-small-button"
+          title="告诉模型这张参考图是什么：角色、场景、道具或风格。再点切换"
+          onClick={onCycleRole}
+        >
+          <span>{card.role ? `用途：${REFERENCE_ROLES[card.role].label}` : '标注用途'}</span>
         </button>
       )}
       {!failed && (

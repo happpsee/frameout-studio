@@ -2,6 +2,7 @@ import { memo } from 'react';
 import type { Card } from '../types';
 import { CARD_HEIGHT, CARD_WIDTH } from '../lib/canvas-camera';
 import { failedImage } from '../lib/failed-image';
+import { REFERENCE_ROLES } from '../lib/consistency';
 import { CardMedia } from './CardMedia';
 import Icon from './Icon';
 import './CanvasCard.css';
@@ -109,7 +110,11 @@ export const CanvasCard = memo(function CanvasCard({
           </>
         )}
         {pending(card) && !failed && <span className="fo-job-status">{videoStatus(card)}</span>}
-        {reference && <span className="fo-reference-badge">参考</span>}
+        {reference && (
+          <span className="fo-reference-badge">
+            {card.role ? `参考 · ${REFERENCE_ROLES[card.role].label}` : '参考'}
+          </span>
+        )}
       </button>
       <div className="fo-card-bottom">
         <span title={card.prompt}>{card.name}</span>

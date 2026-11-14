@@ -95,6 +95,7 @@ const paths: Record<string, ReactNode> = {
   ),
   grip: <path d="M9 5v.1M15 5v.1M9 12v.1M15 12v.1M9 19v.1M15 19v.1" strokeWidth="3" />,
   save: <path d="M4 3h13l4 4v14H3V3h1Zm3 0v6h10V3M7 21v-8h10v8" />,
+  tidy: <path d="M4 5h6v6H4zM14 5h6v6h-6zM4 15h6v4H4zM14 15h6v4h-6z" />,
   text: <path d="M5 6h14M5 11h14M5 16h9" />,
   list: <path d="M9 6h11M9 12h11M9 18h11M4 6h.1M4 12h.1M4 18h.1" />,
   home: <path d="m3 10 9-7 9 7v11h-7v-7h-4v7H3V10Z" />,

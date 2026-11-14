@@ -18,7 +18,7 @@ const card = (id: string, x: number, extra: Partial<Card> = {}): Card => ({
 const commits: ProjectState[] = [];
 let selection: MultiSelection;
 
-function Harness({ busy = false, onAddShots = vi.fn(), toast = vi.fn() }) {
+function Harness({ busy = false, onAddShots = vi.fn(), onArrange = vi.fn(), toast = vi.fn() }) {
   const [project, setProject] = useState<ProjectState>({
     version: 1,
     title: 't',
@@ -50,6 +50,7 @@ function Harness({ busy = false, onAddShots = vi.fn(), toast = vi.fn() }) {
         busy={busy}
         toast={toast}
         onAddShots={onAddShots}
+        onArrange={onArrange}
       />
       <output data-testid="cards">{project.cards.map(c => c.id).join(',')}</output>
     </>
@@ -67,6 +68,19 @@ describe('MultiSelectionBar', () => {
     expect(screen.queryByText(/已选/)).toBeNull();
     act(() => selection.toggle('b'));
     expect(screen.getByText('已选 2 个')).toBeTruthy();
+  });
+  it('offers the three arrangements for the selected cards', () => {
+    const onArrange = vi.fn();
+    render(<Harness onArrange={onArrange} />);
+    act(() => selection.add(['a', 'b']));
+    fireEvent.click(screen.getByRole('button', { name: '宫格排列' }));
+    fireEvent.click(screen.getByRole('button', { name: '横向排列' }));
+    fireEvent.click(screen.getByRole('button', { name: '纵向排列' }));
+    expect(onArrange.mock.calls).toEqual([
+      [['a', 'b'], 'grid'],
+      [['a', 'b'], 'row'],
+      [['a', 'b'], 'column'],
+    ]);
   });
   it('adds finished cards to the cut in visual order', () => {
     const onAddShots = vi.fn();
