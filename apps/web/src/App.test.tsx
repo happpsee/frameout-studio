@@ -332,7 +332,7 @@ describe('web navigation', () => {
     frame();
     expect((document.querySelector('#studio-root') as HTMLElement).hidden).toBe(true);
     expect(findProject(project.id)).toMatchObject({ shotCount: 1, durationSeconds: 4 });
-    fireEvent.keyDown(document, { key: 'z', ctrlKey: true });
+    fireEvent.keyDown(document, { key: 'z', code: 'KeyZ', ctrlKey: true });
     fireEvent.click(screen.getByRole('button', { name: '打开项目：森林' }));
     frame();
     frame();

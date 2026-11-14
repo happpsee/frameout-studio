@@ -1,5 +1,14 @@
-import { useEffect, type RefObject } from 'react';
+import type { RefObject } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
 import type { ProjectState, UpdateProject } from '../../types';
+
+/** Shortcuts wait while the user is typing, using the side panel, or a dialog is open. */
+const busyElsewhere = (event: KeyboardEvent) =>
+  Boolean(
+    (event.target as Element)?.closest?.(
+      '.fo-work-panel,input,textarea,select,[role="combobox"],[role="listbox"],[contenteditable="true"]',
+    ) || document.querySelector('dialog[open]'),
+  );
 
 /** Keyboard shortcuts of the studio: undo and redo, zoom, fit, tidy, delete, tools, Escape. */
 export function useStudioShortcuts({
@@ -33,64 +42,39 @@ export function useStudioShortcuts({
   tidyCanvas: () => void;
   setZoomOpen: (open: boolean) => void;
 }) {
-  useEffect(() => {
-    if (!isActive) return;
-    const keydown = (event: KeyboardEvent) => {
-      if (
-        (event.target as Element)?.closest?.(
-          '.fo-work-panel,input,textarea,select,[role="combobox"],[role="listbox"],[contenteditable="true"]',
-        ) ||
-        document.querySelector('dialog[open]')
-      )
-        return;
-      const mod = event.metaKey || event.ctrlKey;
-      if (mod && event.key.toLowerCase() === 'z') {
-        event.preventDefault();
-        cancelGesture();
-        if (!active) {
-          if (event.shiftKey) redo();
-          else undo();
-        }
-      } else if (mod && event.key.toLowerCase() === 'y') {
-        event.preventDefault();
-        cancelGesture();
-        if (!active) redo();
-      } else if (mod && ['+', '=', '-'].includes(event.key)) {
-        event.preventDefault();
-        zoomBy(event.key === '-' ? 1 / 1.2 : 1.2);
-      } else if (event.altKey && event.shiftKey && event.code === 'KeyF') {
-        event.preventDefault();
-        tidyCanvas();
-      } else if (event.key === '0') {
-        event.preventDefault();
-        fitCanvas();
-      } else if (['Delete', 'Backspace'].includes(event.key) && projectRef.current.selected) {
-        event.preventDefault();
-        removeSelected();
-      } else if (!mod && event.key.toLowerCase() === 'v') setTool('select');
-      else if (!mod && event.key.toLowerCase() === 'h') setTool('hand');
-      else if (event.key === 'Escape') {
-        setZoomOpen(false);
-        update(draft => {
-          draft.selected = null;
-        }, false);
-      }
-    };
-    document.addEventListener('keydown', keydown);
-    return () => document.removeEventListener('keydown', keydown);
-  }, [
-    isActive,
-    active,
-    undo,
-    redo,
-    cancelGesture,
-    fitCanvas,
-    zoomBy,
-    setTool,
-    projectRef,
-    removeSelected,
-    update,
-    tidyCanvas,
-    setZoomOpen,
-  ]);
+  const on = { enabled: isActive, ignoreEventWhen: busyElsewhere, preventDefault: true };
+  // These keys keep their normal browser meaning when the shortcut does nothing.
+  const passive = { ...on, preventDefault: false };
+  const history = (step: () => void) => () => {
+    cancelGesture();
+    if (!active) step();
+  };
+
+  useHotkeys('mod+z', history(undo), on);
+  useHotkeys(['mod+shift+z', 'mod+y'], history(redo), on);
+  useHotkeys(['mod+equal', 'mod+shift+equal', 'mod+add'], () => zoomBy(1.2), on);
+  useHotkeys(['mod+minus', 'mod+subtract'], () => zoomBy(1 / 1.2), on);
+  useHotkeys(['0', 'mod+0'], () => fitCanvas(), on);
+  useHotkeys('alt+shift+f', () => tidyCanvas(), on);
+  useHotkeys('v', () => setTool('select'), passive);
+  useHotkeys('h', () => setTool('hand'), passive);
+  useHotkeys(
+    ['delete', 'backspace'],
+    event => {
+      if (!projectRef.current.selected) return;
+      event.preventDefault();
+      removeSelected();
+    },
+    passive,
+  );
+  useHotkeys(
+    'escape',
+    () => {
+      setZoomOpen(false);
+      update(draft => {
+        draft.selected = null;
+      }, false);
+    },
+    passive,
+  );
 }
