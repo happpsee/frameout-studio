@@ -1,6 +1,6 @@
 import type { Card } from '../../types';
-import { CARD_HEIGHT, CARD_WIDTH } from '../../lib/canvas-camera';
-import { EXAMPLE_LABEL, uid } from '../../lib/project';
+import { CARD_HEIGHT, CARD_WIDTH } from '../../core/canvas/canvas-camera';
+import { EXAMPLE_LABEL, uid } from '../../core/project/project';
 
 export interface StudioExample {
   id: 'forest' | 'ocean' | 'city';

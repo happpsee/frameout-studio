@@ -1,6 +1,6 @@
 import { useId, useState } from 'react';
-import { readStoredValue, writeStoredValue } from '../../lib/desktop-storage';
-import { isDesktop } from '../../lib/platform';
+import { readStoredValue, writeStoredValue } from '../../core/project/desktop-storage';
+import { isDesktop } from '../../platform';
 import '../../styles/browser-notice.css';
 
 export const BROWSER_NOTICE_KEY = 'frameout-browser-storage-notice-v1';

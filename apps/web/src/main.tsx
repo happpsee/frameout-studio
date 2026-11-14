@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { loadDesktopStorage } from './lib/desktop-storage';
+import { loadDesktopStorage } from './core/project/desktop-storage';
 import { loadRememberedKeys } from './shell/settings/secrets';
-import { desktopBridge } from './lib/platform';
+import { desktopBridge } from './platform';
 import './styles/app.css';
 import './styles/studio.css';
 import './styles/select-control.css';

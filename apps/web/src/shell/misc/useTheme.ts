@@ -1,5 +1,5 @@
 import { useLayoutEffect, useSyncExternalStore } from 'react';
-import { THEME_KEY, readStoredValue, writeStoredValue } from '../../lib/desktop-storage';
+import { THEME_KEY, readStoredValue, writeStoredValue } from '../../core/project/desktop-storage';
 
 type Theme = 'dark' | 'light';
 export type ThemePreference = Theme | 'system';

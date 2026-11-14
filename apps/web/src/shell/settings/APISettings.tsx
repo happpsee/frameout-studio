@@ -3,7 +3,7 @@ import type { AIConfig, Provider } from '../../types';
 import { createClient, PROVIDERS, validateBaseUrl } from '@frameout/shared';
 import { loadProfiles, providerIds, redact, saveProfile, startingProfile } from './preferences';
 import { canRememberKeys, rememberKey, rememberedKey } from './secrets';
-import { desktopBridge } from '../../lib/platform';
+import { desktopBridge } from '../../platform';
 import Select from '../../ui/Select';
 import Icon from '../../ui/Icon';
 import ModelSection from './APIModelSection';

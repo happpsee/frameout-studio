@@ -1,7 +1,7 @@
 import type { AIConfig } from '../../types';
 import { PROVIDERS } from '@frameout/shared';
 import { hasModelList, parameterOptions } from './model-options';
-import { isDesktop } from '../../lib/platform';
+import { isDesktop } from '../../platform';
 import ModelField from './ModelField';
 import Select from '../../ui/Select';
 

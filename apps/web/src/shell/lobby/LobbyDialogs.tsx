@@ -1,6 +1,6 @@
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { closeOnBackdropClick } from '../../ui/dialog';
-import type { ProjectSummary } from '../../lib/projects';
+import type { ProjectSummary } from '../../core/project/projects';
 import Icon from '../../ui/Icon';
 import { TRASH_DAYS, daysLeft, timeAgo } from './format';
 

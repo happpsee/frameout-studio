@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef } from 'react';
 import { closeOnBackdropClick } from '../../ui/dialog';
-import { isDesktop } from '../../lib/platform';
+import { isDesktop } from '../../platform';
 import Icon from '../../ui/Icon';
 import '../../styles/help-steps.css';
 

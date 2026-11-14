@@ -1,6 +1,6 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
-import { getMedia } from '../../lib/media-store';
-import type { ProjectSummary } from '../../lib/projects';
+import { getMedia } from '../../core/project/media-store';
+import type { ProjectSummary } from '../../core/project/projects';
 import Icon from '../../ui/Icon';
 import { projectStage, projectStatus, timeAgo } from './format';
 

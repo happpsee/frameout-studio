@@ -1,4 +1,4 @@
-import type { ProjectSummary } from '../../lib/projects';
+import type { ProjectSummary } from '../../core/project/projects';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;

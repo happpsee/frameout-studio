@@ -15,22 +15,22 @@ const MAX_FUNCTION_LINES = 150;
 const OVERSIZED_FILES = [
   'packages/shared/src/ai-client.ts',
   'apps/web/src/shell/landing/Landing.tsx',
-  'apps/web/src/components/Studio.tsx',
-  'apps/web/src/hooks/useCanvas.ts',
-  'apps/web/src/hooks/useGeneration.ts',
+  'apps/web/src/core/Studio.tsx',
+  'apps/web/src/core/canvas/useCanvas.ts',
+  'apps/web/src/core/generation/useGeneration.ts',
 ];
 /** Components and hooks whose main function is over the limit. Same rule: split, then remove. */
 const OVERSIZED_FUNCTIONS = [
   ...OVERSIZED_FILES,
   'apps/web/src/shell/settings/APISettings.tsx',
-  'apps/web/src/components/ExportDialog.tsx',
-  'apps/web/src/components/PreviewDialog.tsx',
+  'apps/web/src/core/film/ExportDialog.tsx',
+  'apps/web/src/core/film/PreviewDialog.tsx',
   'apps/web/src/ui/Select.tsx',
-  'apps/web/src/components/Sequence.tsx',
-  'apps/web/src/components/WorkflowPanel.tsx',
+  'apps/web/src/core/film/Sequence.tsx',
+  'apps/web/src/core/generation/WorkflowPanel.tsx',
   'apps/web/src/shell/landing/useLandingMotion.ts',
-  'apps/web/src/hooks/useWorkflow.ts',
-  'apps/web/src/hooks/useWorkspace.ts',
+  'apps/web/src/core/generation/useWorkflow.ts',
+  'apps/web/src/core/project/useWorkspace.ts',
 ];
 
 export default tseslint.config(
@@ -79,7 +79,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/web/src/lib/platform.ts'],
+    files: ['apps/web/src/platform.ts'],
     rules: { 'no-restricted-syntax': 'off' },
   },
   {

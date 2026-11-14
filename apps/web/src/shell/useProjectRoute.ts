@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DESKTOP_INTRO_KEY, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
+import {
+  DESKTOP_INTRO_KEY,
+  readStoredValue,
+  writeStoredValue,
+} from '../core/project/desktop-storage';
 import { peekExampleRequest } from './misc/examples';
-import { isDesktop } from '../lib/platform';
+import { isDesktop } from '../platform';
 import {
   createProject,
   findProject,
@@ -10,7 +14,7 @@ import {
   markProjectOpened,
   prepareProject,
   subscribeProjects,
-} from '../lib/projects';
+} from '../core/project/projects';
 
 type Route = { view: 'intro' } | { view: 'lobby' } | { view: 'studio'; projectId: string };
 interface Resolved {

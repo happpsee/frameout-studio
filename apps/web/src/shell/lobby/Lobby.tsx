@@ -10,7 +10,7 @@ import {
   renameProject,
   restoreDeletedProject,
   subscribeProjects,
-} from '../../lib/projects';
+} from '../../core/project/projects';
 import Icon from '../../ui/Icon';
 import { DeleteDialog, RenameDialog, TrashDialog } from './LobbyDialogs';
 import LobbyHeader from './LobbyHeader';

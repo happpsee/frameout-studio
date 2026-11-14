@@ -3,15 +3,15 @@ import { StrictMode } from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
-import { initialState } from './lib/project';
+import { initialState } from './core/project/project';
 import {
   DESKTOP_INTRO_KEY,
   PROJECT_STORAGE_KEY,
   PROJECTS_INDEX_KEY,
   flushDesktopStorage,
   loadDesktopStorage,
-} from './lib/desktop-storage';
-import { createProject, findProject, listProjects, projectDataKeys } from './lib/projects';
+} from './core/project/desktop-storage';
+import { createProject, findProject, listProjects, projectDataKeys } from './core/project/projects';
 import { requestExample } from './shell/misc/examples';
 import type { ProjectState } from './types';
 
@@ -35,7 +35,7 @@ vi.mock('./shell/landing/Landing', () => ({
 }));
 // The real list is built separately; this stand-in only needs the same props and store.
 vi.mock('./shell/lobby/Lobby', async () => {
-  const projects = await import('./lib/projects');
+  const projects = await import('./core/project/projects');
   const { useSyncExternalStore } = await import('react');
   return {
     default: function Lobby({

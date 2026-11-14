@@ -1,9 +1,13 @@
 import { useEffect } from 'react';
 import Landing from './shell/landing/Landing';
 import Lobby from './shell/lobby/Lobby';
-import Studio from './components/Studio';
-import { DESKTOP_INTRO_KEY, flushDesktopStorage, readStoredValue } from './lib/desktop-storage';
-import { desktopBridge, isDesktop } from './lib/platform';
+import Studio from './core/Studio';
+import {
+  DESKTOP_INTRO_KEY,
+  flushDesktopStorage,
+  readStoredValue,
+} from './core/project/desktop-storage';
+import { desktopBridge, isDesktop } from './platform';
 import { markIntroSeen, useProjectRoute } from './shell/useProjectRoute';
 
 const TITLES = {
