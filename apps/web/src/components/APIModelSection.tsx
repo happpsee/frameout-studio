@@ -1,5 +1,5 @@
 import type { AIConfig } from '../types';
-import { PROVIDERS } from '../lib/ai-client';
+import { PROVIDERS } from '@frameout/shared';
 import { hasModelList, parameterOptions } from '../lib/model-options';
 import { isDesktop } from '../lib/platform';
 import ModelField from './ModelField';

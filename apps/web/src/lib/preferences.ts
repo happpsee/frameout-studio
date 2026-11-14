@@ -1,5 +1,4 @@
-import { PROVIDER_IDS } from '@frameout/shared';
-import { PROVIDERS } from './ai-client';
+import { PROVIDER_IDS, PROVIDERS } from '@frameout/shared';
 import type { AIConfig, Provider } from '../types';
 import { preferenceOnly } from './project';
 import { rememberedKey } from './secrets';

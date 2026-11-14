@@ -1,18 +1,7 @@
-import type { ProviderId } from '@frameout/shared';
+import type { AIConfig, ProviderId } from '@frameout/shared';
 
+export type { AIConfig };
 export type Provider = ProviderId;
-export interface AIConfig {
-  provider: Provider;
-  baseUrl: string;
-  key: string;
-  imageModel: string;
-  videoModel: string;
-  imageSize: string;
-  duration: number;
-  videoRatio: string;
-  resolution: string;
-  transport: 'proxy' | 'direct';
-}
 export type ReferenceRole = 'character' | 'scene' | 'prop' | 'style';
 export interface VideoJob {
   id: string;

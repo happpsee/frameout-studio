@@ -13,11 +13,11 @@ const MAX_FUNCTION_LINES = 150;
  * remove an entry once its file fits. Do not add new entries.
  */
 const OVERSIZED_FILES = [
+  'packages/shared/src/ai-client.ts',
   'apps/web/src/components/Landing.tsx',
   'apps/web/src/components/Studio.tsx',
   'apps/web/src/hooks/useCanvas.ts',
   'apps/web/src/hooks/useGeneration.ts',
-  'apps/web/src/lib/ai-client.ts',
 ];
 /** Components and hooks whose main function is over the limit. Same rule: split, then remove. */
 const OVERSIZED_FUNCTIONS = [
@@ -86,7 +86,7 @@ export default tseslint.config(
     files: [
       'apps/server/**/*.ts',
       'apps/desktop/**/*.ts',
-      'packages/**/*.ts',
+      'packages/**/*.{ts,js}',
       'tools/**/*.mts',
       '**/vite.config.ts',
       '*.mjs',

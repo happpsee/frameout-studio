@@ -1,5 +1,5 @@
 import type { AIConfig } from '../types';
-import { PROVIDERS } from '../lib/ai-client';
+import { PROVIDERS } from '@frameout/shared';
 import { parameterOptions } from '../lib/model-options';
 import Select from './Select';
 import '../styles/composer-parameters.css';

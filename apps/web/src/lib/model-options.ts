@@ -1,6 +1,6 @@
 // Choices shown in the model dropdowns and the generation parameter pickers.
-// Model IDs here must match ones the adapters in ai-client.ts already handle.
-import { PROVIDERS } from './ai-client';
+// Model IDs here must match ones the adapters in packages/shared/src/ai-client.ts already handle.
+import { PROVIDERS } from '@frameout/shared';
 import type { AIConfig, Provider } from '../types';
 
 export type ModelKind = 'image' | 'video';

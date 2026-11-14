@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MODERATION_MESSAGE, moderationMessage, submitFailure } from './provider-errors';
+import { MODERATION_MESSAGE, moderationMessage, submitFailure } from './provider-errors.ts';
 
 describe('moderationMessage', () => {
   it('recognizes provider safety codes and messages', () => {

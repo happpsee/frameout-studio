@@ -1,14 +1,15 @@
 // Pure provider adapters; request credentials are never persisted.
+import type { AIConfig } from './ai-config.ts';
+import { moderationMessage } from './provider-errors.ts';
 import {
   OFFICIAL_BASE_URLS,
   PROVIDER_CAPABILITIES,
   PROVIDER_KEY_PAGES,
-  RELAY_PATH,
-  type RelayEnvelope,
-} from '@frameout/shared';
-import type { AIConfig, Provider } from '../types';
-import { moderationMessage } from './provider-errors';
+  type ProviderId,
+} from './providers.ts';
+import { RELAY_PATH, type RelayEnvelope } from './relay.ts';
 
+type Provider = ProviderId;
 type ProviderPreset = {
   label: string;
   baseUrl: string;
@@ -258,7 +259,8 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
       controller.abort();
     }, timeoutMs);
     try {
-      const init: RequestInit = {
+      // `cache` is a browser fetch option that Node's fetch types leave out.
+      const init: RequestInit & { cache?: 'no-store' } = {
         signal: controller.signal,
         credentials: 'omit',
         redirect: 'error',

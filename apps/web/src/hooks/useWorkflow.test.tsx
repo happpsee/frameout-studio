@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useWorkspace } from './useWorkspace';
 import { useGeneration } from './useGeneration';
 import { useWorkflow } from './useWorkflow';
-import { createClient } from '../lib/ai-client';
+import { createClient } from '@frameout/shared';
 import { defaults } from '../lib/preferences';
 import { getMedia } from '../lib/media-store';
 import { initialState, serializeProject } from '../lib/project';
@@ -13,8 +13,8 @@ import { projectDataKeys } from '../lib/projects';
 const TEST_PROJECT = 'test';
 const STORAGE_KEY = projectDataKeys(TEST_PROJECT).project;
 
-vi.mock('../lib/ai-client', async original => ({
-  ...(await original<typeof import('../lib/ai-client')>()),
+vi.mock('@frameout/shared', async original => ({
+  ...(await original<typeof import('@frameout/shared')>()),
   createClient: vi.fn(),
 }));
 vi.mock('../lib/media-store', async original => ({

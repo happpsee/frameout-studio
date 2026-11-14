@@ -7,7 +7,7 @@ import type {
   UpdateProject,
   VideoJob,
 } from '../types';
-import { createClient } from '../lib/ai-client';
+import { createClient, PROVIDER_CAPABILITIES, submitFailure } from '@frameout/shared';
 import { PENDING_MEDIA, preferenceOnly, uid } from '../lib/project';
 import { DesktopMediaTooLargeError, putMedia } from '../lib/media-store';
 import { GENERATION_MODE_KEY, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
@@ -21,8 +21,6 @@ import {
 import { initialConfig, redact, saveProfile } from '../lib/preferences';
 import { desktopBridge } from '../lib/platform';
 import { CARD_CENTER } from '../lib/canvas-camera';
-import { PROVIDER_CAPABILITIES } from '@frameout/shared';
-import { submitFailure } from '../lib/provider-errors';
 import { regeneration } from '../lib/regenerate';
 import { failedImageCard, placeImageCard } from '../lib/failed-image';
 import { askNotificationPermission, useCompletionNotice } from './useCompletionNotice';

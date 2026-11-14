@@ -14,8 +14,8 @@ import { loadRememberedKeys } from '../lib/secrets';
 import type { AIConfig } from '../types';
 
 const mocked = vi.hoisted(() => ({ createClient: vi.fn(), connect: vi.fn() }));
-vi.mock('../lib/ai-client', async importOriginal => ({
-  ...(await importOriginal<typeof import('../lib/ai-client')>()),
+vi.mock('@frameout/shared', async importOriginal => ({
+  ...(await importOriginal<typeof import('@frameout/shared')>()),
   createClient: mocked.createClient,
 }));
 

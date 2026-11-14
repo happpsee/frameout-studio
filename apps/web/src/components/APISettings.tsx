@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { AIConfig, Provider } from '../types';
-import { createClient, PROVIDERS, validateBaseUrl } from '../lib/ai-client';
+import { createClient, PROVIDERS, validateBaseUrl } from '@frameout/shared';
 import {
   loadProfiles,
   providerIds,

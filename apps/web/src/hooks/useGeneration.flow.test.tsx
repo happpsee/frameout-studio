@@ -1,14 +1,14 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useGeneration } from './useGeneration';
-import { AIError, createClient } from '../lib/ai-client';
+import { AIError, createClient } from '@frameout/shared';
 import { putMedia } from '../lib/media-store';
 import { initialState, preferenceOnly } from '../lib/project';
 import { defaults } from '../lib/preferences';
 import type { AIConfig, Card, ProjectState, UpdateProject } from '../types';
 
-vi.mock('../lib/ai-client', async importOriginal => ({
-  ...(await importOriginal<typeof import('../lib/ai-client')>()),
+vi.mock('@frameout/shared', async importOriginal => ({
+  ...(await importOriginal<typeof import('@frameout/shared')>()),
   createClient: vi.fn(),
 }));
 vi.mock('../lib/media-store', async importOriginal => ({
