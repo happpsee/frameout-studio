@@ -474,39 +474,29 @@ export function useCanvas(options: Options) {
     const blur = () => {
       if (latest.current.active !== false) reset();
     };
-    viewport.addEventListener('wheel', wheel, { passive: false });
-    viewport.addEventListener('pointerdown', down);
-    viewport.addEventListener('pointermove', move);
-    viewport.addEventListener('pointerup', end);
-    viewport.addEventListener('pointercancel', end);
-    viewport.addEventListener('lostpointercapture', end);
-    viewport.addEventListener('click', click, true);
-    viewport.addEventListener('dblclick', doubleClick);
-    viewport.addEventListener('dragover', dragover);
-    viewport.addEventListener('dragleave', dragleave);
-    viewport.addEventListener('drop', drop);
-    document.addEventListener('keydown', keydown);
-    document.addEventListener('keyup', keyup);
-    window.addEventListener('blur', blur);
+    // Every listener is tied to this signal, so one abort() removes them all.
+    const listeners = new AbortController();
+    const { signal } = listeners;
+    viewport.addEventListener('wheel', wheel, { passive: false, signal });
+    viewport.addEventListener('pointerdown', down, { signal });
+    viewport.addEventListener('pointermove', move, { signal });
+    viewport.addEventListener('pointerup', end, { signal });
+    viewport.addEventListener('pointercancel', end, { signal });
+    viewport.addEventListener('lostpointercapture', end, { signal });
+    viewport.addEventListener('click', click, { capture: true, signal });
+    viewport.addEventListener('dblclick', doubleClick, { signal });
+    viewport.addEventListener('dragover', dragover, { signal });
+    viewport.addEventListener('dragleave', dragleave, { signal });
+    viewport.addEventListener('drop', drop, { signal });
+    document.addEventListener('keydown', keydown, { signal });
+    document.addEventListener('keyup', keyup, { signal });
+    window.addEventListener('blur', blur, { signal });
     return () => {
       if (frame) cancelAnimationFrame(frame);
       camera.destroy();
       controller.current = null;
       cancelGesture.current = () => {};
-      viewport.removeEventListener('wheel', wheel);
-      viewport.removeEventListener('pointerdown', down);
-      viewport.removeEventListener('pointermove', move);
-      viewport.removeEventListener('pointerup', end);
-      viewport.removeEventListener('pointercancel', end);
-      viewport.removeEventListener('lostpointercapture', end);
-      viewport.removeEventListener('click', click, true);
-      viewport.removeEventListener('dblclick', doubleClick);
-      viewport.removeEventListener('dragover', dragover);
-      viewport.removeEventListener('dragleave', dragleave);
-      viewport.removeEventListener('drop', drop);
-      document.removeEventListener('keydown', keydown);
-      document.removeEventListener('keyup', keyup);
-      window.removeEventListener('blur', blur);
+      listeners.abort();
     };
   }, [toWorld, viewportPoint]);
   useEffect(() => {
