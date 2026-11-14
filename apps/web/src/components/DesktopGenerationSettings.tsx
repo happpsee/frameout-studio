@@ -1,9 +1,9 @@
 import type { AIConfig } from '../types';
 import { PROVIDERS } from '@frameout/shared';
-import { hasModelList, parameterOptions } from '../lib/model-options';
-import Icon from './Icon';
-import ModelField from './ModelField';
-import Select from './Select';
+import { hasModelList, parameterOptions } from '../shell/settings/model-options';
+import Icon from '../ui/Icon';
+import ModelField from '../shell/settings/ModelField';
+import Select from '../ui/Select';
 
 export default function DesktopGenerationSettings({
   config,

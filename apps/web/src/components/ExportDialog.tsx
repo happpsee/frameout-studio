@@ -10,8 +10,8 @@ import {
   type ExportQuality,
   type ExportRatio,
 } from '../lib/export-preferences';
-import Icon from './Icon';
-import Select from './Select';
+import Icon from '../ui/Icon';
+import Select from '../ui/Select';
 import { timeLabel } from './Sequence';
 import './ExportDialog.css';
 

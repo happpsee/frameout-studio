@@ -1,8 +1,8 @@
 import { memo, useState } from 'react';
 import type { Card, ProjectState, UpdateProject } from '../types';
 import { CardMedia } from './CardMedia';
-import Icon from './Icon';
-import Select from './Select';
+import Icon from '../ui/Icon';
+import Select from '../ui/Select';
 
 export const timeLabel = (seconds: number) =>
   `${Math.floor(seconds / 60)

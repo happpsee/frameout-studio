@@ -1,9 +1,9 @@
 import { PROVIDER_IDS, PROVIDERS } from '@frameout/shared';
-import type { AIConfig, Provider } from '../types';
-import { preferenceOnly } from './project';
+import type { AIConfig, Provider } from '../../types';
+import { preferenceOnly } from '../../lib/project';
 import { rememberedKey } from './secrets';
-import { PREFERENCES_KEY, readStoredValue, writeStoredValue } from './desktop-storage';
-export { PREFERENCES_KEY } from './desktop-storage';
+import { PREFERENCES_KEY, readStoredValue, writeStoredValue } from '../../lib/desktop-storage';
+export { PREFERENCES_KEY } from '../../lib/desktop-storage';
 export const providerIds: readonly Provider[] = PROVIDER_IDS;
 /**
  * Provider for someone who has not saved a choice yet. The interface is Chinese, and Volcano Ark

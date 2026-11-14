@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { Card } from '../types';
-import Icon from './Icon';
+import Icon from '../ui/Icon';
 import { timeLabel } from './Sequence';
-import { closeOnBackdropClick } from '../lib/dialog';
+import { closeOnBackdropClick } from '../ui/dialog';
 import PromptCopy from './PromptCopy';
 import PreviewSoundButton from './PreviewSoundButton';
 import { loadPreviewMuted, playPreviewClip, savePreviewMuted } from '../lib/preview-sound';

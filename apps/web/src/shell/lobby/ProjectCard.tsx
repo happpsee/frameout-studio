@@ -1,7 +1,7 @@
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { getMedia } from '../../lib/media-store';
 import type { ProjectSummary } from '../../lib/projects';
-import Icon from '../Icon';
+import Icon from '../../ui/Icon';
 import { projectStage, projectStatus, timeAgo } from './format';
 
 /** Resolves the cover from the media store, falling back to `coverSrc`. */

@@ -4,7 +4,7 @@ import { REFERENCE_ROLES, usableReference } from '../lib/consistency';
 import { failedImage } from '../lib/failed-image';
 import type { Regeneration } from '../lib/regenerate';
 import { jobEnded, pending } from './CanvasCard';
-import Icon from './Icon';
+import Icon from '../ui/Icon';
 import './SelectionActions.css';
 
 interface SelectionActionsProps {

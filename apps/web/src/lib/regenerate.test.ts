@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { regeneration } from './regenerate';
 import { preferenceOnly } from './project';
-import { defaults } from './preferences';
+import { defaults } from '../shell/settings/preferences';
 import { failedImageCard } from './failed-image';
 import type { Card, VideoJob } from '../types';
 

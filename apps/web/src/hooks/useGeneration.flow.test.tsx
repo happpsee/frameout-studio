@@ -4,7 +4,7 @@ import { useGeneration } from './useGeneration';
 import { AIError, createClient } from '@frameout/shared';
 import { putMedia } from '../lib/media-store';
 import { initialState } from '../lib/project';
-import { defaults } from '../lib/preferences';
+import { defaults } from '../shell/settings/preferences';
 import type { AIConfig, Card, ProjectState, UpdateProject } from '../types';
 
 vi.mock('@frameout/shared', async importOriginal => ({

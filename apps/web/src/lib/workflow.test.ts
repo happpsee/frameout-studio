@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createWorkflow, nextStep, workspaceDiff } from './workflow';
-import { defaults } from './preferences';
+import { defaults } from '../shell/settings/preferences';
 import { initialState, restoreProject, serializeProject } from './project';
 
 describe('shot plans and checkpoint persistence', () => {

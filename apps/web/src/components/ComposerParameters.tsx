@@ -1,7 +1,7 @@
 import type { AIConfig } from '../types';
 import { PROVIDERS } from '@frameout/shared';
-import { parameterOptions } from '../lib/model-options';
-import Select from './Select';
+import { parameterOptions } from '../shell/settings/model-options';
+import Select from '../ui/Select';
 import '../styles/composer-parameters.css';
 
 /** Web composer: the picture settings for the current mode, right next to the prompt. */

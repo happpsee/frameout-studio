@@ -3,7 +3,7 @@ import { createRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SelectionActions from './SelectionActions';
 import { preferenceOnly } from '../lib/project';
-import { defaults } from '../lib/preferences';
+import { defaults } from '../shell/settings/preferences';
 import type { Card } from '../types';
 import type { Regeneration } from '../lib/regenerate';
 

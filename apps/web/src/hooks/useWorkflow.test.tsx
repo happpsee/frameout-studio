@@ -5,7 +5,7 @@ import { useWorkspace } from './useWorkspace';
 import { useGeneration } from './useGeneration';
 import { useWorkflow } from './useWorkflow';
 import { createClient } from '@frameout/shared';
-import { defaults } from '../lib/preferences';
+import { defaults } from '../shell/settings/preferences';
 import { getMedia } from '../lib/media-store';
 import { initialState, serializeProject } from '../lib/project';
 import { createWorkflow } from '../lib/workflow';

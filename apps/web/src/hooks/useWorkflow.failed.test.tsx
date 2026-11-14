@@ -5,7 +5,7 @@ import { useWorkspace } from './useWorkspace';
 import { useGeneration } from './useGeneration';
 import { useWorkflow } from './useWorkflow';
 import { createClient } from '@frameout/shared';
-import { defaults } from '../lib/preferences';
+import { defaults } from '../shell/settings/preferences';
 import { failedImage } from '../lib/failed-image';
 
 vi.mock('@frameout/shared', async original => ({

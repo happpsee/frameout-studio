@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import type { Camera, ProjectState, UpdateProject } from '../types';
-import { CARD_CENTER, CARD_HEIGHT, CARD_WIDTH } from '../lib/canvas-camera';
-import { exampleCards, takeExampleRequest } from '../lib/examples';
-import { DEFAULT_PROJECT_TITLE } from '../lib/project';
+import type { Camera, ProjectState, UpdateProject } from '../../types';
+import { CARD_CENTER, CARD_HEIGHT, CARD_WIDTH } from '../../lib/canvas-camera';
+import { exampleCards, takeExampleRequest } from './examples';
+import { DEFAULT_PROJECT_TITLE } from '../../lib/project';
 
 interface ExampleImportOptions {
   /** Whether the studio is showing; an example request is picked up when it opens. */

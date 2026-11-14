@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Card, Provider } from '../types';
 import { MAX_NOTES, MAX_REFERENCES, supportsReferences } from '../lib/consistency';
-import Icon from './Icon';
+import Icon from '../ui/Icon';
 
 function referenceNote(provider: Provider) {
   if (provider === 'openai')

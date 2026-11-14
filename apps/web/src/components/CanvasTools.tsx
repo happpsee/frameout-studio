@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { isDesktop } from '../lib/platform';
-import Icon from './Icon';
+import Icon from '../ui/Icon';
 
 type CanvasTool = 'select' | 'hand';
 export type PanelTab = 'workflow' | 'versions';

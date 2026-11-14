@@ -1,8 +1,8 @@
 import { Fragment, useEffect, useRef } from 'react';
-import { closeOnBackdropClick } from '../lib/dialog';
-import { isDesktop } from '../lib/platform';
-import Icon from './Icon';
-import '../styles/help-steps.css';
+import { closeOnBackdropClick } from '../../ui/dialog';
+import { isDesktop } from '../../lib/platform';
+import Icon from '../../ui/Icon';
+import '../../styles/help-steps.css';
 
 /** Each line of a shortcut description is rendered on its own row. */
 const SHORTCUTS: { action: string; keys: string[] }[] = [

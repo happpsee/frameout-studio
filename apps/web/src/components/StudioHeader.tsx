@@ -1,7 +1,7 @@
 import { isDesktop } from '../lib/platform';
-import Icon from './Icon';
+import Icon from '../ui/Icon';
 import ProjectTitle from './ProjectTitle';
-import ThemeToggle from './ThemeToggle';
+import ThemeToggle from '../shell/misc/ThemeToggle';
 
 interface StudioHeaderProps {
   title: string;

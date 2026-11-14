@@ -5,8 +5,8 @@ import { isDesktop } from '../lib/platform';
 import ComposerParameters from './ComposerParameters';
 import { ConsistencyBar } from './ConsistencyDialog';
 import DesktopGenerationSettings from './DesktopGenerationSettings';
-import Icon from './Icon';
-import Select from './Select';
+import Icon from '../ui/Icon';
+import Select from '../ui/Select';
 
 const MODE_OPTIONS = [
   { value: 'image', label: '图片' },

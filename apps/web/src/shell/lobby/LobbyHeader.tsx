@@ -1,6 +1,6 @@
 import { type RefObject, useEffect } from 'react';
-import Icon from '../Icon';
-import ThemeToggle from '../ThemeToggle';
+import Icon from '../../ui/Icon';
+import ThemeToggle from '../misc/ThemeToggle';
 import { isApplePlatform } from './format';
 
 interface LobbyHeaderProps {

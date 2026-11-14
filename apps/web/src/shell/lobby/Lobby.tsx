@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { STUDIO_EXAMPLES, type StudioExample, requestExample } from '../lib/examples';
+import { STUDIO_EXAMPLES, type StudioExample, requestExample } from '../misc/examples';
 import {
   type ProjectSummary,
   createProject,
@@ -10,13 +10,13 @@ import {
   renameProject,
   restoreDeletedProject,
   subscribeProjects,
-} from '../lib/projects';
-import Icon from './Icon';
-import { DeleteDialog, RenameDialog, TrashDialog } from './lobby/LobbyDialogs';
-import LobbyHeader from './lobby/LobbyHeader';
-import ProjectCard from './lobby/ProjectCard';
-import { type ProjectStage, greeting, projectStage, timeAgo } from './lobby/format';
-import '../styles/lobby.css';
+} from '../../lib/projects';
+import Icon from '../../ui/Icon';
+import { DeleteDialog, RenameDialog, TrashDialog } from './LobbyDialogs';
+import LobbyHeader from './LobbyHeader';
+import ProjectCard from './ProjectCard';
+import { type ProjectStage, greeting, projectStage, timeAgo } from './format';
+import '../../styles/lobby.css';
 
 interface LobbyProps {
   onOpenProject: (id: string) => void;

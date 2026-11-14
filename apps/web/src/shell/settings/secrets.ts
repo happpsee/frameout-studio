@@ -1,6 +1,6 @@
 import { PROVIDER_IDS } from '@frameout/shared';
-import type { Provider } from '../types';
-import { desktopBridge } from './platform';
+import type { Provider } from '../../types';
+import { desktopBridge } from '../../lib/platform';
 
 // Desktop only: API keys the user opted to remember, decrypted by the main process.
 // The browser build never persists keys, so everything here is a no-op there.

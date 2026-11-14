@@ -9,9 +9,9 @@ import {
   loadProfiles,
   PREFERENCES_KEY,
   startingProfile,
-} from '../lib/preferences';
-import { loadRememberedKeys } from '../lib/secrets';
-import type { AIConfig } from '../types';
+} from './preferences';
+import { loadRememberedKeys } from './secrets';
+import type { AIConfig } from '../../types';
 
 const mocked = vi.hoisted(() => ({ createClient: vi.fn(), connect: vi.fn() }));
 vi.mock('@frameout/shared', async importOriginal => ({

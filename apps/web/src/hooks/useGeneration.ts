@@ -18,12 +18,12 @@ import {
   withNotes,
   withReferenceRoles,
 } from '../lib/consistency';
-import { initialConfig, redact, saveProfile } from '../lib/preferences';
+import { initialConfig, redact, saveProfile } from '../shell/settings/preferences';
 import { desktopBridge } from '../lib/platform';
 import { CARD_CENTER } from '../lib/canvas-camera';
 import { regeneration } from '../lib/regenerate';
 import { failedImageCard, placeImageCard } from '../lib/failed-image';
-import { askNotificationPermission, useCompletionNotice } from './useCompletionNotice';
+import { askNotificationPermission, useCompletionNotice } from '../shell/misc/useCompletionNotice';
 
 // openSettings shows the API settings with a reason; without it, missing settings fall back to a toast.
 type Options = {

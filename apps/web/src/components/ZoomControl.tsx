@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { clamp } from '../lib/canvas-camera';
-import Icon from './Icon';
+import Icon from '../ui/Icon';
 
 const MIN_ZOOM_PERCENT = 15;
 const MAX_ZOOM_PERCENT = 400;

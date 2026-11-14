@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { type ThemePreference, useTheme } from '../hooks/useTheme';
+import { type ThemePreference, useTheme } from './useTheme';
 
 const LABELS: Record<ThemePreference, string> = {
   dark: '深色',

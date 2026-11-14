@@ -1,9 +1,9 @@
 import { useRef } from 'react';
-import Icon from './Icon';
-import { useLandingMotion } from '../hooks/useLandingMotion';
-import { requestExample } from '../lib/examples';
-import '../styles/landing-zh.css';
-import '../styles/landing-examples.css';
+import Icon from '../../ui/Icon';
+import { useLandingMotion } from './useLandingMotion';
+import { requestExample } from '../misc/examples';
+import '../../styles/landing-zh.css';
+import '../../styles/landing-examples.css';
 
 interface LandingProps {
   onOpenStudio: () => void;

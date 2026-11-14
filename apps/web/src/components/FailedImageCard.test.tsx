@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CanvasCard } from './CanvasCard';
 import PlanToSequence from './PlanToSequence';
 import { failedImageCard } from '../lib/failed-image';
-import { defaults } from '../lib/preferences';
+import { defaults } from '../shell/settings/preferences';
 import { initialState } from '../lib/project';
 import { createWorkflow } from '../lib/workflow';
 import type { Card } from '../types';

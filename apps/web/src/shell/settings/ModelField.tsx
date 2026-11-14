@@ -1,6 +1,6 @@
-import type { Provider } from '../types';
-import { hasModelList, modelOptions, type ModelKind } from '../lib/model-options';
-import Select from './Select';
+import type { Provider } from '../../types';
+import { hasModelList, modelOptions, type ModelKind } from './model-options';
+import Select from '../../ui/Select';
 
 /** Picks a model from the provider's list; the compatible endpoint keeps a free-text name. */
 export default function ModelField({

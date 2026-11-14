@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Card } from '../types';
 import { CardMedia } from './CardMedia';
-import Icon from './Icon';
+import Icon from '../ui/Icon';
 
 export default function AssetLibrary({
   cards,

@@ -4,7 +4,7 @@ import { useGeneration } from './useGeneration';
 import { AIError, createClient, MODERATION_MESSAGE } from '@frameout/shared';
 import { putMedia } from '../lib/media-store';
 import { initialState, restoreProject, serializeProject } from '../lib/project';
-import { defaults } from '../lib/preferences';
+import { defaults } from '../shell/settings/preferences';
 import { failedImage } from '../lib/failed-image';
 import { usableReference } from '../lib/consistency';
 import { regeneration } from '../lib/regenerate';

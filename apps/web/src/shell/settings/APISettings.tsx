@@ -1,19 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import type { AIConfig, Provider } from '../types';
+import type { AIConfig, Provider } from '../../types';
 import { createClient, PROVIDERS, validateBaseUrl } from '@frameout/shared';
-import {
-  loadProfiles,
-  providerIds,
-  redact,
-  saveProfile,
-  startingProfile,
-} from '../lib/preferences';
-import { canRememberKeys, rememberKey, rememberedKey } from '../lib/secrets';
-import { desktopBridge } from '../lib/platform';
-import Select from './Select';
-import Icon from './Icon';
+import { loadProfiles, providerIds, redact, saveProfile, startingProfile } from './preferences';
+import { canRememberKeys, rememberKey, rememberedKey } from './secrets';
+import { desktopBridge } from '../../lib/platform';
+import Select from '../../ui/Select';
+import Icon from '../../ui/Icon';
 import ModelSection from './APIModelSection';
-import { closeOnBackdropClick } from '../lib/dialog';
+import { closeOnBackdropClick } from '../../ui/dialog';
 /** After a passing test: Ark still needs each model switched on in its console. */
 function connectedText(provider: Provider) {
   return provider === 'ark'

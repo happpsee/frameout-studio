@@ -5,7 +5,7 @@ import type { Rect } from '../lib/canvas-selection';
 import { visualOrder } from '../lib/canvas-selection';
 import type { ArrangeMode } from '../lib/canvas-layout';
 import { pending } from './CanvasCard';
-import Icon from './Icon';
+import Icon from '../ui/Icon';
 import './MultiSelectionBar.css';
 
 interface MultiSelectionBarProps {

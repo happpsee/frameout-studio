@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ProjectSummary } from '../lib/projects';
+import type { ProjectSummary } from '../../lib/projects';
 
 const NOW = new Date(2026, 10, 13, 15, 0).getTime();
 const MINUTE = 60_000;
@@ -14,7 +14,7 @@ const store = vi.hoisted(() => ({
   nextId: 1,
 }));
 
-vi.mock('../lib/projects', () => ({
+vi.mock('../../lib/projects', () => ({
   listProjects: vi.fn(() => [...store.projects]),
   listDeletedProjects: vi.fn(() => [...store.deleted]),
   createProject: vi.fn((title?: string) => {
@@ -54,13 +54,13 @@ vi.mock('../lib/projects', () => ({
   }),
 }));
 
-vi.mock('../lib/media-store', () => ({
+vi.mock('../../lib/media-store', () => ({
   getMedia: vi.fn(async (id: string) =>
     id === 'media-cover' ? new Blob(['x'], { type: 'image/png' }) : null,
   ),
 }));
 
-import * as projects from '../lib/projects';
+import * as projects from '../../lib/projects';
 import Lobby from './Lobby';
 
 function project(overrides: Partial<ProjectSummary> & { id: string }): ProjectSummary {

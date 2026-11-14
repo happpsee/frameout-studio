@@ -1,7 +1,7 @@
 import { type FormEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
-import { closeOnBackdropClick } from '../../lib/dialog';
+import { closeOnBackdropClick } from '../../ui/dialog';
 import type { ProjectSummary } from '../../lib/projects';
-import Icon from '../Icon';
+import Icon from '../../ui/Icon';
 import { TRASH_DAYS, daysLeft, timeAgo } from './format';
 
 interface LobbyDialogProps {

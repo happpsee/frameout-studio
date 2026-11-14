@@ -1,7 +1,7 @@
 import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { Note, StepStatus, Workflow } from '../types';
 import { SCRIPT_SHOT_MAX, scriptProgress, scriptShots } from '../lib/notes';
-import Icon from './Icon';
+import Icon from '../ui/Icon';
 import './CanvasNote.css';
 
 const shotStatus: Record<StepStatus, string> = {

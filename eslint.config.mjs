@@ -14,7 +14,7 @@ const MAX_FUNCTION_LINES = 150;
  */
 const OVERSIZED_FILES = [
   'packages/shared/src/ai-client.ts',
-  'apps/web/src/components/Landing.tsx',
+  'apps/web/src/shell/landing/Landing.tsx',
   'apps/web/src/components/Studio.tsx',
   'apps/web/src/hooks/useCanvas.ts',
   'apps/web/src/hooks/useGeneration.ts',
@@ -22,13 +22,13 @@ const OVERSIZED_FILES = [
 /** Components and hooks whose main function is over the limit. Same rule: split, then remove. */
 const OVERSIZED_FUNCTIONS = [
   ...OVERSIZED_FILES,
-  'apps/web/src/components/APISettings.tsx',
+  'apps/web/src/shell/settings/APISettings.tsx',
   'apps/web/src/components/ExportDialog.tsx',
   'apps/web/src/components/PreviewDialog.tsx',
-  'apps/web/src/components/Select.tsx',
+  'apps/web/src/ui/Select.tsx',
   'apps/web/src/components/Sequence.tsx',
   'apps/web/src/components/WorkflowPanel.tsx',
-  'apps/web/src/hooks/useLandingMotion.ts',
+  'apps/web/src/shell/landing/useLandingMotion.ts',
   'apps/web/src/hooks/useWorkflow.ts',
   'apps/web/src/hooks/useWorkspace.ts',
 ];

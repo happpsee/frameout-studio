@@ -12,10 +12,10 @@ import {
   loadDesktopStorage,
 } from './lib/desktop-storage';
 import { createProject, findProject, listProjects, projectDataKeys } from './lib/projects';
-import { requestExample } from './lib/examples';
+import { requestExample } from './shell/misc/examples';
 import type { ProjectState } from './types';
 
-vi.mock('./components/Landing', () => ({
+vi.mock('./shell/landing/Landing', () => ({
   default: ({ onOpenStudio }: { onOpenStudio: () => void }) => (
     <section aria-label="产品介绍">
       <button type="button" onClick={() => onOpenStudio()}>
@@ -34,7 +34,7 @@ vi.mock('./components/Landing', () => ({
   ),
 }));
 // The real list is built separately; this stand-in only needs the same props and store.
-vi.mock('./components/Lobby', async () => {
+vi.mock('./shell/lobby/Lobby', async () => {
   const projects = await import('./lib/projects');
   const { useSyncExternalStore } = await import('react');
   return {

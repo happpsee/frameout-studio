@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DESKTOP_INTRO_KEY, readStoredValue, writeStoredValue } from '../lib/desktop-storage';
-import { peekExampleRequest } from '../lib/examples';
+import { peekExampleRequest } from './misc/examples';
 import { isDesktop } from '../lib/platform';
 import {
   createProject,

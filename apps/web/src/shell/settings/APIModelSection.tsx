@@ -1,9 +1,9 @@
-import type { AIConfig } from '../types';
+import type { AIConfig } from '../../types';
 import { PROVIDERS } from '@frameout/shared';
-import { hasModelList, parameterOptions } from '../lib/model-options';
-import { isDesktop } from '../lib/platform';
+import { hasModelList, parameterOptions } from './model-options';
+import { isDesktop } from '../../lib/platform';
 import ModelField from './ModelField';
-import Select from './Select';
+import Select from '../../ui/Select';
 
 /** API settings, section 02: model choice. Desktop also keeps the picture parameters here. */
 export default function APIModelSection({

@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import Landing from './components/Landing';
-import Lobby from './components/Lobby';
+import Landing from './shell/landing/Landing';
+import Lobby from './shell/lobby/Lobby';
 import Studio from './components/Studio';
 import { DESKTOP_INTRO_KEY, flushDesktopStorage, readStoredValue } from './lib/desktop-storage';
 import { desktopBridge, isDesktop } from './lib/platform';
-import { markIntroSeen, useProjectRoute } from './hooks/useProjectRoute';
+import { markIntroSeen, useProjectRoute } from './shell/useProjectRoute';
 
 const TITLES = {
   intro: '帧外 FRAMEOUT — 让灵感，发生。',

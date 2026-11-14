@@ -4,7 +4,7 @@ import { CARD_HEIGHT, CARD_WIDTH } from '../lib/canvas-camera';
 import { failedImage } from '../lib/failed-image';
 import { REFERENCE_ROLES } from '../lib/consistency';
 import { CardMedia } from './CardMedia';
-import Icon from './Icon';
+import Icon from '../ui/Icon';
 import './CanvasCard.css';
 
 export const pending = (card?: Card) => Boolean(card?.job && card.job.status !== 'succeeded');
