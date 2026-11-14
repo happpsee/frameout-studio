@@ -53,7 +53,9 @@
   transform: rotate(180deg);
 }
 .fo-studio .fo-select-menu {
-  position: fixed;
+  /* Radix places the menu; these keep the old size rules: as wide as the control, at most 260px tall. */
+  width: max(130px, var(--radix-select-trigger-width));
+  max-height: min(260px, var(--radix-select-content-available-height));
   z-index: 30;
   margin: 0;
   padding: 5px;
@@ -88,18 +90,21 @@
     'PingFang SC',
     sans-serif;
   cursor: pointer;
+  user-select: none;
+  outline: none;
+  box-sizing: border-box;
   color: var(--fo-text-3);
   overflow-wrap: anywhere;
   transition:
     background 0.1s,
     color 0.1s;
 }
-.fo-studio .fo-select-option.is-active,
+.fo-studio .fo-select-option[data-highlighted],
 .fo-studio .fo-select-option:hover {
   background: var(--fo-hover);
   color: var(--fo-text-1);
 }
-.fo-studio .fo-select-option[aria-selected='true'] {
+.fo-studio .fo-select-option[data-state='checked'] {
   color: var(--fo-text-1);
 }
 .fo-studio .fo-select-check {
@@ -108,7 +113,7 @@
   height: 14px;
   color: var(--fo-green-1);
 }
-.fo-studio .fo-select-option[aria-disabled='true'] {
+.fo-studio .fo-select-option[data-disabled] {
   opacity: 0.4;
   cursor: not-allowed;
 }
