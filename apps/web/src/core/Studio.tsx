@@ -24,14 +24,15 @@ import { cardPrompt, type PromptAction } from './generation/card-prompt';
 import { CARD_CENTER, CARD_HEIGHT, CARD_WIDTH, clamp } from './canvas/canvas-camera';
 import { readStoredValue } from './project/desktop-storage';
 import { desktopBridge, isDesktop } from '../platform';
-import { serializeProject, uid } from './project/project';
+import { serializeProject } from './project/project';
 import { projectDataKeys } from './project/projects';
 import APISettings from '../shell/settings/APISettings';
 import Icon from '../ui/Icon';
 import { CanvasCard, jobNote, pending, visibleCards } from './canvas/CanvasCard';
 import { regeneration } from './generation/regenerate';
 import Sequence from './film/Sequence';
-import PreviewDialog, { type PreviewItem } from './film/PreviewDialog';
+import { useFilm } from './film/useFilm';
+import PreviewDialog from './film/PreviewDialog';
 import ExportDialog from './film/ExportDialog';
 import ConsistencyDialog from './generation/ConsistencyDialog';
 import { MAX_REFERENCES, referenceCards, supportsReferences } from './generation/consistency';
@@ -47,15 +48,6 @@ import Composer from './generation/Composer';
 import HelpDialog from '../shell/misc/HelpDialog';
 import BrowserStorageNotice from '../shell/misc/BrowserStorageNotice';
 
-function clipDuration(card: Card) {
-  const duration = card.duration;
-  return card.kind === 'video' &&
-    typeof duration === 'number' &&
-    Number.isFinite(duration) &&
-    duration > 0
-    ? duration
-    : 4;
-}
 function needsInitialFit(projectId: string) {
   try {
     const saved = JSON.parse(readStoredValue(projectDataKeys(projectId).project) || 'null');
@@ -115,12 +107,6 @@ export default function Studio({
   const [panelTab, setPanelTab] = useState<PanelTab | null>(null);
   const [assetsOpen, setAssetsOpen] = useState(false);
   const [view, setView] = useState<StudioView>('canvas');
-  const [timelineOpen, setTimelineOpen] = useState(() => project.sequence.length > 0);
-  const [preview, setPreview] = useState<{ items: PreviewItem[]; title: string } | null>(null);
-  const [exporting, setExporting] = useState<{ items: PreviewItem[]; skipped: number } | null>(
-    null,
-  );
-
   const [toastText, setToastText] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
@@ -141,6 +127,18 @@ export default function Studio({
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToastText(''), 3300);
   }, []);
+  const {
+    timelineOpen,
+    toggleTimeline,
+    preview,
+    closePreview,
+    exporting,
+    closeExport,
+    addToSequence,
+    openExport,
+    openPreview,
+    updateDuration,
+  } = useFilm({ project, projectRef, update, toast });
   const getProject = useCallback(() => projectRef.current, [projectRef]);
   const openSettings = useCallback((notice = '') => {
     setSettingsNotice(notice);
@@ -163,31 +161,6 @@ export default function Studio({
   const { pause: pauseWorkflow } = workflow;
   const generationActive = useRef(active);
   generationActive.current = active;
-  const addToSequence = useCallback(
-    // Several ids are added in order as one undo step; unfinished media is skipped.
-    (ids: string | string[]) => {
-      const cards = [ids].flat().flatMap(id => {
-        const card = projectRef.current.cards.find(c => c.id === id);
-        return card && !card.missingMedia && !pending(card) ? [card] : [];
-      });
-      if (!cards.length) return;
-      update(draft => {
-        for (const card of cards)
-          draft.sequence.push({
-            id: uid(),
-            cardId: card.id,
-            duration: clamp(clipDuration(card), 1, 15),
-          });
-      });
-      setTimelineOpen(true);
-      toast(
-        cards.length > 1
-          ? `已加入成片 ${cards.length} 个镜头 · 在下方拖动调整顺序`
-          : '已加入成片 · 在下方拖动调整顺序',
-      );
-    },
-    [projectRef, update, toast],
-  );
   const { importFiles, pendingImports } = useFileImport({ projectRef, viewportRef, update, toast });
   useEffect(
     () =>
@@ -281,7 +254,6 @@ export default function Studio({
     (card: Card, duration: number) => cardActions.current.updateDuration(card, duration),
     [],
   );
-  const toggleTimeline = useCallback(() => setTimelineOpen(value => !value), []);
   const previewShot = useCallback(
     (card: Card) => {
       update(draft => {
@@ -360,15 +332,15 @@ export default function Studio({
     setSettingsOpen(false);
     setHelpOpen(false);
     setZoomOpen(false);
-    setPreview(null);
-    setExporting(null);
+    closePreview();
+    closeExport();
     setConsistencyOpen(false);
     if (
       document.activeElement instanceof HTMLElement &&
       studioRef.current?.contains(document.activeElement)
     )
       document.activeElement.blur();
-  }, [isActive, stopGeneration, cancelGesture]);
+  }, [isActive, stopGeneration, cancelGesture, closePreview, closeExport]);
   useLayoutEffect(() => {
     if (!isActive) return;
     const measure = () => {
@@ -452,43 +424,6 @@ export default function Studio({
     tidyCanvas,
   ]);
 
-  // Shots the preview and export can play: skips missing or unfinished media.
-  function sequenceItems(): PreviewItem[] {
-    return project.sequence.flatMap(shot => {
-      const source = project.cards.find(c => c.id === shot.cardId);
-      return source && !source.missingMedia && !pending(source)
-        ? [{ card: source, duration: shot.duration }]
-        : [];
-    });
-  }
-  function openExport() {
-    const items = sequenceItems();
-    if (!items.length) {
-      toast('成片里还没有可导出的镜头');
-      return;
-    }
-    setExporting({ items, skipped: project.sequence.length - items.length });
-  }
-  function openPreview(card?: Card) {
-    if (card && (card.missingMedia || pending(card))) {
-      toast('该素材尚未完成或需要重新导入');
-      return;
-    }
-    const items = card ? [{ card, duration: clipDuration(card) }] : sequenceItems();
-    if (!items.length) {
-      toast('先选择素材并加入成片，再开始预览');
-      return;
-    }
-    setPreview({ items, title: card?.name ?? project.title });
-  }
-  function updateDuration(card: Card, duration: number) {
-    const current = projectRef.current.cards.find(item => item.id === card.id);
-    if (!current || current.src !== card.src || current.duration === duration) return;
-    update(draft => {
-      const target = draft.cards.find(item => item.id === card.id);
-      if (target) target.duration = duration;
-    }, false);
-  }
   cardActions.current = { openPreview, updateDuration };
   function exportProject() {
     const exported = {
@@ -919,11 +854,7 @@ export default function Studio({
 
       {!desktop && workflowPanel}
       {isActive && preview && (
-        <PreviewDialog
-          items={preview.items}
-          title={preview.title}
-          onClose={() => setPreview(null)}
-        />
+        <PreviewDialog items={preview.items} title={preview.title} onClose={closePreview} />
       )}
       {isActive && consistencyOpen && (
         <ConsistencyDialog
@@ -952,7 +883,7 @@ export default function Studio({
           shots={exporting.items}
           skipped={exporting.skipped}
           title={project.title}
-          onClose={() => setExporting(null)}
+          onClose={closeExport}
         />
       )}
       <APISettings
