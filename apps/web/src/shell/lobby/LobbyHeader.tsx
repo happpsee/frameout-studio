@@ -1,4 +1,5 @@
-import { type RefObject, useEffect } from 'react';
+import type { RefObject } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
 import Icon from '../../ui/Icon';
 import ThemeToggle from '../misc/ThemeToggle';
 import { isApplePlatform } from './format';
@@ -15,18 +16,19 @@ interface LobbyHeaderProps {
 
 /** ⌘K / Ctrl+K focuses the search field from anywhere in the lobby. */
 function useSearchShortcut(searchRef: RefObject<HTMLInputElement | null>) {
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.altKey || event.key.toLowerCase() !== 'k')
-        return;
-      if (document.querySelector('dialog[open]')) return;
-      event.preventDefault();
+  useHotkeys(
+    'mod+k',
+    () => {
       searchRef.current?.focus();
       searchRef.current?.select();
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [searchRef]);
+    },
+    {
+      preventDefault: true,
+      // Also from inside the search field itself, but not over an open dialog.
+      enableOnFormTags: true,
+      ignoreEventWhen: () => Boolean(document.querySelector('dialog[open]')),
+    },
+  );
 }
 
 export default function LobbyHeader({

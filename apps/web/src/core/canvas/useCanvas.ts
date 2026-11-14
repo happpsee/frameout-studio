@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
 import type { Camera, Card, ProjectState, UpdateProject } from '../../types';
 import { NOTE_HEIGHT, NOTE_WIDTH } from './notes';
 import {
@@ -46,6 +47,8 @@ export function useCanvas(options: Options) {
   const toolRef = useRef(tool);
   toolRef.current = tool;
   const [space, setSpace] = useState(false);
+  /** Same as `space`, readable inside the pointer handlers without re-binding them. */
+  const spaceHeld = useRef(false);
   const [panning, setPanning] = useState(false);
   const [fileDrop, setFileDrop] = useState(false);
   const [dragPosition, setDragPosition] = useState<{ id: string; x: number; y: number } | null>(
@@ -159,7 +162,6 @@ export function useCanvas(options: Options) {
     const captures = new Map<number, Element>();
     let drag: Drag | null = null;
     let pinch: { distance: number; zoom: number; world: Point } | null = null;
-    let spaceHeld = false;
     let nextPosition: { id: string; x: number; y: number } | null = null;
     let nextGroup: { ids: string[]; dx: number; dy: number } | null = null;
     let nextMarquee: Rect | null = null;
@@ -248,7 +250,7 @@ export function useCanvas(options: Options) {
       });
       camera.cancel();
       camera.flush();
-      spaceHeld = false;
+      spaceHeld.current = false;
       setSpace(false);
       setPanning(false);
       setFileDrop(false);
@@ -300,7 +302,7 @@ export function useCanvas(options: Options) {
       }
       const id = target.closest<HTMLElement>('.fo-card')?.dataset.id;
       const card = latest.current.projectRef.current.cards.find(c => c.id === id);
-      const hand = spaceHeld || toolRef.current === 'hand' || event.button === 1;
+      const hand = spaceHeld.current || toolRef.current === 'hand' || event.button === 1;
       if (card && !hand && event.shiftKey) {
         selectionRef.current.toggle(card.id);
         // Swallow the click that follows, which would select this card alone.
@@ -439,38 +441,6 @@ export function useCanvas(options: Options) {
       event.preventDefault();
       latest.current.onFiles(event.dataTransfer.files, toWorld(event.clientX, event.clientY));
     };
-    const keydown = (event: KeyboardEvent) => {
-      if (latest.current.active === false) return;
-      if (
-        (event.target as Element)?.closest?.(
-          'input,textarea,select,[role="combobox"],[contenteditable="true"]',
-        ) ||
-        document.querySelector('dialog[open]')
-      )
-        return;
-      // Space activates a focused control. Only use it as the temporary hand
-      // shortcut when focus is on the workspace itself.
-      if (
-        event.code === 'Space' &&
-        (event.target as Element)?.closest?.('button,a,[role="button"]')
-      )
-        return;
-      if (event.code === 'Space') {
-        spaceHeld = true;
-        setSpace(true);
-        event.preventDefault();
-      }
-      if (event.key === 'Escape') {
-        reset();
-        selectionRef.current.clear();
-      }
-    };
-    const keyup = (event: KeyboardEvent) => {
-      if (latest.current.active !== false && event.code === 'Space') {
-        spaceHeld = false;
-        setSpace(false);
-      }
-    };
     const blur = () => {
       if (latest.current.active !== false) reset();
     };
@@ -488,8 +458,6 @@ export function useCanvas(options: Options) {
     viewport.addEventListener('dragover', dragover, { signal });
     viewport.addEventListener('dragleave', dragleave, { signal });
     viewport.addEventListener('drop', drop, { signal });
-    document.addEventListener('keydown', keydown, { signal });
-    document.addEventListener('keyup', keyup, { signal });
     window.addEventListener('blur', blur, { signal });
     return () => {
       if (frame) cancelAnimationFrame(frame);
@@ -499,6 +467,43 @@ export function useCanvas(options: Options) {
       listeners.abort();
     };
   }, [toWorld, viewportPoint]);
+  const keysOn = options.active !== false;
+  const typing = (event: KeyboardEvent) =>
+    Boolean(
+      (event.target as Element)?.closest?.(
+        'input,textarea,select,[role="combobox"],[contenteditable="true"]',
+      ) || document.querySelector('dialog[open]'),
+    );
+  // Hold Space to pan with the hand. On a focused button Space still presses that button.
+  useHotkeys(
+    'space',
+    event => {
+      const down = event.type === 'keydown';
+      spaceHeld.current = down;
+      setSpace(down);
+      if (down) event.preventDefault();
+    },
+    {
+      enabled: keysOn,
+      keydown: true,
+      keyup: true,
+      // Releasing Space always counts; only pressing it is ignored while typing or on a control.
+      enableOnFormTags: true,
+      enableOnContentEditable: true,
+      ignoreEventWhen: event =>
+        event.type === 'keydown' &&
+        (typing(event) ||
+          Boolean((event.target as Element)?.closest?.('button,a,[role="button"]'))),
+    },
+  );
+  useHotkeys(
+    'escape',
+    () => {
+      cancelGesture.current();
+      selectionRef.current.clear();
+    },
+    { enabled: keysOn, ignoreEventWhen: typing },
+  );
   useEffect(() => {
     if (options.active === false) cancelActiveGesture();
   }, [options.active, cancelActiveGesture]);

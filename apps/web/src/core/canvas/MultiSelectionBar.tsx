@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useHotkeys } from 'react-hotkeys-hook';
 import type { Card } from '../../types';
 import type { MultiSelection } from './useMultiSelection';
 import type { Rect } from './canvas-selection';
@@ -6,6 +6,7 @@ import { visualOrder } from './canvas-selection';
 import type { ArrangeMode } from './canvas-layout';
 import { pending } from './CanvasCard';
 import Icon from '../../ui/Icon';
+import { busyElsewhere } from './useStudioShortcuts';
 import './MultiSelectionBar.css';
 
 interface MultiSelectionBarProps {
@@ -26,9 +27,6 @@ const ARRANGE: { mode: ArrangeMode; label: string; icon: string }[] = [
   { mode: 'column', label: '纵向排列', icon: 'arrow-down' },
 ];
 
-const ignoredTargets =
-  '.fo-work-panel,input,textarea,select,[role="combobox"],[role="listbox"],[contenteditable="true"]';
-
 /** Actions for two or more selected cards: add them to the cut, delete them, or deselect. */
 export default function MultiSelectionBar({
   selection,
@@ -46,21 +44,11 @@ export default function MultiSelectionBar({
     if (busy) toast('先停止本页等待，再删除素材');
     else selection.remove();
   };
-  const removeRef = useRef(remove);
-  removeRef.current = remove;
-
-  useEffect(() => {
-    if (!enabled || count < 2) return;
-    const keydown = (event: KeyboardEvent) => {
-      if (!['Delete', 'Backspace'].includes(event.key)) return;
-      if ((event.target as Element)?.closest?.(ignoredTargets)) return;
-      if (document.querySelector('dialog[open]')) return;
-      event.preventDefault();
-      removeRef.current();
-    };
-    document.addEventListener('keydown', keydown);
-    return () => document.removeEventListener('keydown', keydown);
-  }, [enabled, count]);
+  useHotkeys(['delete', 'backspace'], remove, {
+    enabled: enabled && count >= 2,
+    preventDefault: true,
+    ignoreEventWhen: busyElsewhere,
+  });
 
   if (count < 2) return null;
   return (

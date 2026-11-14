@@ -79,7 +79,7 @@ describe('MultiSelectionBar', () => {
     expect(screen.queryByText(/已选/)).toBeNull();
 
     act(() => selection.add(['c', 'job']));
-    fireEvent.keyDown(document.body, { key: 'Backspace' });
+    fireEvent.keyDown(document.body, { key: 'Backspace', code: 'Backspace' });
     expect(commits).toHaveLength(2);
     expect(screen.getByTestId('cards').textContent).toBe('');
   });
@@ -87,7 +87,7 @@ describe('MultiSelectionBar', () => {
     const toast = vi.fn();
     render(<Harness busy toast={toast} />);
     act(() => selection.add(['a', 'b']));
-    fireEvent.keyDown(document.body, { key: 'Delete' });
+    fireEvent.keyDown(document.body, { key: 'Delete', code: 'Delete' });
     expect(commits).toHaveLength(0);
     expect(toast).toHaveBeenCalledWith('先停止本页等待，再删除素材');
   });

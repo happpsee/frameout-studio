@@ -3,7 +3,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import type { ProjectState, UpdateProject } from '../../types';
 
 /** Shortcuts wait while the user is typing, using the side panel, or a dialog is open. */
-const busyElsewhere = (event: KeyboardEvent) =>
+export const busyElsewhere = (event: KeyboardEvent) =>
   Boolean(
     (event.target as Element)?.closest?.(
       '.fo-work-panel,input,textarea,select,[role="combobox"],[role="listbox"],[contenteditable="true"]',
