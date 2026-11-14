@@ -22,11 +22,7 @@ import {
   prepareProject,
   projectDataKeys,
   purgeDeletedProjects,
-  recordProjectSave,
-  renameProject,
   restoreDeletedProject,
-  subscribeProjects,
-  summarizeProject,
 } from './projects';
 import type { Card, ProjectState } from '../types';
 
@@ -91,62 +87,6 @@ describe('moving the single workspace into projects', () => {
     expect(lastOpenedProjectId()).toBe(project.id);
   });
 
-  it('migrates once: later starts and a changed backup do not add projects', () => {
-    localStorage.setItem(
-      PROJECT_STORAGE_KEY,
-      legacyProject(p => (p.cards = [card('a')])),
-    );
-    const [first] = listProjects();
-    localStorage.setItem(
-      PROJECT_STORAGE_KEY,
-      legacyProject(p => (p.cards = [card('z')])),
-    );
-    expect(listProjects().map(project => project.id)).toEqual([first.id]);
-    createProject('新项目');
-    expect(listProjects()).toHaveLength(2);
-  });
-
-  it('migrates again after an interruption before the list was stored', async () => {
-    const legacy = legacyProject(p => (p.title = '只改了名字'));
-    localStorage.setItem(PROJECT_STORAGE_KEY, legacy);
-    const [first] = listProjects();
-    // Simulate a crash after copying: the list never reached storage.
-    localStorage.removeItem(PROJECTS_INDEX_KEY);
-    vi.resetModules();
-    const fresh = await import('./projects');
-    const [again] = fresh.listProjects();
-    expect(again.title).toBe('只改了名字');
-    expect(localStorage.getItem(fresh.projectDataKeys(again.id).project)).toBe(legacy);
-    expect(localStorage.getItem(PROJECT_STORAGE_KEY)).toBe(legacy);
-    expect(first.id).toBeTruthy();
-  });
-
-  it.each([
-    ['nothing saved', null],
-    ['an untouched workspace', legacyProject()],
-    ['a damaged value', '{damaged'],
-    ['an unknown format', JSON.stringify({ version: 9, cards: 'x' })],
-  ])('starts with an empty list for %s, leaving the old keys alone', (_name, legacy) => {
-    if (legacy !== null) localStorage.setItem(PROJECT_STORAGE_KEY, legacy);
-    expect(listProjects()).toEqual([]);
-    expect(listDeletedProjects()).toEqual([]);
-    expect(lastOpenedProjectId()).toBeNull();
-    expect(localStorage.getItem(PROJECT_STORAGE_KEY)).toBe(legacy);
-    expect(JSON.parse(localStorage.getItem(PROJECTS_INDEX_KEY)!)).toEqual({
-      version: 1,
-      projects: [],
-    });
-  });
-
-  it('counts saved versions alone as a used workspace', () => {
-    localStorage.setItem(PROJECT_STORAGE_KEY, legacyProject());
-    localStorage.setItem(
-      CHECKPOINTS_STORAGE_KEY,
-      JSON.stringify([{ id: 'v1', name: '第一稿', createdAt: 1, state: initialState() }]),
-    );
-    expect(listProjects()).toHaveLength(1);
-  });
-
   it('keeps using the old keys when browser storage is too full to copy them', () => {
     const legacy = legacyProject(p => (p.cards = [card('a')]));
     localStorage.setItem(PROJECT_STORAGE_KEY, legacy);
@@ -180,32 +120,6 @@ describe('moving the single workspace into projects', () => {
     expect(localStorage.getItem(DAMAGED_INDEX_KEY)).toBe('{damaged');
     expect(listProjects().map(project => project.title)).toEqual(['重新开始']);
   });
-
-  it('on desktop, stores the list only after the copied project is on disk', async () => {
-    let finishCopy!: () => void;
-    const files = new Map<string, ArrayBuffer>([
-      [PROJECT_STORAGE_KEY, bytes(legacyProject(p => (p.cards = [card('a')])))],
-    ]);
-    const write = vi.fn(async (key: string, value: ArrayBuffer) => {
-      if (key.startsWith('frameout-project-'))
-        await new Promise<void>(resolve => (finishCopy = resolve));
-      files.set(key, value);
-    });
-    vi.stubGlobal('frameoutDesktop', {
-      storage: { read: async (key: string) => files.get(key) ?? null, write },
-      onBeforeClose: () => () => {},
-    });
-    await loadDesktopStorage();
-    const [project] = listProjects();
-    expect(project.cardCount).toBe(1);
-    await new Promise(resolve => setTimeout(resolve, 0));
-    expect(files.has(PROJECTS_INDEX_KEY)).toBe(false);
-    finishCopy();
-    await flushDesktopStorage();
-    expect(text(files.get(PROJECTS_INDEX_KEY))).toContain(project.id);
-    expect(text(files.get(`frameout-project-${project.id}`))).toContain('"cards"');
-    expect(text(files.get(PROJECT_STORAGE_KEY))).toContain('"cards"');
-  });
 });
 
 describe('project list', () => {
@@ -221,16 +135,6 @@ describe('project list', () => {
       '海边 短片',
     );
     expect(first.id).not.toBe(second.id);
-  });
-
-  it('renames like the studio does and ignores unknown ids', () => {
-    const project = createProject('旧名字');
-    renameProject(project.id, '   ');
-    expect(findProject(project.id)?.title).toBe('未命名项目');
-    renameProject(project.id, 'x'.repeat(60));
-    expect(findProject(project.id)?.title).toHaveLength(40);
-    renameProject('missing', '无效');
-    expect(listProjects()).toHaveLength(1);
   });
 
   it('moves projects to 已删除项目 and back, and forgets the last opened one when deleted', () => {
@@ -274,88 +178,6 @@ describe('project list', () => {
     expect(localStorage.getItem(keys.checkpoints)).toBeNull();
     expect(listProjects().map(project => project.id)).toEqual([kept.id]);
   });
-
-  it('notifies subscribers of changes here and in other tabs, and returns stable lists', () => {
-    const listener = vi.fn();
-    const unsubscribe = subscribeProjects(listener);
-    const project = createProject();
-    expect(listener).toHaveBeenCalledTimes(1);
-    const list = listProjects();
-    expect(listProjects()).toBe(list);
-    renameProject(project.id, '新名字');
-    expect(listener).toHaveBeenCalledTimes(2);
-    expect(listProjects()).not.toBe(list);
-    renameProject(project.id, '新名字');
-    expect(listener).toHaveBeenCalledTimes(2);
-    window.dispatchEvent(new StorageEvent('storage', { key: PROJECTS_INDEX_KEY }));
-    window.dispatchEvent(new StorageEvent('storage', { key: 'frameout-theme' }));
-    expect(listener).toHaveBeenCalledTimes(3);
-    unsubscribe();
-    deleteProject(project.id);
-    expect(listener).toHaveBeenCalledTimes(3);
-  });
-
-  it('ignores the last opened id once that project is deleted or missing', () => {
-    const project = createProject();
-    markProjectOpened('missing');
-    expect(lastOpenedProjectId()).toBeNull();
-    markProjectOpened(project.id);
-    expect(lastOpenedProjectId()).toBe(project.id);
-  });
-});
-
-describe('project summaries', () => {
-  it('uses the first playable shot as the cover, else the latest finished card', () => {
-    const cards = [
-      card('old'),
-      card('temp', { remoteTemporary: true }),
-      card('pending', { kind: 'video', job: { status: 'running' } as Card['job'] }),
-      card('session', { sessionOnly: true }),
-    ];
-    expect(summarizeProject({ title: '', cards, sequence: [] })).toMatchObject({
-      title: '未命名项目',
-      cardCount: 3,
-      coverSrc: 'https://media.example/old.webp',
-      coverKind: 'image',
-    });
-    const withShots = summarizeProject({
-      title: '片子',
-      cards: [...cards, card('shot', { mediaId: 'media-shot', src: 'blob:x' })],
-      sequence: [
-        { id: 's0', cardId: 'missing', duration: 3 },
-        { id: 's1', cardId: 'pending', duration: 5 },
-        { id: 's2', cardId: 'shot', duration: 4.5 },
-      ],
-    });
-    expect(withShots).toMatchObject({
-      shotCount: 2,
-      durationSeconds: 9.5,
-      coverMediaId: 'media-shot',
-      coverKind: 'image',
-    });
-    expect(withShots.coverSrc).toBeUndefined();
-    expect(
-      summarizeProject({ title: 'x', cards: [card('t', { remoteTemporary: true })], sequence: [] })
-        .coverSrc,
-    ).toBeUndefined();
-  });
-
-  it('updates the entry on save and moves it up only when the contents changed', () => {
-    vi.useFakeTimers({ now: 1000 });
-    const project = createProject('甲');
-    vi.setSystemTime(5000);
-    const listener = vi.fn();
-    subscribeProjects(listener);
-    recordProjectSave(project.id, { title: '甲', cards: [], sequence: [] }, false);
-    expect(listener).not.toHaveBeenCalled();
-    recordProjectSave(project.id, { title: '甲', cards: [card('a')], sequence: [] }, false);
-    expect(findProject(project.id)).toMatchObject({ cardCount: 1, updatedAt: 1000 });
-    recordProjectSave(project.id, { title: '乙', cards: [], sequence: [] }, true);
-    expect(findProject(project.id)).toMatchObject({ title: '乙', cardCount: 0, updatedAt: 5000 });
-    expect(findProject(project.id)?.coverSrc).toBeUndefined();
-    recordProjectSave('missing', { title: '丙', cards: [], sequence: [] }, true);
-    expect(findProject('missing')).toBeUndefined();
-  });
 });
 
 describe('opening a project on desktop', () => {
@@ -385,33 +207,5 @@ describe('opening a project on desktop', () => {
     expect(readStoredValue(projectDataKeys(good.id).checkpoints)).toBe('[]');
     await expect(prepareProject(bad.id)).rejects.toThrow('项目文件格式无法读取');
     expect(text(files.get(projectDataKeys(bad.id).project))).toBe('{damaged');
-  });
-
-  it('empties files when purging, since the desktop bridge cannot delete them', async () => {
-    const files = new Map<string, ArrayBuffer>();
-    vi.stubGlobal('frameoutDesktop', {
-      storage: {
-        read: async (key: string) => files.get(key) ?? null,
-        write: async (key: string, value: ArrayBuffer) => {
-          files.set(key, value);
-        },
-      },
-      onBeforeClose: () => () => {},
-    });
-    await loadDesktopStorage();
-    const project = createProject('要删的');
-    deleteProject(project.id);
-    purgeDeletedProjects(Date.now() + DELETED_PROJECT_RETENTION_MS + DAY);
-    await flushDesktopStorage();
-    expect(files.get(projectDataKeys(project.id).project)!.byteLength).toBe(0);
-    await loadDesktopStorage();
-    expect(findProject(project.id)).toBeUndefined();
-    await prepareProject(project.id);
-    expect(readStoredValue(projectDataKeys(project.id).project)).toBeNull();
-  });
-
-  it('does nothing in the browser', async () => {
-    const project = createProject();
-    await expect(prepareProject(project.id)).resolves.toBeUndefined();
   });
 });

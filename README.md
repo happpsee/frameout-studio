@@ -141,7 +141,7 @@ pnpm-workspace.yaml    工作区与统一依赖版本（catalog）
 pnpm check
 ```
 
-`pnpm check` 依次跑格式检查（Prettier）、代码检查（TS 包用 ESLint，`apps/api` 用 ruff）、类型检查和全部测试，改完代码后必须通过。各项也可单独运行：`pnpm format:check`、`pnpm lint`、`pnpm typecheck`、`pnpm test`；Turborepo 对未改动的包直接使用缓存结果。`pnpm bench` 用 200 个素材、8 个版本和 160 条计划记录的项目测量编辑、自动保存和画布渲染耗时，不包含在 `pnpm test` 中。
+`pnpm check` 依次跑格式检查（Prettier）、代码检查（TS 包用 ESLint，`apps/api` 用 ruff）、类型检查和全部测试，改完代码后必须通过。各项也可单独运行：`pnpm format:check`、`pnpm lint`、`pnpm typecheck`、`pnpm test`；Turborepo 对未改动的包直接使用缓存结果。
 
 前端测试覆盖相机计算、手势取消与提交、双指转单指、历史操作、镜头排序与时长、浏览器媒体恢复、生成停止及续查、配置密钥隔离、下拉框键盘导航。后端测试覆盖协议校验、大小限制、错误脱敏、超时、断连取消、Cookie 隔离、Host 校验和静态文件（含软链接与路径穿越）。
 

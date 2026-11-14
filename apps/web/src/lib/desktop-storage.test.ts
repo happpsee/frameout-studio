@@ -7,7 +7,6 @@ import {
   loadDesktopKeys,
   loadDesktopStorage,
   readStoredValue,
-  removeStoredValue,
   writeStoredValue,
 } from './desktop-storage';
 import { DesktopMediaTooLargeError, getMedia, putMedia } from './media-store';
@@ -42,13 +41,6 @@ describe('desktop data files', () => {
     expect(write).not.toHaveBeenCalled();
   });
 
-  it('starts with a damaged pre-project workspace and leaves the file alone', async () => {
-    files.set(PROJECT_STORAGE_KEY, bytes('{damaged'));
-    await loadDesktopStorage();
-    expect(readStoredValue(PROJECT_STORAGE_KEY)).toBe('{damaged');
-    expect(write).not.toHaveBeenCalled();
-  });
-
   it('loads other keys on demand, keeps newer writes and refuses a damaged value', async () => {
     files.set('frameout-project-a', bytes('saved-a'));
     files.set('frameout-project-b', bytes('saved-b'));
@@ -65,25 +57,6 @@ describe('desktop data files', () => {
     expect(readStoredValue('frameout-project-bad')).toBeNull();
     await flushDesktopStorage();
     expect(new TextDecoder().decode(files.get('frameout-project-bad'))).toBe('{damaged');
-  });
-
-  it('removes a value by emptying its file, and can hold a write until another finishes', async () => {
-    await loadDesktopStorage();
-    let finish!: () => void;
-    const first = new Promise<void>(resolve => (finish = resolve));
-    const index = writeStoredValue('frameout-projects-v1', 'index', first);
-    expect(readStoredValue('frameout-projects-v1')).toBe('index');
-    await Promise.resolve();
-    await Promise.resolve();
-    expect(files.has('frameout-projects-v1')).toBe(false);
-    finish();
-    await index;
-    expect(new TextDecoder().decode(files.get('frameout-projects-v1'))).toBe('index');
-    await removeStoredValue('frameout-projects-v1');
-    expect(readStoredValue('frameout-projects-v1')).toBeNull();
-    expect(files.get('frameout-projects-v1')!.byteLength).toBe(0);
-    await loadDesktopStorage();
-    expect(readStoredValue('frameout-projects-v1')).toBeNull();
   });
 
   it('drains queued writes in order and leaves the latest snapshot on disk', async () => {

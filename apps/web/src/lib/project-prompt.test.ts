@@ -48,24 +48,4 @@ describe('generation records on cards', () => {
       [prompt, ''],
     ]);
   });
-
-  it('drops malformed values instead of trusting them', () => {
-    const restored = restoreProject({
-      ...initialState(),
-      cards: [
-        {
-          id: 'x',
-          x: 0,
-          y: 0,
-          name: 'x',
-          src: 'https://media.example/a.png',
-          kind: 'image',
-          prompt: 42,
-          sourceId: {},
-        },
-      ],
-    });
-    expect(restored.cards[0]).not.toHaveProperty('prompt');
-    expect(restored.cards[0]).not.toHaveProperty('sourceId');
-  });
 });

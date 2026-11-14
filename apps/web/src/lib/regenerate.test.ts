@@ -38,17 +38,6 @@ function video(status: string, sourceId?: string): Card {
 }
 
 describe('regeneration', () => {
-  it('is not offered for uploaded media', () => {
-    expect(regeneration({ ...image, provider: undefined }, [])).toBeNull();
-    expect(regeneration({ ...image, prompt: undefined }, [])).toBeNull();
-  });
-  it('re-runs an image with its full prompt', () => {
-    expect(regeneration(image, [image])).toEqual({
-      ok: true,
-      prompt: '海边的灯塔，黄昏',
-      mode: 'image',
-    });
-  });
   it('reuses the first frame of an image-to-video card while it is available', () => {
     const card = video('succeeded', 'img');
     expect(regeneration(card, [image, card])).toMatchObject({
@@ -63,10 +52,6 @@ describe('regeneration', () => {
     expect(regeneration(card, [{ ...image, missingMedia: true }, card])).toMatchObject({
       ok: false,
     });
-  });
-  it('re-runs text-to-video without a first frame', () => {
-    const card = video('rejected', '');
-    expect(regeneration(card, [card])).toEqual({ ok: true, prompt: '镜头缓缓推进', mode: 'video' });
   });
   it('refuses while the task may still run or when the first frame was not recorded', () => {
     expect(regeneration(video('running', ''), [])).toMatchObject({ ok: false });

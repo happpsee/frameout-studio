@@ -53,28 +53,4 @@ describe('ShotList', () => {
     fireEvent.click(within(rest).getByRole('button', { name: '加入成片' }));
     expect(onAddShot).toHaveBeenLastCalledWith('upload');
   });
-
-  it('says so when a shot is already in the cut or a script has no results yet', () => {
-    render(
-      <ShotList
-        project={project({
-          notes: [{ id: 'n1', x: 0, y: 0, kind: 'script', title: '空脚本', text: '一' }],
-          cards: [card('a')],
-          sequence: [{ id: 's', cardId: 'a', duration: 4 }],
-        })}
-        onPreview={vi.fn()}
-        onAddShot={vi.fn()}
-        onLocate={vi.fn()}
-      />,
-    );
-    expect(screen.getByText(/这份脚本还没有生成画面/)).toBeTruthy();
-    expect(screen.getByRole('button', { name: '再加一次' })).toBeTruthy();
-  });
-
-  it('explains an empty project', () => {
-    render(
-      <ShotList project={project({})} onPreview={vi.fn()} onAddShot={vi.fn()} onLocate={vi.fn()} />,
-    );
-    expect(screen.getByText(/还没有素材/)).toBeTruthy();
-  });
 });

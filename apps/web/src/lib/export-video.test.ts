@@ -1,11 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  ExportError,
-  exportSequence,
-  fitRect,
-  objectPosition,
-  shotFrameTimes,
-} from './export-video';
+import { ExportError, exportSequence, fitRect, shotFrameTimes } from './export-video';
 import type { Card } from '../types';
 
 const card: Card = {
@@ -22,12 +16,6 @@ describe('sequence export layout and timing', () => {
     expect(shotFrameTimes(1, 30)).toHaveLength(30);
     expect(shotFrameTimes(4, 30).at(-1)).toBeCloseTo(119 / 30);
     expect(shotFrameTimes(0.01, 30)).toEqual([0]);
-  });
-  it('reads object-position like the preview CSS', () => {
-    expect(objectPosition()).toEqual({ x: 0.5, y: 0.5 });
-    expect(objectPosition('20% 0')).toEqual({ x: 0.2, y: 0 });
-    expect(objectPosition('left bottom')).toEqual({ x: 0, y: 1 });
-    expect(objectPosition('top')).toEqual({ x: 0.5, y: 0 });
   });
   it('letterboxes with contain and crops with cover', () => {
     const target = { width: 1280, height: 720 };

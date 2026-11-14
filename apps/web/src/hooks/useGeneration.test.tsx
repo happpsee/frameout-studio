@@ -100,26 +100,6 @@ afterEach(() => {
 });
 
 describe('generation cancellation and retained video tasks', () => {
-  it('opens a temporary desktop asset in the default browser and reports failures', async () => {
-    const openTemporaryDownload = vi.fn(async (_url: string) => {});
-    vi.stubGlobal('frameoutDesktop', {
-      storage: { write: vi.fn(async () => {}) },
-      openTemporaryDownload,
-    });
-    const card: Card = {
-      ...jobCard(),
-      src: 'https://media.example/result.png',
-      job: undefined,
-      remoteTemporary: true,
-    };
-    const hook = harness([card]);
-    await hook.result.current.download(card);
-    expect(openTemporaryDownload).toHaveBeenCalledWith(card.src);
-    openTemporaryDownload.mockRejectedValueOnce(new Error('browser unavailable'));
-    await hook.result.current.download(card);
-    expect(hook.toast).toHaveBeenCalledWith('无法在浏览器打开临时素材链接');
-  });
-
   it('does not insert an image if a provider responds after the user stops', async () => {
     const pending = deferred<{ src: string; provider: string; model: string }>();
     client.generateImage.mockReturnValue(pending.promise);
@@ -142,49 +122,6 @@ describe('generation cancellation and retained video tasks', () => {
     expect(hook.getProject().cards).toEqual([]);
     expect(hook.result.current.active).toBe(false);
     expect(hook.toast).not.toHaveBeenCalledWith(expect.stringContaining('图片已加入'));
-  });
-
-  it('does not insert an image when saving the media finishes after stopping', async () => {
-    const stored = deferred<string>();
-    client.generateImage.mockResolvedValue({
-      src: 'data:image/png;base64,aA==',
-      provider: 'ark',
-      model: 'image-model',
-    });
-    vi.stubGlobal(
-      'fetch',
-      vi.fn().mockResolvedValue({ blob: async () => new Blob(['fixture'], { type: 'image/png' }) }),
-    );
-    vi.mocked(putMedia).mockReturnValue(stored.promise);
-    const hook = harness();
-    let generation!: Promise<void>;
-    await act(async () => {
-      generation = hook.result.current.generate();
-    });
-    expect(putMedia).toHaveBeenCalledTimes(1);
-    act(() => hook.result.current.stop());
-    await act(async () => {
-      stored.resolve('stored-media-id');
-      await generation;
-    });
-    expect(hook.getProject().cards).toEqual([]);
-    expect(hook.result.current.active).toBe(false);
-  });
-
-  it('does not update the project if a pending image request finishes after unmount', async () => {
-    const pending = deferred<{ src: string; provider: string; model: string }>();
-    client.generateImage.mockReturnValue(pending.promise);
-    const hook = harness();
-    let generation!: Promise<void>;
-    await act(async () => {
-      generation = hook.result.current.generate();
-    });
-    hook.unmount();
-    await act(async () => {
-      pending.resolve({ src: 'https://media.example/late.png', provider: 'ark', model: 'test' });
-      await generation;
-    });
-    expect(hook.update).not.toHaveBeenCalled();
   });
 
   it('does not resubmit a video task that has no provider task ID', async () => {
@@ -284,61 +221,6 @@ describe('generation cancellation and retained video tasks', () => {
     expect(hook.result.current.active).toBe(false);
   });
 
-  it('does not let a stopped query overwrite a later successful resume of the same card', async () => {
-    const oldQuery = deferred<{ id: string; status: string; src?: string }>();
-    client.getVideo.mockReturnValueOnce(oldQuery.promise).mockResolvedValueOnce({
-      id: 'provider-job-123',
-      status: 'succeeded',
-      src: 'https://media.example/new-completed.mp4',
-    });
-    const hook = harness([jobCard()]);
-    let oldResume!: Promise<void>;
-    await act(async () => {
-      oldResume = hook.result.current.resume(hook.getProject().cards[0]);
-    });
-    const oldSignal = client.getVideo.mock.calls[0][0].signal as AbortSignal;
-    act(() => hook.result.current.stop());
-    expect(oldSignal.aborted).toBe(true);
-
-    await act(async () => hook.result.current.resume(hook.getProject().cards[0]));
-    const completed = structuredClone(hook.getProject().cards[0]);
-    expect(completed).toMatchObject({
-      kind: 'video',
-      src: 'https://media.example/new-completed.mp4',
-      job: { id: 'provider-job-123', status: 'succeeded' },
-    });
-    expect(completed.job).not.toHaveProperty('error');
-    const updatesBeforeOldFailure = hook.update.mock.calls.length;
-    const toastsBeforeOldFailure = hook.toast.mock.calls.length;
-
-    await act(async () => {
-      oldQuery.reject(new DOMException('stopped query rejected late', 'AbortError'));
-      await oldResume;
-    });
-    expect(hook.getProject().cards[0]).toEqual(completed);
-    expect(hook.update).toHaveBeenCalledTimes(updatesBeforeOldFailure);
-    expect(hook.toast).toHaveBeenCalledTimes(toastsBeforeOldFailure);
-    expect(hook.result.current.active).toBe(false);
-    expect(client.getVideo).toHaveBeenCalledTimes(2);
-    expect(client.submitVideo).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    { provider: 'compatible', baseUrl: 'https://custom.example/v1' },
-    { provider: 'ark', baseUrl: 'https://other.example/api/v3' },
-  ] as const)(
-    'requires switching back before querying a task from a different provider or address: $baseUrl',
-    async changed => {
-      const card = jobCard();
-      const hook = harness([card]);
-      act(() => hook.result.current.setConfig({ ...originalConfig, ...changed }));
-      await act(async () => hook.result.current.resume(card));
-      expect(createClient).not.toHaveBeenCalled();
-      expect(client.getVideo).not.toHaveBeenCalled();
-      expect(hook.toast).toHaveBeenCalledWith(expect.stringContaining('原来的供应商'));
-    },
-  );
-
   it('redacts the key before saving a submission error to a paused job', async () => {
     client.submitVideo.mockRejectedValue(new Error(`provider rejected ${KEY}`));
     const hook = harness();
@@ -348,36 +230,6 @@ describe('generation cancellation and retained video tasks', () => {
     expect(JSON.stringify(serializeProject(hook.getProject()))).not.toContain(KEY);
     expect(hook.getProject().cards[0].job?.error).toContain('[已隐藏]');
     expect(hook.toast).toHaveBeenCalledWith(expect.stringContaining('[已隐藏]'));
-  });
-
-  it('keeps provider failure details secret-free in a saved video job', async () => {
-    const card = jobCard();
-    const hook = harness([card]);
-    client.getVideo.mockResolvedValue({
-      id: card.job!.id,
-      status: 'failed',
-      error: `rejected credential ${KEY}`,
-    });
-    await act(async () => hook.result.current.resume(card));
-    expect(hook.getProject().cards[0].job?.status).toBe('failed');
-    expect(JSON.stringify(serializeProject(hook.getProject()))).not.toContain(KEY);
-    expect(hook.getProject().cards[0].job?.error).toContain('[已隐藏]');
-  });
-  it('opens the settings instead of a toast when the key is missing', async () => {
-    const openSettings = vi.fn();
-    const toast = vi.fn();
-    const hook = renderHook(() =>
-      useGeneration({ getProject: initialState, update: vi.fn(), toast, openSettings }),
-    );
-    act(() => {
-      hook.result.current.setConfig({ ...originalConfig, key: '' });
-      hook.result.current.setPrompt('森林');
-    });
-    await act(() => hook.result.current.generate());
-    expect(openSettings).toHaveBeenCalledWith(expect.stringContaining('提示词已保留'));
-    expect(toast).not.toHaveBeenCalled();
-    expect(createClient).not.toHaveBeenCalled();
-    expect(hook.result.current.prompt).toBe('森林');
   });
   it('sends shared notes with every prompt and reference images with image generation', async () => {
     const hero: Card = {

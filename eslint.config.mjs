@@ -95,7 +95,7 @@ export default tseslint.config(
   },
   {
     // Tests read best as one long list of cases, stub the desktop bridge, and read untyped JSON.
-    files: ['**/*.test.{ts,tsx,js}', '**/bench/**'],
+    files: ['**/*.test.{ts,tsx,js}'],
     rules: {
       'max-lines': 'off',
       'max-lines-per-function': 'off',

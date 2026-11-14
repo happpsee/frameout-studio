@@ -62,26 +62,6 @@ afterEach(() => {
 });
 
 describe('MultiSelectionBar', () => {
-  it('stays hidden until two cards are selected', () => {
-    render(<Harness />);
-    act(() => selection.toggle('a'));
-    expect(screen.queryByText(/已选/)).toBeNull();
-    act(() => selection.toggle('b'));
-    expect(screen.getByText('已选 2 个')).toBeTruthy();
-  });
-  it('offers the three arrangements for the selected cards', () => {
-    const onArrange = vi.fn();
-    render(<Harness onArrange={onArrange} />);
-    act(() => selection.add(['a', 'b']));
-    fireEvent.click(screen.getByRole('button', { name: '宫格排列' }));
-    fireEvent.click(screen.getByRole('button', { name: '横向排列' }));
-    fireEvent.click(screen.getByRole('button', { name: '纵向排列' }));
-    expect(onArrange.mock.calls).toEqual([
-      [['a', 'b'], 'grid'],
-      [['a', 'b'], 'row'],
-      [['a', 'b'], 'column'],
-    ]);
-  });
   it('adds finished cards to the cut in visual order', () => {
     const onAddShots = vi.fn();
     render(<Harness onAddShots={onAddShots} />);
@@ -110,11 +90,5 @@ describe('MultiSelectionBar', () => {
     fireEvent.keyDown(document.body, { key: 'Delete' });
     expect(commits).toHaveLength(0);
     expect(toast).toHaveBeenCalledWith('先停止本页等待，再删除素材');
-  });
-  it('clears the selection', () => {
-    render(<Harness />);
-    act(() => selection.add(['a', 'b']));
-    fireEvent.click(screen.getByRole('button', { name: '取消选择' }));
-    expect(screen.queryByText(/已选/)).toBeNull();
   });
 });

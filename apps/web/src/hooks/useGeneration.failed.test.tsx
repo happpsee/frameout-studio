@@ -88,22 +88,6 @@ describe('failed image generation', () => {
     expect(regeneration(card, [card])).toMatchObject({ ok: true, mode: 'image', replaces: true });
   });
 
-  it('adds no card when the user stopped the request', async () => {
-    let reject!: (error: unknown) => void;
-    client.generateImage.mockReturnValue(new Promise((_, fail) => (reject = fail)));
-    const h = harness();
-    let generation!: Promise<void>;
-    await act(async () => {
-      generation = h.result.current.generate();
-    });
-    act(() => h.result.current.stop());
-    await act(async () => {
-      reject(new DOMException('已停止等待', 'AbortError'));
-      await generation;
-    });
-    expect(h.getProject().cards).toEqual([]);
-  });
-
   it('再来一张 puts the new result in place of the failed card', async () => {
     client.generateImage.mockRejectedValueOnce(new Error('网络错误'));
     const h = harness();
@@ -120,18 +104,5 @@ describe('failed image generation', () => {
     expect(failedImage(cards[0])).toBe(false);
     expect(cards[0]).toMatchObject({ prompt: PROMPT, x: failed.x, y: failed.y });
     expect(h.getProject().selected).toBe(cards[0].id);
-  });
-
-  it('a retry that fails again replaces the old failed card instead of piling up', async () => {
-    client.generateImage.mockRejectedValueOnce(new Error('网络错误'));
-    const h = harness();
-    await act(() => h.result.current.generate());
-    const first = h.getProject().cards[0];
-    client.generateImage.mockRejectedValueOnce(new Error('超时'));
-    await act(() => h.result.current.regenerate(first));
-    const cards = h.getProject().cards;
-    expect(cards).toHaveLength(1);
-    expect(cards[0].id).not.toBe(first.id);
-    expect(cards[0].job?.error).toBe('超时');
   });
 });

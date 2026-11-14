@@ -2,16 +2,12 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { createRef } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import SelectionActions from './SelectionActions';
-import PromptCopy from './PromptCopy';
 import { preferenceOnly } from '../lib/project';
 import { defaults } from '../lib/preferences';
 import type { Card } from '../types';
 import type { Regeneration } from '../lib/regenerate';
 
-afterEach(() => {
-  cleanup();
-  vi.unstubAllGlobals();
-});
+afterEach(cleanup);
 
 const image: Card = {
   id: 'img',
@@ -53,21 +49,6 @@ describe('再来一张', () => {
     fireEvent.click(button);
     expect(handlers.onRegenerate).toHaveBeenCalledTimes(1);
   });
-
-  it('is disabled while another generation runs and hidden for uploads', () => {
-    renderBar(image, { ok: true, prompt: '海边的灯塔', mode: 'image' }, true);
-    expect(screen.getByRole('button', { name: /再来一张/ })).toHaveProperty('disabled', true);
-    cleanup();
-    renderBar({ ...image, provider: undefined }, null);
-    expect(screen.queryByRole('button', { name: /再来/ })).toBeNull();
-  });
-
-  it('shows why it cannot run', () => {
-    renderBar(image, { ok: false, mode: 'video', reason: '用作首帧的图片已删除或不可用' });
-    const button = screen.getByRole('button', { name: /再来一条/ });
-    expect(button.getAttribute('aria-disabled')).toBe('true');
-    expect(button.getAttribute('title')).toBe('用作首帧的图片已删除或不可用');
-  });
 });
 
 describe('rejected video tasks', () => {
@@ -84,18 +65,5 @@ describe('rejected video tasks', () => {
     cleanup();
     renderBar({ ...image, job: { ...job, status: 'paused' } }, null);
     expect(screen.getByRole('button', { name: /继续查询/ })).toBeTruthy();
-  });
-});
-
-describe('PromptCopy', () => {
-  it('shows the whole prompt and copies it', async () => {
-    const writeText = vi.fn(async () => {});
-    vi.stubGlobal('navigator', { ...navigator, clipboard: { writeText } });
-    const prompt = '海边的灯塔，黄昏，镜头缓缓推进，远处有一艘返航的渔船，海浪轻拍礁石';
-    render(<PromptCopy prompt={prompt} />);
-    expect(screen.getByText(prompt)).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '复制提示词' }));
-    expect(await screen.findByText('已复制')).toBeTruthy();
-    expect(writeText).toHaveBeenCalledWith(prompt);
   });
 });

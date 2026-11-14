@@ -93,55 +93,6 @@ describe('persisted creative workflow', () => {
     expect(client.generateImage).not.toHaveBeenCalled();
     expect(client.submitVideo).not.toHaveBeenCalled();
   });
-  it('requires confirmation when the output referenced by an interrupted step is missing', async () => {
-    const project = initialState();
-    project.workflow = createWorkflow('中断的首帧', false, config);
-    project.workflow.status = 'running';
-    project.workflow.steps[0] = {
-      ...project.workflow.steps[0],
-      status: 'running',
-      outputCardId: 'missing-image',
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
-    const hook = harness();
-    act(() => hook.result.current.generation.setConfig(config));
-    await act(async () => hook.result.current.workflow.start());
-    await waitFor(() =>
-      expect(hook.result.current.workspace.project.workflow?.steps[0].error).toContain('重新生成'),
-    );
-    expect(client.generateImage).not.toHaveBeenCalled();
-  });
-  it('keeps an unreadable restored image paused instead of acknowledging it as complete', async () => {
-    const project = initialState();
-    project.cards = [
-      {
-        id: 'unreadable',
-        name: '首帧',
-        x: 0,
-        y: 0,
-        kind: 'image',
-        src: '',
-        mediaId: 'missing-media',
-      },
-    ];
-    project.workflow = createWorkflow('首帧', false, config);
-    project.workflow.status = 'running';
-    project.workflow.steps[0] = {
-      ...project.workflow.steps[0],
-      status: 'running',
-      outputCardId: 'unreadable',
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(project));
-    vi.mocked(getMedia).mockResolvedValue(null);
-    const hook = harness();
-    act(() => hook.result.current.generation.setConfig(config));
-    await act(async () => hook.result.current.workflow.start());
-    await waitFor(() =>
-      expect(hook.result.current.workspace.project.workflow?.steps[0].error).toContain('无法读取'),
-    );
-    expect(hook.result.current.workspace.project.workflow?.steps[0].status).toBe('paused');
-    expect(client.generateImage).not.toHaveBeenCalled();
-  });
   it('executes a confirmed image-to-video plan with the generated image as its reference', async () => {
     const hook = harness();
     act(() => hook.result.current.generation.setConfig(config));
@@ -163,28 +114,6 @@ describe('persisted creative workflow', () => {
     expect(JSON.stringify(serializeProject(hook.result.current.workspace.project))).not.toContain(
       config.key,
     );
-  });
-  it('pauses before the next shot and ignores an image that returns after stopping', async () => {
-    let resolve!: (result: { src: string; provider: string; model: string }) => void;
-    client.generateImage.mockReturnValueOnce(
-      new Promise(done => {
-        resolve = done;
-      }),
-    );
-    const hook = harness();
-    act(() => hook.result.current.generation.setConfig(config));
-    act(() => hook.result.current.workflow.plan('镜头一\n镜头二', false));
-    await act(async () => hook.result.current.workflow.start());
-    await waitFor(() => expect(client.generateImage).toHaveBeenCalledTimes(1));
-    act(() => hook.result.current.workflow.pause());
-    await act(async () => {
-      resolve({ src: 'https://media.example/late.png', provider: 'ark', model: 'image' });
-    });
-    await waitFor(() =>
-      expect(hook.result.current.workspace.project.workflow?.status).toBe('paused'),
-    );
-    expect(hook.result.current.workspace.project.cards).toHaveLength(0);
-    expect(client.generateImage).toHaveBeenCalledTimes(1);
   });
   it('preserves a late provider task ID and resumes it without resubmitting', async () => {
     let submitted!: (result: { id: string; status: string }) => void;

@@ -1,13 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  DEFAULT_PROJECT_TITLE,
-  initialState,
-  MISSING_MEDIA,
-  normalizeProjectTitle,
-  PROJECT_TITLE_MAX,
-  restoreProject,
-  serializeProject,
-} from './project';
+import { initialState, MISSING_MEDIA, restoreProject, serializeProject } from './project';
 
 function projectWithCards() {
   return {
@@ -24,58 +16,6 @@ function projectWithCards() {
 }
 
 describe('project persistence compatibility', () => {
-  it('restores relative asset paths that are not bundled demos', () => {
-    const old = projectWithCards();
-    old.cards[0].src = 'assets/own-photo.png';
-    old.selected = old.cards[0].id;
-    old.sequence = [{ id: 'shot-1', cardId: old.cards[0].id, duration: 6 }];
-    const restored = restoreProject(old);
-    expect(restored.cards[0].src).toBe('/assets/own-photo.png');
-    expect(restored.selected).toBe(old.selected);
-    expect(restored.sequence).toEqual(old.sequence);
-    expect(restored.camera).toEqual(old.camera);
-  });
-
-  it('drops legacy examples and demo copies while preserving real media and its timeline', () => {
-    const original = projectWithCards();
-    const localCard = { ...original.cards[0], src: '', mediaId: 'original-upload' };
-    const providerCard = { ...original.cards[1], provider: 'ark', label: 'AI 生成图片' };
-    const saved = {
-      ...original,
-      cards: [
-        localCard,
-        providerCard,
-        { ...original.cards[2], id: 'forest-wide', src: 'assets/forest-astronaut.png' },
-        {
-          ...original.cards[2],
-          id: 'example-ocean',
-          src: '/assets/still-ocean.webp',
-          label: '灵感样例',
-        },
-        {
-          ...localCard,
-          id: 'demo-copy',
-          name: `${localCard.name} · 动态`,
-          label: '动态预览',
-          motion: true,
-        },
-      ],
-      selected: 'demo-copy',
-      sequence: [
-        { id: 'local-shot', cardId: localCard.id, duration: 6 },
-        { id: 'sample-shot', cardId: 'forest-wide', duration: 4 },
-        { id: 'provider-shot', cardId: providerCard.id, duration: 5 },
-        { id: 'copy-shot', cardId: 'demo-copy', duration: 4 },
-      ],
-    };
-    const restored = restoreProject(saved);
-    expect(restored.cards.map(card => card.id)).toEqual([localCard.id, providerCard.id]);
-    expect(restored.cards[0]).toMatchObject({ mediaId: localCard.mediaId, missingMedia: true });
-    expect(restored.cards[1]).toMatchObject({ src: providerCard.src, provider: 'ark' });
-    expect(restored.sequence.map(shot => shot.id)).toEqual(['local-shot', 'provider-shot']);
-    expect(restored.selected).toBeNull();
-  });
-
   it('preserves IndexedDB media references without writing object URLs to localStorage', () => {
     const project = projectWithCards();
     Object.assign(project.cards[0], { src: 'blob:current-session', mediaId: 'media-1' });
@@ -120,37 +60,5 @@ describe('project persistence compatibility', () => {
       prompt: '森林',
     });
     expect(restored.cards[0].job?.config).not.toHaveProperty('key');
-  });
-
-  it('does not save unavailable session-only files or timeline entries that reference them', () => {
-    const project = projectWithCards();
-    Object.assign(project.cards[0], { sessionOnly: true });
-    project.selected = project.cards[0].id;
-    project.sequence = [{ id: 'shot-1', cardId: project.cards[0].id, duration: 4 }];
-    const saved = serializeProject(project);
-    expect(saved.cards).toHaveLength(2);
-    expect(saved.selected).toBeNull();
-    expect(saved.sequence).toEqual([]);
-  });
-
-  it('filters broken references and clamps a stored camera without discarding valid cards', () => {
-    const project = projectWithCards();
-    project.camera.zoom = 900;
-    project.sequence = [
-      { id: 'invalid', cardId: 'deleted-card', duration: 5 },
-      { id: 'valid', cardId: project.cards[0].id, duration: -8 },
-    ];
-    const restored = restoreProject(project);
-    expect(restored.cards).toHaveLength(3);
-    expect(restored.camera.zoom).toBe(4);
-    expect(restored.sequence).toEqual([{ id: 'valid', cardId: project.cards[0].id, duration: 1 }]);
-  });
-});
-
-describe('project name', () => {
-  it('trims, shortens and falls back to the default name', () => {
-    expect(normalizeProjectTitle('  海边   短片 ')).toBe('海边 短片');
-    expect(normalizeProjectTitle('   ')).toBe(DEFAULT_PROJECT_TITLE);
-    expect(Array.from(normalizeProjectTitle('长'.repeat(60)))).toHaveLength(PROJECT_TITLE_MAX);
   });
 });

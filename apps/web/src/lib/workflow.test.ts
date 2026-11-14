@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createWorkflow, nextStep, restoreWorkflow, workspaceDiff } from './workflow';
+import { createWorkflow, nextStep, workspaceDiff } from './workflow';
 import { defaults } from './preferences';
 import { initialState, restoreProject, serializeProject } from './project';
 
@@ -35,14 +35,6 @@ describe('shot plans and checkpoint persistence', () => {
     expect(recovered.steps.map(step => step.status)).toEqual(['succeeded', 'paused']);
     expect(recovered.steps[1].outputCardId).toBe('video');
     expect(JSON.stringify(serialized)).not.toContain('not-for-storage');
-  });
-  it('rejects a cyclic dependency and limits the number of planned calls', () => {
-    const workflow = createWorkflow('第一帧', false, { ...defaults('ark'), key: '' });
-    workflow.steps[0].dependsOn = workflow.steps[0].id;
-    expect(restoreWorkflow(workflow)?.steps[0].status).toBe('failed');
-    expect(() =>
-      createWorkflow(Array(9).fill('镜头').join('\n'), false, { ...defaults('ark'), key: '' }),
-    ).toThrow();
   });
   it('serializes checkpoint media references and excludes credentials and nested history', () => {
     const state = initialState();

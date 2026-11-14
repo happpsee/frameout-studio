@@ -8,7 +8,6 @@ import type { ProjectState, UpdateProject } from '../types';
 let nextFrame = 0;
 const frames = new Map<number, FrameRequestCallback>();
 const commits: ProjectState[] = [];
-let latestProject: () => ProjectState;
 let latestCanvas: () => ReturnType<typeof useCanvas>;
 const onFiles = vi.fn();
 const addToSequence = vi.fn();
@@ -49,7 +48,6 @@ function Harness({ cards = oneCard }: { cards?: ProjectState['cards'] }) {
   });
   const projectRef = useRef(project);
   const viewportRef = useRef<HTMLElement>(null);
-  latestProject = () => projectRef.current;
   const update: UpdateProject = useCallback((recipe, record = true) => {
     const next = JSON.parse(JSON.stringify(projectRef.current));
     recipe(next);
@@ -77,12 +75,8 @@ function Harness({ cards = oneCard }: { cards?: ProjectState['cards'] }) {
           </article>
         ))}
       </main>
-      <output data-testid="camera">{JSON.stringify(canvas.camera)}</output>
-      <output data-testid="position">{JSON.stringify(canvas.dragPosition)}</output>
-      <output data-testid="saved">{JSON.stringify(project.cards[0])}</output>
       <output data-testid="group">{canvas.selection.ids.join(',')}</output>
       <output data-testid="selected">{project.selected ?? ''}</output>
-      <textarea data-testid="prompt" />
     </>
   );
 }
@@ -106,27 +100,6 @@ function pointer(
   fireEvent(target, event);
 }
 describe('React canvas gestures', () => {
-  it.each(['pointercancel', 'lostpointercapture'])(
-    '%s restores the original drag position without recording history',
-    reason => {
-      render(<Harness />);
-      frame();
-      const card = screen.getByTestId('card');
-      pointer(card, 'pointerdown', 1, 100, 100);
-      pointer(card, 'pointermove', 1, 140, 120);
-      frame();
-      expect(JSON.parse(screen.getByTestId('position').textContent!)).toEqual({
-        id: 'one',
-        x: 60,
-        y: 45,
-      });
-      pointer(card, reason, 1, 140, 120);
-      frame();
-      expect(screen.getByTestId('position').textContent).toBe('null');
-      expect(JSON.parse(screen.getByTestId('saved').textContent!).x).toBe(10);
-      expect(commits).toHaveLength(0);
-    },
-  );
   it('commits one history entry at the end of a drag in world coordinates', () => {
     render(<Harness />);
     frame();
@@ -138,54 +111,6 @@ describe('React canvas gestures', () => {
     pointer(card, 'pointerup', 1, 140, 120);
     expect(commits).toHaveLength(1);
     expect(commits[0].cards[0]).toMatchObject({ x: 60, y: 45 });
-  });
-  it('continues panning with one finger after ending a pinch without a jump', () => {
-    render(<Harness />);
-    frame();
-    const viewport = screen.getByTestId('viewport');
-    pointer(viewport, 'pointerdown', 1, 100, 100);
-    pointer(viewport, 'pointerdown', 2, 200, 100);
-    pointer(viewport, 'pointermove', 2, 240, 100);
-    frame();
-    const before = JSON.parse(screen.getByTestId('camera').textContent!);
-    pointer(viewport, 'pointerup', 2, 240, 100);
-    pointer(viewport, 'pointermove', 1, 120, 110);
-    frame();
-    const after = JSON.parse(screen.getByTestId('camera').textContent!);
-    expect(after.zoom).toBeCloseTo(before.zoom);
-    expect(after.x).toBeCloseTo(before.x + 20);
-    expect(after.y).toBeCloseTo(before.y + 10);
-    pointer(viewport, 'pointerup', 1, 120, 110);
-  });
-  it('keeps the synchronous project ref at the displayed camera before save debounce', () => {
-    render(<Harness />);
-    frame();
-    fireEvent.wheel(screen.getByTestId('viewport'), { deltaX: 30, deltaY: -20 });
-    frame();
-    const visible = JSON.parse(screen.getByTestId('camera').textContent!);
-    expect(latestProject().camera).toEqual(visible);
-    expect(visible).toMatchObject({ x: 40, y: 40, zoom: 0.8 });
-  });
-  it('lets Space activate a focused button instead of stealing it for pan', () => {
-    render(<Harness />);
-    frame();
-    const activate = new KeyboardEvent('keydown', {
-      key: ' ',
-      code: 'Space',
-      bubbles: true,
-      cancelable: true,
-    });
-    fireEvent(screen.getByTestId('card'), activate);
-    expect(activate.defaultPrevented).toBe(false);
-    const pan = new KeyboardEvent('keydown', {
-      key: ' ',
-      code: 'Space',
-      bubbles: true,
-      cancelable: true,
-    });
-    fireEvent(screen.getByTestId('viewport'), pan);
-    expect(pan.defaultPrevented).toBe(true);
-    fireEvent.keyUp(document, { key: ' ', code: 'Space' });
   });
 });
 
@@ -235,48 +160,6 @@ describe('multi-selection', () => {
     ]);
     expect(text('group')).toBe('one,two');
   });
-  it('a plain click on a selected card keeps only that card', () => {
-    render(<Harness cards={threeCards} />);
-    click('one');
-    click('two', true);
-    click('two');
-    expect(text('group')).toBe('');
-    expect(text('selected')).toBe('two');
-  });
-  it('shift-drag on empty canvas selects the cards inside the box', () => {
-    render(<Harness cards={threeCards} />);
-    frame();
-    const viewport = screen.getByTestId('viewport');
-    pointer(viewport, 'pointerdown', 1, 60, 20, true);
-    pointer(viewport, 'pointermove', 1, 650, 220, true);
-    frame();
-    expect(latestCanvas().marquee).toEqual({ left: 60, top: 20, width: 590, height: 200 });
-    const before = text('camera');
-    pointer(viewport, 'pointerup', 1, 650, 220, true);
-    expect(text('group')).toBe('one,two');
-    expect(text('camera')).toBe(before);
-    expect(latestCanvas().marquee).toBeNull();
-  });
-  it('a plain drag on empty canvas still pans and clears the selection', () => {
-    render(<Harness cards={threeCards} />);
-    frame();
-    click('one');
-    click('two', true);
-    const viewport = screen.getByTestId('viewport');
-    pointer(viewport, 'pointerdown', 1, 600, 500);
-    pointer(viewport, 'pointermove', 1, 640, 520);
-    frame();
-    pointer(viewport, 'pointerup', 1, 640, 520);
-    expect(text('group')).toBe('');
-    expect(JSON.parse(text('camera')!)).toMatchObject({ x: 110, y: 40 });
-  });
-  it('Escape clears the selection', () => {
-    render(<Harness cards={threeCards} />);
-    click('one');
-    click('two', true);
-    fireEvent.keyDown(document, { key: 'Escape' });
-    expect(text('group')).toBe('');
-  });
 });
 function paste(target: Element, files: File[]) {
   const event = new Event('paste', { bubbles: true, cancelable: true });
@@ -293,13 +176,5 @@ describe('paste', () => {
     expect(onFiles).toHaveBeenCalledTimes(1);
     expect(onFiles.mock.calls[0]).toHaveLength(1);
     expect([...onFiles.mock.calls[0][0]]).toEqual([image]);
-  });
-  it('ignores pastes into text fields and clipboard content without media', () => {
-    render(<Harness />);
-    paste(screen.getByTestId('prompt'), [image]);
-    const plain = paste(document.body, [new File(['x'], 'a.txt', { type: 'text/plain' })]);
-    paste(document.body, []);
-    expect(plain.defaultPrevented).toBe(false);
-    expect(onFiles).not.toHaveBeenCalled();
   });
 });

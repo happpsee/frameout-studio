@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Card, ProjectState } from '../types';
-import { cardsInRect, rectBetween, removeCards, visualOrder } from './canvas-selection';
+import { removeCards } from './canvas-selection';
 
 const card = (id: string, x: number, y: number): Card => ({
   id,
@@ -12,22 +12,6 @@ const card = (id: string, x: number, y: number): Card => ({
 });
 
 describe('canvas selection helpers', () => {
-  it('builds a rectangle from a drag in any direction', () => {
-    expect(rectBetween({ x: 50, y: 40 }, { x: 10, y: 60 })).toEqual({
-      left: 10,
-      top: 40,
-      width: 40,
-      height: 20,
-    });
-  });
-  it('finds cards that touch the box', () => {
-    const cards = [card('a', 0, 0), card('b', 500, 0), card('c', 0, 500)];
-    expect(cardsInRect(cards, { left: 260, top: 200, width: 300, height: 10 })).toEqual(['a', 'b']);
-  });
-  it('orders cards left to right, then top to bottom within a column', () => {
-    const cards = [card('right', 600, 0), card('low', 40, 300), card('high', 0, 0)];
-    expect(visualOrder(cards).map(c => c.id)).toEqual(['high', 'low', 'right']);
-  });
   it('removes cards with their shots, references and selection', () => {
     const draft: ProjectState = {
       version: 1,

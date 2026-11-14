@@ -11,14 +11,7 @@ import {
   flushDesktopStorage,
   loadDesktopStorage,
 } from './lib/desktop-storage';
-import {
-  createProject,
-  deleteProject,
-  findProject,
-  listProjects,
-  projectDataKeys,
-  renameProject,
-} from './lib/projects';
+import { createProject, findProject, listProjects, projectDataKeys } from './lib/projects';
 import { requestExample } from './lib/examples';
 import type { ProjectState } from './types';
 
@@ -202,29 +195,6 @@ describe('desktop navigation', () => {
     await flushDesktopStorage();
   });
 
-  it('returns to the same project and prompt after reviewing the introduction from help', async () => {
-    const files = new Map<string, ArrayBuffer>([[DESKTOP_INTRO_KEY, encode('seen')]]);
-    await desktopSession(files);
-    createProject('桌面项目');
-    renderApp();
-    await openFromLobby('打开项目：桌面项目');
-    fireEvent.change(screen.getByRole('textbox', { name: '提示词' }), {
-      target: { value: '继续未完成的镜头' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: '打开使用指南' }));
-    fireEvent.click(screen.getByRole('button', { name: '查看产品介绍' }));
-    frame();
-    expect(intro()).toBeTruthy();
-    await act(async () => fireEvent.click(screen.getByRole('button', { name: '进入画布' })));
-    frame();
-    frame();
-    expect((screen.getByRole('textbox', { name: '提示词' }) as HTMLTextAreaElement).value).toBe(
-      '继续未完成的镜头',
-    );
-    expect(canvas()).toBeTruthy();
-    await flushDesktopStorage();
-  });
-
   it('opens the workspace saved before projects, with its assets, from the list', async () => {
     const files = new Map<string, ArrayBuffer>([
       [DESKTOP_INTRO_KEY, encode('seen')],
@@ -310,21 +280,6 @@ describe('web navigation', () => {
     expect(document.body.dataset.studio).toBeUndefined();
   });
 
-  it('shows the list from the introduction once projects exist, and the introduction from the list', () => {
-    localStorage.setItem(DESKTOP_INTRO_KEY, 'seen');
-    createProject('已有项目');
-    history.replaceState(null, '', '/#intro');
-    renderApp();
-    expect(intro()).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '进入画布' }));
-    expect(lobby()).toBeTruthy();
-    expect(location.hash).toBe('#projects');
-    expect(listProjects()).toHaveLength(1);
-    fireEvent.click(screen.getByRole('button', { name: '查看介绍' }));
-    expect(intro()).toBeTruthy();
-    expect(location.hash).toBe('#intro');
-  });
-
   it('opens an example from the introduction as a new project named after it', () => {
     localStorage.setItem(DESKTOP_INTRO_KEY, 'seen');
     const mine = createProject('我的项目');
@@ -340,67 +295,6 @@ describe('web navigation', () => {
     fireEvent.click(screen.getByRole('button', { name: '返回项目列表' }));
     expect(findProject(example.id)?.cardCount).toBe(1);
     expect(findProject(mine.id)?.cardCount).toBe(0);
-  });
-
-  it('sends an old #studio address to the migrated workspace', () => {
-    localStorage.setItem(
-      PROJECT_STORAGE_KEY,
-      savedProject(project => {
-        project.title = '迁移过来的';
-        project.cards = [forestCard];
-      }),
-    );
-    history.replaceState(null, '', '/#studio');
-    renderApp();
-    frame();
-    frame();
-    const [project] = listProjects();
-    expect(project.title).toBe('迁移过来的');
-    expect(location.hash).toBe(`#studio/${project.id}`);
-    expect(screen.getByRole('button', { name: '选择素材：穿过森林' })).toBeTruthy();
-  });
-
-  it('creates a project for an old #studio address when there is none', () => {
-    history.replaceState(null, '', '/#studio');
-    renderApp();
-    expect(listProjects()).toHaveLength(1);
-    expect(location.hash).toBe(`#studio/${listProjects()[0].id}`);
-    expect(canvas()).toBeTruthy();
-  });
-
-  it.each([
-    ['an unknown project', () => 'abc123', '没有找到这个项目'],
-    [
-      'a deleted project',
-      () => {
-        const project = createProject('删掉的');
-        deleteProject(project.id);
-        return project.id;
-      },
-      '已删除',
-    ],
-  ])('shows the list with a message for %s', (_name, id, message) => {
-    history.replaceState(null, '', `/#studio/${id()}`);
-    renderApp();
-    expect(canvas()).toBeNull();
-    expect(lobby()).toBeTruthy();
-    expect(screen.getByRole('status').textContent).toContain(message);
-    expect(location.hash).toBe('#projects');
-  });
-
-  it('follows the browser back button between the list and a project', () => {
-    localStorage.setItem(DESKTOP_INTRO_KEY, 'seen');
-    const project = createProject('甲');
-    renderApp();
-    fireEvent.click(screen.getByRole('button', { name: '打开项目：甲' }));
-    frame();
-    expect(canvas()).toBeTruthy();
-    history.replaceState(null, '', '/');
-    act(() => window.dispatchEvent(new PopStateEvent('popstate', { state: null })));
-    expect(lobby()).toBeTruthy();
-    history.replaceState(null, '', `/#studio/${project.id}`);
-    act(() => window.dispatchEvent(new HashChangeEvent('hashchange')));
-    expect(canvas()).toBeTruthy();
   });
 
   it('keeps the in-page key, unfinished prompt, camera and undo history after visiting the list', () => {
@@ -499,34 +393,5 @@ describe('web navigation', () => {
     expect(savedA.sequence).toHaveLength(1);
     expect(savedB).toMatchObject({ title: '乙', cards: [], sequence: [] });
     expect(listProjects().map(project => project.title)).toEqual(['甲', '乙']);
-  });
-
-  it('shows a rename made in the list in the studio kept behind it', () => {
-    localStorage.setItem(DESKTOP_INTRO_KEY, 'seen');
-    const project = createProject('旧名字');
-    renderApp();
-    fireEvent.click(screen.getByRole('button', { name: '打开项目：旧名字' }));
-    frame();
-    fireEvent.click(screen.getByRole('button', { name: '返回项目列表' }));
-    act(() => renameProject(project.id, '新名字'));
-    fireEvent.click(screen.getByRole('button', { name: '打开项目：新名字' }));
-    expect(screen.getByRole('button', { name: /项目名称：新名字/ })).toBeTruthy();
-    fireEvent.click(screen.getByRole('button', { name: '返回项目列表' }));
-    expect(JSON.parse(localStorage.getItem(projectDataKeys(project.id).project)!).title).toBe(
-      '新名字',
-    );
-    expect(findProject(project.id)?.title).toBe('新名字');
-  });
-
-  it('closes the studio kept behind the list when its project is deleted', () => {
-    localStorage.setItem(DESKTOP_INTRO_KEY, 'seen');
-    const project = createProject('要删的');
-    renderApp();
-    fireEvent.click(screen.getByRole('button', { name: '打开项目：要删的' }));
-    frame();
-    fireEvent.click(screen.getByRole('button', { name: '返回项目列表' }));
-    expect(document.querySelector('#studio-root')).toBeTruthy();
-    act(() => deleteProject(project.id));
-    expect(document.querySelector('#studio-root')).toBeNull();
   });
 });

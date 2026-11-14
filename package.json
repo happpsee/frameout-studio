@@ -15,7 +15,6 @@
     "dev:desktop": "pnpm --filter @frameout/desktop dev",
     "desktop": "turbo run build --filter=@frameout/desktop && pnpm --filter @frameout/desktop start",
     "build:desktop": "turbo run build --filter=@frameout/desktop && pnpm --filter @frameout/desktop package",
-    "bench": "pnpm --filter @frameout/web bench",
     "format": "prettier --write \"**/*.{ts,mts,tsx,js,mjs,cjs,css}\"",
     "format:check": "prettier --check \"**/*.{ts,mts,tsx,js,mjs,cjs,css}\""
   },

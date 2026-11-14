@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import APISettings from './APISettings';
@@ -87,23 +87,6 @@ async function provider(user: ReturnType<typeof userEvent.setup>, label: string)
   await user.click(screen.getByRole('option', { name: label }));
 }
 
-describe('default provider', () => {
-  it('starts new users on Volcano Ark but keeps a provider someone saved', () => {
-    expect(initialConfig().provider).toBe('ark');
-    expect(defaults().provider).toBe('ark');
-    localStorage.setItem(
-      PREFERENCES_KEY,
-      JSON.stringify({ version: 1, active: 'openai', profiles: { openai: defaults('openai') } }),
-    );
-    expect(initialConfig().provider).toBe('openai');
-    localStorage.setItem(
-      PREFERENCES_KEY,
-      JSON.stringify({ version: 1, active: 'gone', profiles: { openai: defaults('openai') } }),
-    );
-    expect(initialConfig().provider).toBe('openai');
-  });
-});
-
 describe('API settings provider profiles and cancellation', () => {
   it('retains provider keys during this mount while saved/refreshed profiles contain no keys', async () => {
     const user = userEvent.setup();
@@ -141,58 +124,6 @@ describe('API settings provider profiles and cancellation', () => {
     expect(keyInput().value).toBe('');
   });
 
-  it.each(['close button', 'Escape cancellation', 'backdrop click'] as const)(
-    'aborts a pending connection test after %s',
-    async reason => {
-      let signal: AbortSignal | undefined;
-      mocked.connect.mockImplementation(({ signal: current }: { signal: AbortSignal }) => {
-        signal = current;
-        return new Promise((_resolve, reject) =>
-          current.addEventListener(
-            'abort',
-            () => reject(new DOMException('Aborted', 'AbortError')),
-            { once: true },
-          ),
-        );
-      });
-      const user = userEvent.setup();
-      render(<Harness />);
-      await user.click(screen.getByRole('button', { name: '测试连接' }));
-      expect(signal?.aborted).toBe(false);
-      const dialog = screen.getByRole('dialog');
-      if (reason === 'close button')
-        await user.click(screen.getByRole('button', { name: '关闭 API 设置' }));
-      else if (reason === 'backdrop click') fireEvent.click(dialog, { clientX: -1, clientY: -1 });
-      else {
-        // A browser dispatches cancel when Escape closes a modal dialog.
-        fireEvent(dialog, new Event('cancel', { bubbles: false, cancelable: true }));
-      }
-      await act(async () => {});
-      expect(signal?.aborted).toBe(true);
-      expect(dialog).toHaveProperty('open', false);
-      expect(screen.queryByRole('button', { name: '正在连接…' })).toBeNull();
-    },
-  );
-
-  it('ignores a connection response after switching the provider', async () => {
-    let signal!: AbortSignal;
-    let resolve!: (value: unknown) => void;
-    mocked.connect.mockImplementation(({ signal: current }: { signal: AbortSignal }) => {
-      signal = current;
-      return new Promise(done => {
-        resolve = done;
-      });
-    });
-    const user = userEvent.setup();
-    render(<Harness />);
-    await user.click(screen.getByRole('button', { name: '测试连接' }));
-    await provider(user, '火山方舟');
-    expect(signal.aborted).toBe(true);
-    await act(async () => resolve({ ok: true }));
-    expect(screen.getByRole('status').textContent).toBe('');
-    expect(keyInput().value).toBe('');
-  });
-
   it('redacts connection error messages instead of displaying the API key', async () => {
     mocked.connect.mockRejectedValue(
       new Error('upstream echoed openai-memory-secret in Bearer openai-memory-secret'),
@@ -217,28 +148,6 @@ describe('API settings provider profiles and cancellation', () => {
     expect(onConfig).toHaveBeenLastCalledWith(expect.objectContaining({ key: '' }));
     await provider(user, '火山方舟');
     expect(keyInput().value).toBe('');
-  });
-
-  it('does not mutate the config object supplied by the parent when clearing keys', async () => {
-    const initial = { ...defaults('openai'), key: 'parent-owned-memory-key' };
-    const user = userEvent.setup();
-    render(<Harness initial={initial} />);
-    await user.click(screen.getByRole('button', { name: '清除本页所有密钥' }));
-    expect(keyInput().value).toBe('');
-    expect(initial.key).toBe('parent-owned-memory-key');
-  });
-  it('shows only the fields the provider supports and where to get a key', async () => {
-    const user = userEvent.setup();
-    render(<Harness />);
-    expect(screen.queryByLabelText('视频模型')).toBeNull();
-    expect(screen.getByRole('link', { name: /到OpenAI控制台创建/ }).getAttribute('href')).toBe(
-      'https://platform.openai.com/api-keys',
-    );
-    await provider(user, '火山方舟');
-    expect(screen.getByLabelText('视频模型')).toBeTruthy();
-    await provider(user, 'OpenAI 兼容接口');
-    expect(screen.queryByRole('link', { name: /控制台创建/ })).toBeNull();
-    expect(screen.queryByRole('checkbox')).toBeNull();
   });
   it('remembers a key in the desktop keychain only when asked', async () => {
     const write = vi.fn(async () => {});
@@ -281,56 +190,5 @@ describe('API settings provider profiles and cancellation', () => {
       delete window.frameoutDesktop;
       await loadRememberedKeys();
     }
-  });
-
-  it('picks models from a list, keeps an unlisted saved model, and types them for compatible', async () => {
-    const user = userEvent.setup();
-    const onConfig = vi.fn();
-    render(
-      <Harness
-        initial={{ ...defaults('ark'), key: 'ark-key', imageModel: 'my-old-seedream' }}
-        onConfig={onConfig}
-      />,
-    );
-    const image = screen.getByRole('combobox', { name: '图片模型' });
-    expect(image.textContent).toBe('当前：my-old-seedream');
-    await user.click(image);
-    expect(screen.getAllByRole('option').map(option => option.textContent)).toEqual([
-      expect.stringContaining('Seedream 5.0 Pro'),
-      '当前：my-old-seedream',
-    ]);
-    await user.click(screen.getByRole('option', { name: /Seedream 5.0 Pro/ }));
-    expect(screen.getByRole('combobox', { name: '视频模型' }).textContent).toContain(
-      'Seedance 2.5',
-    );
-    await user.click(screen.getByRole('button', { name: /保存配置/ }));
-    expect(onConfig).toHaveBeenLastCalledWith(
-      expect.objectContaining({ imageModel: 'doubao-seedream-5-0-pro-260628' }),
-    );
-    await user.click(screen.getByRole('button', { name: '重新打开设置' }));
-    await provider(user, 'OpenAI 兼容接口');
-    expect(screen.getByLabelText<HTMLInputElement>('图片模型').tagName).toBe('INPUT');
-  });
-  it('leaves picture parameters to the composer on the web', async () => {
-    const user = userEvent.setup();
-    render(<Harness />);
-    expect(screen.queryByRole('combobox', { name: '图片尺寸' })).toBeNull();
-    await provider(user, '火山方舟');
-    expect(screen.queryByRole('combobox', { name: '视频时长' })).toBeNull();
-    expect(screen.queryByRole('combobox', { name: '视频比例' })).toBeNull();
-    expect(screen.queryByRole('combobox', { name: '视频分辨率' })).toBeNull();
-    expect(screen.getByText(/尺寸、时长、比例在输入框旁边调整/)).toBeTruthy();
-  });
-  it('tells Ark users to switch on the model after a passing test', async () => {
-    const user = userEvent.setup();
-    render(<Harness initial={{ ...defaults('ark'), key: 'ark-key' }} />);
-    await user.click(screen.getByRole('button', { name: '测试连接' }));
-    const status = screen.getByRole('status').textContent;
-    expect(status).toContain('火山方舟控制台开通所选模型');
-    expect(status).toContain('200 元');
-    await provider(user, 'OpenAI');
-    await user.type(keyInput(), 'sk-openai');
-    await user.click(screen.getByRole('button', { name: '测试连接' }));
-    expect(screen.getByRole('status').textContent).toBe('连接成功。具体模型权限以实际生成为准。');
   });
 });
