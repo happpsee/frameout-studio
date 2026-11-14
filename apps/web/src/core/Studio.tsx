@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-} from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Card } from '../types';
 import { useWorkspace } from './project/useWorkspace';
 import { useGeneration } from './generation/useGeneration';
@@ -13,6 +6,7 @@ import { useCanvas } from './canvas/useCanvas';
 import { useFileImport } from './canvas/useFileImport';
 import { useCardActions } from './canvas/useCardActions';
 import { useStudioShortcuts } from './canvas/useStudioShortcuts';
+import { useSelectionLayout } from './canvas/useSelectionLayout';
 import { useWorkflow } from './generation/useWorkflow';
 import { useExampleImport } from '../shell/misc/useExampleImport';
 import { useNotes } from './canvas/useNotes';
@@ -22,7 +16,7 @@ import { thumbnails, wantsOriginal } from './canvas/thumbnails';
 import { CanvasNote } from './canvas/CanvasNote';
 import CardPrompt from './generation/CardPrompt';
 import { cardPrompt, type PromptAction } from './generation/card-prompt';
-import { CARD_CENTER, CARD_HEIGHT, CARD_WIDTH, clamp } from './canvas/canvas-camera';
+import { CARD_CENTER } from './canvas/canvas-camera';
 import { readStoredValue } from './project/desktop-storage';
 import { desktopBridge, isDesktop } from '../platform';
 import { serializeProject } from './project/project';
@@ -115,13 +109,6 @@ export default function Studio({
   // the second effect setup. That save should not suppress the first fit.
   const [fitOnOpen] = useState(() => needsInitialFit(projectId));
   const didInitialFit = useRef(!fitOnOpen);
-  const [layout, setLayout] = useState({
-    width: 1200,
-    height: 600,
-    bottom: 400,
-    selectionWidth: 400,
-    selectionHeight: 48,
-  });
 
   const toast = useCallback((message: string) => {
     setToastText(message);
@@ -291,29 +278,6 @@ export default function Studio({
     )
       document.activeElement.blur();
   }, [isActive, stopGeneration, cancelGesture, closePreview, closeExport]);
-  useLayoutEffect(() => {
-    if (!isActive) return;
-    const measure = () => {
-      const rect = viewportRef.current?.getBoundingClientRect();
-      if (!rect?.width || !rect.height) return;
-      const bottom = desktop
-        ? rect.bottom
-        : (composerRef.current?.getBoundingClientRect().top ?? rect.bottom);
-      setLayout({
-        width: rect.width,
-        height: rect.height,
-        bottom: bottom - rect.top - 12,
-        selectionWidth: selectionRef.current?.offsetWidth ?? 400,
-        selectionHeight: selectionRef.current?.offsetHeight ?? 48,
-      });
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    if (viewportRef.current) observer.observe(viewportRef.current);
-    if (selectionRef.current) observer.observe(selectionRef.current);
-    if (composerRef.current) observer.observe(composerRef.current);
-    return () => observer.disconnect();
-  }, [desktop, isActive, hasSelection, generation.mode, selectedJobStatus]);
   useStudioShortcuts({
     isActive,
     active,
@@ -348,33 +312,18 @@ export default function Studio({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast('已导出项目文件：只含布局和设置，图片和视频请另外保存');
   }
-  let selectionStyle: CSSProperties = {};
-  let outside = false;
-  let selectedBox = { left: 0, top: 0, right: 0, bottom: 0 };
-  let barBottom: number | undefined;
-  if (selectedPosition) {
-    const left = canvas.camera.x + selectedPosition.x * canvas.camera.zoom;
-    const top = canvas.camera.y + selectedPosition.y * canvas.camera.zoom;
-    const right = left + CARD_WIDTH * canvas.camera.zoom;
-    const bottom = top + CARD_HEIGHT * canvas.camera.zoom;
-    outside = right < 0 || left > layout.width || bottom < 0 || top > layout.height;
-    let x = clamp(
-      (left + right - layout.selectionWidth) / 2,
-      12,
-      Math.max(12, layout.width - layout.selectionWidth - 12),
-    );
-    let y = top - layout.selectionHeight - 12;
-    if (y < 48) y = bottom + 12;
-    y = clamp(y, 48, Math.max(48, layout.bottom - layout.selectionHeight));
-    if (!desktop && x < 65 && y < 320) {
-      if (70 + layout.selectionWidth < layout.width - 12) x = 70;
-      else y = clamp(325, 48, Math.max(48, layout.bottom - layout.selectionHeight));
-    }
-    selectionStyle = { left: x, top: y };
-    selectedBox = { left, top, right, bottom };
-    // The bar normally sits above the card; when it had to go below, the prompt goes under it.
-    if (y >= bottom) barBottom = y + layout.selectionHeight;
-  }
+  const { layout, selectionStyle, outside, selectedBox, barBottom } = useSelectionLayout({
+    isActive,
+    desktop,
+    viewportRef,
+    composerRef,
+    selectionRef,
+    camera: canvas.camera,
+    selectedPosition,
+    hasSelection,
+    mode: generation.mode,
+    selectedJobStatus,
+  });
   const promptPlan =
     selected && !canvas.selection.ids.length ? cardPrompt(selected, project.cards) : null;
   const runPrompt = (card: Card, action: PromptAction, prompt: string) => {
