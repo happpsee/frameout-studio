@@ -89,6 +89,26 @@
   --fo-shadow-5: #0007;
   --fo-shadow-6: #0009;
 
+  /*
+   * Feel. Use these instead of one-off values, so the whole app moves and sits the same way.
+   * Motion: things that arrive use --fo-ease-out; things that answer the pointer use --fo-ease-press.
+   */
+  --fo-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --fo-ease-press: cubic-bezier(0.3, 0, 0.2, 1);
+  --fo-fast: 0.12s; /* hover and press */
+  --fo-base: 0.22s; /* menus, toggles, small moves */
+  --fo-slow: 0.5s; /* panels and pages */
+  /* Depth: a hairline of light on the top edge plus a soft shadow, rather than a border on every box. */
+  --fo-elevation-1: inset 0 1px 0 #ffffff0a, 0 1px 2px var(--fo-shadow-3);
+  --fo-elevation-2:
+    inset 0 1px 0 #ffffff0f, 0 8px 24px var(--fo-shadow-4), 0 2px 6px var(--fo-shadow-2);
+  --fo-elevation-3:
+    inset 0 1px 0 #ffffff14, 0 24px 60px var(--fo-shadow-6), 0 4px 12px var(--fo-shadow-3);
+  /* Corners: three sizes only. */
+  --fo-radius-s: 4px;
+  --fo-radius-m: 8px;
+  --fo-radius-l: 14px;
+
   /* Same in both themes: paper notes, the selection bar, toasts and labels over media */
   --fo-toast-bg: #dcebc7;
   --fo-toast-text: #25301b;
