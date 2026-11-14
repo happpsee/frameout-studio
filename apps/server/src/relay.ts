@@ -1,18 +1,11 @@
-// A bounded, request-scoped relay for the two supported official providers.
+// A request-scoped relay for the two supported official providers.
 //
 // Do not log envelopes or upstream errors: they may contain the caller's key.
 // No redirects, retries, cookies, incoming authorization headers, or response cache.
-import type { IncomingMessage, ServerResponse } from 'node:http';
 import { OFFICIAL_BASE_URLS, type ApiErrorBody, type OfficialProvider } from '@frameout/shared';
 import type { Settings } from './config.ts';
 
-export const SAFE_HEADERS = Object.freeze({
-  'cache-control': 'no-store, max-age=0',
-  pragma: 'no-cache',
-  'x-content-type-options': 'nosniff',
-});
-const JSON_CONTENT = /^application\/(?:json|[A-Za-z0-9!#$&^_.+-]+\+json)(?:\s*;|$)/i;
-const REDIRECTS = new Set([301, 302, 303, 307, 308]);
+/** Node's fetch reports its own header and body timeouts with these codes. */
 const UPSTREAM_TIMEOUT_CODES = new Set([
   'UND_ERR_CONNECT_TIMEOUT',
   'UND_ERR_HEADERS_TIMEOUT',
@@ -20,13 +13,11 @@ const UPSTREAM_TIMEOUT_CODES = new Set([
 ]);
 const TIMEOUT_MESSAGE = '供应商响应超时，未自动重试；已提交的生成请求可能仍在处理中';
 const UNAVAILABLE_MESSAGE = '无法连接供应商，请检查接口状态后重试';
-const TOO_LARGE_MESSAGE = '数据过大，请减小图片或请求大小后重试';
-const UPSTREAM_TOO_LARGE_MESSAGE = '供应商响应过大，本站无法接收';
 
+/** `body` is JSON text. */
 export interface Reply {
   status: number;
-  headers: Record<string, string>;
-  body: Buffer;
+  body: string;
 }
 
 export interface Target {
@@ -51,8 +42,6 @@ export class RelayError extends Error {
   }
 }
 
-class ClientDisconnect extends Error {}
-
 export function failure(
   status: number,
   code: string,
@@ -62,11 +51,7 @@ export function failure(
   const body: ApiErrorBody = {
     error: { code, message, ...(upstreamCode ? { upstreamCode } : {}) },
   };
-  return {
-    status,
-    headers: { ...SAFE_HEADERS, 'content-type': 'application/json' },
-    body: Buffer.from(JSON.stringify(body)),
-  };
+  return { status, body: JSON.stringify(body) };
 }
 
 export function redactMessage(value: unknown, apiKey = ''): string {
@@ -137,135 +122,19 @@ export function validateTarget(envelope: unknown): Target {
   return Object.defineProperty(target, 'apiKey', { value: key, enumerable: false }) as Target;
 }
 
-export function checkLength(
-  value: string | null | undefined,
-  limit: number,
-  upstream = false,
-): void {
-  if (value === undefined || value === null) return;
-  if (!/^[0-9]+$/.test(value)) {
-    throw new RelayError(
-      upstream ? 502 : 400,
-      upstream ? 'UPSTREAM_INVALID_RESPONSE' : 'INVALID_LENGTH',
-      '数据长度格式不正确',
-    );
-  }
-  // Compare digit length before conversion to avoid pathological integer strings.
-  const normalized = value.replace(/^0+/, '') || '0';
-  if (normalized.length > String(limit).length || Number(normalized) > limit) {
-    throw upstream
-      ? new RelayError(502, 'UPSTREAM_RESPONSE_TOO_LARGE', UPSTREAM_TOO_LARGE_MESSAGE)
-      : new RelayError(413, 'BODY_TOO_LARGE', TOO_LARGE_MESSAGE);
-  }
-}
-
-function decodeJson(bytes: Uint8Array): unknown {
-  const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-  // Reject NaN/Infinity and numbers that overflow to Infinity (e.g. 1e10000).
-  return JSON.parse(text, (_key, value: unknown) => {
-    if (typeof value === 'number' && !Number.isFinite(value))
-      throw new Error('Non-finite JSON number');
-    return value;
-  });
-}
-
-function readEnvelope(req: IncomingMessage, settings: Settings): Promise<unknown> {
-  if (!JSON_CONTENT.test(req.headers['content-type'] ?? '')) {
-    return Promise.reject(
-      new RelayError(415, 'INVALID_CONTENT_TYPE', '请使用 application/json 请求'),
-    );
-  }
-  try {
-    checkLength(req.headers['content-length'], settings.requestLimit);
-  } catch (error) {
-    return Promise.reject(error);
-  }
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    let size = 0;
-    let settled = false;
-    const settle = (finish: () => void) => {
-      if (settled) return;
-      settled = true;
-      req.off('data', onData).off('end', onEnd).off('error', onAbort).off('close', onClose);
-      finish();
-    };
-    const onData = (chunk: Buffer) => {
-      size += chunk.length;
-      if (size > settings.requestLimit) {
-        // Stop buffering; the response closes the connection instead of draining the rest.
-        req.pause();
-        settle(() => reject(new RelayError(413, 'BODY_TOO_LARGE', TOO_LARGE_MESSAGE)));
-      } else {
-        chunks.push(chunk);
-      }
-    };
-    const onEnd = () => {
-      let envelope: unknown;
-      try {
-        envelope = decodeJson(Buffer.concat(chunks, size));
-      } catch {
-        settle(() => reject(new RelayError(400, 'INVALID_JSON', '请求正文不是有效的 JSON')));
-        return;
-      }
-      settle(() => resolve(envelope));
-    };
-    const onAbort = () => settle(() => reject(new ClientDisconnect()));
-    const onClose = () => {
-      if (!req.complete) onAbort();
-    };
-    req.on('data', onData).on('end', onEnd).on('error', onAbort).on('close', onClose);
-  });
-}
-
-async function readLimited(response: Response, limit: number): Promise<Buffer> {
-  if (!response.body) return Buffer.alloc(0);
-  const chunks: Uint8Array[] = [];
-  let size = 0;
-  for await (const chunk of response.body) {
-    size += chunk.length;
-    if (size > limit) {
-      await response.body.cancel().catch(() => {});
-      throw new RelayError(502, 'UPSTREAM_RESPONSE_TOO_LARGE', UPSTREAM_TOO_LARGE_MESSAGE);
-    }
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks, size);
-}
-
-async function forward(
-  target: Target,
-  settings: Settings,
-  fetchImpl: FetchImpl,
-  signal: AbortSignal,
-): Promise<Reply> {
+async function forward(target: Target, fetchImpl: FetchImpl, signal: AbortSignal): Promise<Reply> {
   // Only these headers are created; browser cookies and site authorization stay local.
   const response = await fetchImpl(target.url, {
     method: target.method,
     headers: { authorization: `Bearer ${target.apiKey}`, 'content-type': 'application/json' },
     body: target.method === 'POST' ? JSON.stringify(target.body) : undefined,
-    redirect: 'manual',
+    redirect: 'error',
     signal,
   });
-  const discard = () => response.body?.cancel().catch(() => {});
-  if (REDIRECTS.has(response.status)) {
-    await discard();
-    return failure(502, 'UPSTREAM_REDIRECT', '供应商返回了重定向，本站未继续转发');
-  }
-  if (!JSON_CONTENT.test(response.headers.get('content-type') ?? '')) {
-    await discard();
-    return failure(502, 'UPSTREAM_INVALID_RESPONSE', '供应商未返回有效的 JSON 数据');
-  }
-  try {
-    checkLength(response.headers.get('content-length'), settings.responseLimit, true);
-  } catch (error) {
-    await discard();
-    throw error;
-  }
-  const data = await readLimited(response, settings.responseLimit);
+  const text = await response.text();
   let payload: unknown;
   try {
-    payload = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(data));
+    payload = JSON.parse(text);
   } catch {
     return failure(502, 'UPSTREAM_INVALID_RESPONSE', '供应商未返回有效的 JSON 数据');
   }
@@ -287,69 +156,30 @@ async function forward(
       upstreamCode,
     );
   }
-  return {
-    status: response.status,
-    headers: { ...SAFE_HEADERS, 'content-type': 'application/json' },
-    body: data,
-  };
+  return { status: response.status, body: text };
 }
 
-const TIMEOUT = Symbol('timeout');
-const DISCONNECT = Symbol('disconnect');
-
-/** Resolves to a reply, or null when the client has gone away. */
-export async function handleAi(
-  req: IncomingMessage,
-  res: ServerResponse,
+/** Checks the request, forwards it once, and turns every failure into a reply without the key in it. */
+export async function relay(
+  envelope: unknown,
   settings: Settings,
   fetchImpl: FetchImpl,
-): Promise<Reply | null> {
-  const { origin } = req.headers;
-  if (
-    (origin !== undefined && !settings.allowedOrigins.has(origin)) ||
-    (origin === undefined &&
-      String(req.headers['sec-fetch-site'] ?? '').toLowerCase() === 'cross-site')
-  ) {
-    return failure(403, 'CROSS_ORIGIN_BLOCKED', '只允许从已配置的前端地址发起请求');
-  }
+): Promise<Reply> {
   let target: Target;
   try {
-    target = validateTarget(await readEnvelope(req, settings));
+    target = validateTarget(envelope);
   } catch (error) {
-    if (error instanceof ClientDisconnect) return null;
-    if (error instanceof RelayError) {
-      // A rejected oversized body may still be arriving; don't keep the connection.
-      if (!req.complete) res.setHeader('connection', 'close');
-      return failure(error.status, error.code, error.message);
-    }
+    if (error instanceof RelayError) return failure(error.status, error.code, error.message);
     throw error;
   }
-  const controller = new AbortController();
-  const timer = setTimeout(
-    () => controller.abort(TIMEOUT),
-    target.image ? settings.imageTimeout : settings.queryTimeout,
-  );
-  const onClose = () => {
-    if (!res.writableEnded) controller.abort(DISCONNECT);
-  };
-  res.on('close', onClose);
+  const signal = AbortSignal.timeout(target.image ? settings.imageTimeout : settings.queryTimeout);
   try {
-    return await forward(target, settings, fetchImpl, controller.signal);
+    return await forward(target, fetchImpl, signal);
   } catch (error) {
-    if (controller.signal.reason === DISCONNECT) return null;
     const code = (error as { cause?: { code?: unknown } } | null)?.cause?.code;
-    if (
-      controller.signal.reason === TIMEOUT ||
-      (typeof code === 'string' && UPSTREAM_TIMEOUT_CODES.has(code))
-    ) {
+    if (signal.aborted || (typeof code === 'string' && UPSTREAM_TIMEOUT_CODES.has(code)))
       return failure(504, 'UPSTREAM_TIMEOUT', TIMEOUT_MESSAGE);
-    }
-    if (error instanceof RelayError) return failure(error.status, error.code, error.message);
     // Upstream errors can carry request details (and keys). Keep them opaque.
     return failure(502, 'UPSTREAM_UNAVAILABLE', UNAVAILABLE_MESSAGE);
-  } finally {
-    clearTimeout(timer);
-    res.off('close', onClose);
-    if (!controller.signal.aborted) controller.abort();
   }
 }

@@ -127,13 +127,13 @@ pnpm-workspace.yaml    工作区与统一依赖版本（catalog）
 | `GET /api/health` | 服务健康检查 |
 | `POST /api/ai` | 按指定供应商协议转发图片（含 OpenAI 参考图编辑 `/images/edits`）、任务提交与查询 |
 
-`/api/ai` 沿用 `{ provider, baseUrl, apiKey, path, method, body? }` 请求格式。后端仅向 OpenAI 和火山方舟的官方地址及允许路径转发；不跟随重定向，不自动重试付费请求。默认请求上限 16 MiB、响应上限 32 MiB、图片请求总时限 300 秒、其他请求 90 秒。
+`/api/ai` 沿用 `{ provider, baseUrl, apiKey, path, method, body? }` 请求格式。后端仅向 OpenAI 和火山方舟的官方地址及允许路径转发；不跟随重定向，不自动重试付费请求。默认请求上限 16 MiB、图片请求总时限 300 秒、其他请求 90 秒。
 
 浏览器版的 Key 仅保留在页面内存并用于当次请求，不写入 localStorage、IndexedDB、项目 JSON 或后端文件，刷新后补填 Key。桌面版仅在用户勾选后加密保存到本机（见上文）。未配置 Key 时点生成会直接打开 API 设置并保留提示词，设置里提供 OpenAI 与火山方舟控制台的获取入口。后端不会记录请求正文或转发浏览器 Cookie、站点身份头。密钥清除和连接测试取消均有回归测试。
 
 视频停止等待后保留已取得的任务号；刷新后需补填相同供应商的 Key，再继续查询原任务。未取得任务号时提示先到供应商后台核对，不自动再次提交。停止本地等待不等于取消供应商任务，已经提交的请求仍可能计费。供应商返回的临时媒体链接可能失效，请及时下载。
 
-默认允许 localhost / 127.0.0.1 的 5173 和 8000 端口来源。需要不同前端地址时，用环境变量 `FRAMEOUT_ALLOWED_ORIGINS` 添加以逗号分隔的准确 Origin。`FRAMEOUT_FRONTEND_DIST` 可指定其他前端构建目录。配置示例见 `apps/server/.env.example`，应用不会自动加载 `.env`，请使用 shell 环境变量。
+接口只接受来自本站页面的请求，前端和后端要部署在同一个地址下。`FRAMEOUT_FRONTEND_DIST` 可指定其他前端构建目录。配置示例见 `apps/server/.env.example`，应用不会自动加载 `.env`，请使用 shell 环境变量。
 
 ## 验证
 
