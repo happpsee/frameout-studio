@@ -47,8 +47,6 @@ export interface Task {
   /** What to generate. Dropped once the task finishes. */
   request?: unknown;
   status: TaskStatus;
-  /** Requests actually sent to the provider. */
-  attempts: number;
   error?: TaskError;
   /** Submit-then-poll providers (video): saved before polling starts. */
   providerJobId?: string;
@@ -73,8 +71,6 @@ export type Outcome =
 
 export interface Execution {
   key: string;
-  /** Await this right before each request to the provider, so `attempts` is saved before the request leaves. */
-  attempt(): Promise<void>;
 }
 
 /** Calls the provider. A thrown error is treated as an unknown outcome (`interrupted`). */
@@ -112,7 +108,6 @@ export function readTask(value: unknown): Task | undefined {
     typeof value.baseUrl === 'string' &&
     typeof value.model === 'string' &&
     (TASK_STATUSES as readonly unknown[]).includes(value.status) &&
-    Number.isInteger(value.attempts) &&
     typeof value.createdAt === 'number' &&
     optional(value.startedAt, 'number') &&
     optional(value.finishedAt, 'number') &&
