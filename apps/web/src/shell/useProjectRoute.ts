@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation, useMatch, useNavigate } from 'react-router';
 import {
   DESKTOP_INTRO_KEY,
   readStoredValue,
@@ -16,28 +17,12 @@ import {
   subscribeProjects,
 } from '../core/project/projects';
 
-type Route = { view: 'intro' } | { view: 'lobby' } | { view: 'studio'; projectId: string };
-interface Resolved {
-  route: Route;
-  /** Shown over the project list when an address could not be opened. */
-  notice?: string;
-  /** Address to put in place of the one that was asked for. */
-  replace?: string;
-}
+export type View = 'intro' | 'lobby' | 'studio';
 
 const MISSING_PROJECT_NOTICE = '没有找到这个项目，已回到项目列表';
 const DELETED_PROJECT_NOTICE = '这个项目已删除，可在「已删除项目」里恢复';
 const UNREADABLE_PROJECT_NOTICE = '项目读取失败，请检查应用数据目录后重试';
-const STUDIO_HASH = /^#studio\/(.*)$/;
-const LOBBY: Route = { view: 'lobby' };
-const INTRO: Route = { view: 'intro' };
 
-const routeHash = (route: Route) =>
-  route.view === 'studio'
-    ? `#studio/${route.projectId}`
-    : route.view === 'lobby'
-      ? '#projects'
-      : '#intro';
 const introSeen = () => readStoredValue(DESKTOP_INTRO_KEY) === 'seen';
 export function markIntroSeen() {
   if (introSeen()) return;
@@ -47,48 +32,25 @@ export function markIntroSeen() {
     /* Only decides what the next visit opens with. */
   }
 }
-const openable = (id: string) => findProject(id)?.deletedAt === undefined;
+/** The project exists and is not in the trash. */
+function openable(id: string): boolean {
+  const entry = findProject(id);
+  return entry !== undefined && entry.deletedAt === undefined;
+}
 
-/** The project an old `#studio` address meant: the last one opened, else the newest, else a new one. */
-function defaultProjectId(): string {
+/** The project an old `#/studio` address meant: the last one opened, else the newest, else a new one. */
+export function defaultProjectId(): string {
   return lastOpenedProjectId() ?? listProjects()[0]?.id ?? createProject().id;
 }
 
-/** Where a web address leads. History state tells a visited introduction from the project list. */
-function routeFromLocation(hash: string, state?: unknown): Resolved {
-  if (hash === '#intro') return { route: INTRO };
-  if (hash === '#projects') return { route: LOBBY };
-  if (hash === '#studio') {
-    const projectId = defaultProjectId();
-    return { route: { view: 'studio', projectId }, replace: `#studio/${projectId}` };
-  }
-  const match = STUDIO_HASH.exec(hash);
-  if (match) {
-    const id = decodeURIComponent(match[1]);
-    const entry = findProject(id);
-    if (entry && entry.deletedAt === undefined)
-      return { route: { view: 'studio', projectId: entry.id } };
-    const notice = entry ? DELETED_PROJECT_NOTICE : MISSING_PROJECT_NOTICE;
-    return { route: LOBBY, notice, replace: '#projects' };
-  }
-  if ((state as { frameoutView?: string } | null)?.frameoutView === 'intro')
-    return { route: INTRO };
-  return { route: introSeen() ? LOBBY : INTRO };
+/** Addresses were once written without the slash (`#studio/abc`); keep those links working. */
+export function upgradeOldAddress() {
+  if (/^#(intro|projects|studio)/.test(location.hash))
+    history.replaceState(history.state, '', `#/${location.hash.slice(1)}`);
 }
 
-function initialRoute(): Resolved {
-  if (isDesktop()) return { route: introSeen() ? LOBBY : INTRO };
-  const resolved = routeFromLocation(location.hash, history.state);
-  if (resolved.replace) history.replaceState(null, '', resolved.replace);
-  // An introduction shown at the bare address is remembered so "back" can return to it.
-  else if (!location.hash && resolved.route.view === 'intro')
-    history.replaceState({ frameoutView: 'intro' }, '');
-  if (resolved.route.view === 'studio') markProjectOpened(resolved.route.projectId);
-  return resolved;
-}
-
-function useNotice(initial = '') {
-  const [notice, setNotice] = useState(initial);
+function useNotice() {
+  const [notice, setNotice] = useState('');
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(() => setNotice(''), 4000);
@@ -98,69 +60,71 @@ function useNotice(initial = '') {
 }
 
 /**
- * The app's three places: the introduction, the project list and a project's studio.
+ * Moving between the app's three places: the introduction, the project list and a project's
+ * studio. The routes themselves are declared in App.tsx; this hook decides when to go where.
+ *
  * The last studio stays mounted (hidden) while the list or introduction shows, so an unfinished
- * prompt, the in-page key and undo history survive a quick look around.
+ * prompt, the in-page key and undo history survive a quick look around. `kept` is that project.
  */
 export function useProjectRoute() {
-  const [initial] = useState(initialRoute);
-  const [route, setRoute] = useState<Route>(initial.route);
-  const [kept, setKept] = useState(
-    initial.route.view === 'studio' ? initial.route.projectId : null,
-  );
-  const [notice, setNotice] = useNotice(initial.notice);
-  const routeRef = useRef(route);
-  routeRef.current = route;
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const studioId = useMatch('/studio/:projectId')?.params.projectId ?? null;
+  // Decided once: a first-time visitor sees the introduction at the bare address all visit long.
+  const [startsWithIntro] = useState(() => !introSeen());
+  const view: View = studioId
+    ? 'studio'
+    : pathname === '/intro' || (pathname === '/' && startsWithIntro)
+      ? 'intro'
+      : 'lobby';
+  const [kept, setKept] = useState<string | null>(null);
+  const [notice, setNotice] = useNotice();
+  const here = useRef({ pathname, view, studioId });
+  here.current = { pathname, view, studioId };
   const opening = useRef(0);
   const returnTo = useRef<string | null>(null);
   const scroll = useRef(0);
 
-  const go = useCallback((next: Route, history: 'push' | 'none' = 'push') => {
-    opening.current++;
-    setRoute(current => {
-      if (current.view === 'intro' && next.view !== 'intro') scroll.current = window.scrollY;
-      return next;
-    });
-    if (next.view === 'studio') setKept(next.projectId);
-    if (next.view === 'intro')
-      requestAnimationFrame(() => window.scrollTo({ top: scroll.current, behavior: 'instant' }));
-    if (history === 'push' && !isDesktop() && location.hash !== routeHash(next))
-      window.history.pushState(null, '', routeHash(next));
-  }, []);
+  const go = useCallback(
+    (to: string) => {
+      // A desktop project still being read must not open over the page chosen since.
+      opening.current++;
+      if (here.current.view === 'intro') scroll.current = window.scrollY;
+      if (to !== here.current.pathname) navigate(to);
+    },
+    [navigate],
+  );
 
   const openProject = useCallback(
-    (id: string, history: 'push' | 'none' = 'push') => {
+    (id: string) => {
       const entry = findProject(id);
       if (!entry || entry.deletedAt !== undefined) {
         setNotice(entry ? DELETED_PROJECT_NOTICE : MISSING_PROJECT_NOTICE);
-        go(LOBBY, history);
+        go('/projects');
         return;
       }
-      const show = () => {
-        markProjectOpened(id);
-        go({ view: 'studio', projectId: id }, history);
-      };
-      if (!isDesktop()) return show();
+      if (!isDesktop()) return go(`/studio/${id}`);
+      // The desktop app reads the project's files before showing it.
       const attempt = ++opening.current;
       prepareProject(id).then(
         () => {
-          if (attempt === opening.current) show();
+          if (attempt === opening.current) go(`/studio/${id}`);
         },
         () => {
           if (attempt !== opening.current) return;
           setNotice(UNREADABLE_PROJECT_NOTICE);
-          go(LOBBY, history);
+          go('/projects');
         },
       );
     },
     [go, setNotice],
   );
 
-  const showLobby = useCallback(() => go(LOBBY), [go]);
+  const showLobby = useCallback(() => go('/projects'), [go]);
   const showIntro = useCallback(
     (from: string | null = null) => {
       returnTo.current = from;
-      go(INTRO);
+      go('/intro');
     },
     [go],
   );
@@ -176,37 +140,46 @@ export function useProjectRoute() {
     else showLobby();
   }, [openProject, showLobby]);
 
+  // The address names a project (a link, the back button, or `go` above): show it, or say why not.
   useEffect(() => {
-    if (isDesktop()) return;
-    const change = (event?: PopStateEvent) => {
-      const resolved = routeFromLocation(location.hash, event ? event.state : history.state);
-      if (resolved.replace) history.replaceState(null, '', resolved.replace);
-      if (resolved.notice) setNotice(resolved.notice);
-      if (resolved.route.view === 'studio') openProject(resolved.route.projectId, 'none');
-      else go(resolved.route, 'none');
-    };
-    const onHash = () => change();
-    window.addEventListener('popstate', change);
-    window.addEventListener('hashchange', onHash);
-    return () => {
-      window.removeEventListener('popstate', change);
-      window.removeEventListener('hashchange', onHash);
-    };
-  }, [go, openProject, setNotice]);
+    if (!studioId) return;
+    if (openable(studioId)) {
+      markProjectOpened(studioId);
+      setKept(studioId);
+      return;
+    }
+    setNotice(findProject(studioId) ? DELETED_PROJECT_NOTICE : MISSING_PROJECT_NOTICE);
+    navigate('/projects', { replace: true });
+  }, [studioId, navigate, setNotice]);
+
+  // Back on the introduction: return to where the reader was.
+  useEffect(() => {
+    if (view !== 'intro') return;
+    const frame = requestAnimationFrame(() =>
+      window.scrollTo({ top: scroll.current, behavior: 'instant' }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [view]);
 
   // A project deleted from the list must not stay mounted behind it.
   useEffect(
     () =>
-      subscribeProjects(() => {
-        const current = routeRef.current;
-        setKept(id =>
-          id && (openable(id) || (current.view === 'studio' && current.projectId === id))
-            ? id
-            : null,
-        );
-      }),
+      subscribeProjects(() =>
+        setKept(id => (id && (openable(id) || here.current.studioId === id) ? id : null)),
+      ),
     [],
   );
 
-  return { route, kept, notice, openProject, showLobby, showIntro, leaveIntro };
+  return {
+    view,
+    startsWithIntro,
+    /** The studio to draw, and whether it is the page on screen. */
+    kept,
+    studioActive: view === 'studio' && kept === studioId,
+    notice,
+    openProject,
+    showLobby,
+    showIntro,
+    leaveIntro,
+  };
 }

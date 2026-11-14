@@ -14,9 +14,10 @@ shell/                 外围
   lobby/               项目列表
   settings/            API 设置、Key 的记忆、模型选项
   misc/                帮助、主题、完成通知、示例导入
-  useProjectRoute.ts   介绍页、项目列表、工作台之间的切换
+  useProjectRoute.ts   什么时候去哪个页面（打开项目、离开介绍页、项目不存在时回列表）
 ui/                    通用控件：下拉框、图标、弹窗辅助
 styles/                全局样式
+App.tsx                三个页面的路由声明（react-router）
 types.ts               项目、卡片、任务等数据类型
 platform.ts            判断是不是桌面端，读取桌面端接口
 ```

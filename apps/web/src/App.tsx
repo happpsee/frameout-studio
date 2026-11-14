@@ -1,14 +1,16 @@
 import { useEffect } from 'react';
+import { HashRouter, MemoryRouter, Navigate, Route, Routes } from 'react-router';
 import Landing from './shell/landing/Landing';
 import Lobby from './shell/lobby/Lobby';
 import Studio from './core/Studio';
-import {
-  DESKTOP_INTRO_KEY,
-  flushDesktopStorage,
-  readStoredValue,
-} from './core/project/desktop-storage';
+import { flushDesktopStorage } from './core/project/desktop-storage';
 import { desktopBridge, isDesktop } from './platform';
-import { markIntroSeen, useProjectRoute } from './shell/useProjectRoute';
+import {
+  defaultProjectId,
+  markIntroSeen,
+  upgradeOldAddress,
+  useProjectRoute,
+} from './shell/useProjectRoute';
 
 const TITLES = {
   intro: '帧外 FRAMEOUT — 让灵感，发生。',
@@ -16,14 +18,26 @@ const TITLES = {
   studio: '创作画布 — 帧外 FRAMEOUT',
 };
 
-export default function App() {
-  const { route, kept, notice, openProject, showLobby, showIntro, leaveIntro } = useProjectRoute();
-  const { view } = route;
+/** An old address that names no project opens the last one used. */
+function LastProject() {
+  return <Navigate to={`/studio/${defaultProjectId()}`} replace />;
+}
+
+function Pages() {
+  const {
+    view,
+    startsWithIntro,
+    kept,
+    studioActive,
+    notice,
+    openProject,
+    showLobby,
+    showIntro,
+    leaveIntro,
+  } = useProjectRoute();
   useEffect(() => {
-    if (isDesktop() && view === 'intro' && readStoredValue(DESKTOP_INTRO_KEY) !== 'seen') {
-      // Record the first display, including when the user quits before entering the canvas.
-      markIntroSeen();
-    }
+    // Record the first display, including when the user quits before entering the canvas.
+    if (isDesktop() && view === 'intro') markIntroSeen();
   }, [view]);
   useEffect(() => desktopBridge()?.onBeforeClose(flushDesktopStorage), []);
   useEffect(() => {
@@ -34,15 +48,25 @@ export default function App() {
       delete document.body.dataset.studio;
     };
   }, [view]);
+
+  const landing = <Landing onOpenStudio={leaveIntro} />;
+  const lobby = <Lobby onOpenProject={openProject} onShowIntro={() => showIntro()} />;
   return (
     <>
-      {view === 'intro' && <Landing onOpenStudio={leaveIntro} />}
-      {view === 'lobby' && <Lobby onOpenProject={openProject} onShowIntro={() => showIntro()} />}
+      <Routes>
+        <Route path="/" element={startsWithIntro ? landing : lobby} />
+        <Route path="/intro" element={landing} />
+        <Route path="/projects" element={lobby} />
+        <Route path="/studio" element={<LastProject />} />
+        {/* The studio is drawn below, outside the routes, so it can stay mounted while hidden. */}
+        <Route path="/studio/:projectId" element={null} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
       {kept && (
         <Studio
           key={kept}
           projectId={kept}
-          active={view === 'studio'}
+          active={studioActive}
           onClose={showLobby}
           onShowIntro={() => showIntro(kept)}
         />
@@ -53,5 +77,22 @@ export default function App() {
         </div>
       )}
     </>
+  );
+}
+
+export default function App() {
+  // The desktop app has no address bar, so its pages live in memory.
+  if (isDesktop()) {
+    return (
+      <MemoryRouter>
+        <Pages />
+      </MemoryRouter>
+    );
+  }
+  upgradeOldAddress();
+  return (
+    <HashRouter>
+      <Pages />
+    </HashRouter>
   );
 }

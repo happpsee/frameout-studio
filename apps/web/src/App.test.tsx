@@ -269,7 +269,7 @@ describe('web navigation', () => {
     frame();
     const [project] = listProjects();
     expect(project.title).toBe('未命名项目');
-    expect(location.hash).toBe(`#studio/${project.id}`);
+    expect(location.hash).toBe(`#/studio/${project.id}`);
     expect(canvas()).toBeTruthy();
     expect(localStorage.getItem(DESKTOP_INTRO_KEY)).toBe('seen');
     expect(document.body.dataset.studio).toBe('true');
@@ -290,11 +290,19 @@ describe('web navigation', () => {
     frame();
     expect(canvas()).toBeTruthy();
     const example = listProjects().find(project => project.title === '森林来信')!;
-    expect(location.hash).toBe(`#studio/${example.id}`);
+    expect(location.hash).toBe(`#/studio/${example.id}`);
     expect(screen.getByRole('button', { name: '选择素材：森林来信 · 薄雾森林' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: '返回项目列表' }));
     expect(findProject(example.id)?.cardCount).toBe(1);
     expect(findProject(mine.id)?.cardCount).toBe(0);
+  });
+
+  it('goes to the project list with a message when the address names no project', () => {
+    localStorage.setItem(DESKTOP_INTRO_KEY, 'seen');
+    history.replaceState(null, '', '/#/studio/missing');
+    renderApp();
+    expect(lobby()).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toContain('没有找到这个项目');
   });
 
   it('keeps the in-page key, unfinished prompt, camera and undo history after visiting the list', () => {
