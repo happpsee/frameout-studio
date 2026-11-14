@@ -12,6 +12,7 @@ import { useGeneration } from './generation/useGeneration';
 import { useCanvas } from './canvas/useCanvas';
 import { useFileImport } from './canvas/useFileImport';
 import { useCardActions } from './canvas/useCardActions';
+import { useStudioShortcuts } from './canvas/useStudioShortcuts';
 import { useWorkflow } from './generation/useWorkflow';
 import { useExampleImport } from '../shell/misc/useExampleImport';
 import { useNotes } from './canvas/useNotes';
@@ -313,52 +314,7 @@ export default function Studio({
     if (composerRef.current) observer.observe(composerRef.current);
     return () => observer.disconnect();
   }, [desktop, isActive, hasSelection, generation.mode, selectedJobStatus]);
-  useEffect(() => {
-    if (!isActive) return;
-    const keydown = (event: KeyboardEvent) => {
-      if (
-        (event.target as Element)?.closest?.(
-          '.fo-work-panel,input,textarea,select,[role="combobox"],[role="listbox"],[contenteditable="true"]',
-        ) ||
-        document.querySelector('dialog[open]')
-      )
-        return;
-      const mod = event.metaKey || event.ctrlKey;
-      if (mod && event.key.toLowerCase() === 'z') {
-        event.preventDefault();
-        cancelGesture();
-        if (!active) {
-          if (event.shiftKey) redo();
-          else undo();
-        }
-      } else if (mod && event.key.toLowerCase() === 'y') {
-        event.preventDefault();
-        cancelGesture();
-        if (!active) redo();
-      } else if (mod && ['+', '=', '-'].includes(event.key)) {
-        event.preventDefault();
-        zoomBy(event.key === '-' ? 1 / 1.2 : 1.2);
-      } else if (event.altKey && event.shiftKey && event.code === 'KeyF') {
-        event.preventDefault();
-        tidyCanvas();
-      } else if (event.key === '0') {
-        event.preventDefault();
-        fitCanvas();
-      } else if (['Delete', 'Backspace'].includes(event.key) && projectRef.current.selected) {
-        event.preventDefault();
-        removeSelected();
-      } else if (!mod && event.key.toLowerCase() === 'v') setTool('select');
-      else if (!mod && event.key.toLowerCase() === 'h') setTool('hand');
-      else if (event.key === 'Escape') {
-        setZoomOpen(false);
-        update(draft => {
-          draft.selected = null;
-        }, false);
-      }
-    };
-    document.addEventListener('keydown', keydown);
-    return () => document.removeEventListener('keydown', keydown);
-  }, [
+  useStudioShortcuts({
     isActive,
     active,
     undo,
@@ -371,8 +327,8 @@ export default function Studio({
     removeSelected,
     update,
     tidyCanvas,
-  ]);
-
+    setZoomOpen,
+  });
   cardActions.current = { openPreview, updateDuration };
   function exportProject() {
     const exported = {
