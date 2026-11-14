@@ -11,11 +11,11 @@ import { useWorkspace } from './project/useWorkspace';
 import { useGeneration } from './generation/useGeneration';
 import { useCanvas } from './canvas/useCanvas';
 import { useFileImport } from './canvas/useFileImport';
+import { useCardActions } from './canvas/useCardActions';
 import { useWorkflow } from './generation/useWorkflow';
 import { useExampleImport } from '../shell/misc/useExampleImport';
 import { useNotes } from './canvas/useNotes';
 import { linkedIds } from './canvas/notes';
-import { arrange, tidy, type ArrangeMode } from './canvas/canvas-layout';
 import { nextRole } from './generation/consistency';
 import { thumbnails, wantsOriginal } from './canvas/thumbnails';
 import { CanvasNote } from './canvas/CanvasNote';
@@ -35,7 +35,7 @@ import { useFilm } from './film/useFilm';
 import PreviewDialog from './film/PreviewDialog';
 import ExportDialog from './film/ExportDialog';
 import ConsistencyDialog from './generation/ConsistencyDialog';
-import { MAX_REFERENCES, referenceCards, supportsReferences } from './generation/consistency';
+import { referenceCards } from './generation/consistency';
 import WorkflowPanel from './generation/WorkflowPanel';
 import AssetLibrary from './canvas/AssetLibrary';
 import StudioHeader, { type StudioView } from './StudioHeader';
@@ -215,22 +215,15 @@ export default function Studio({
   const selectedJobStatus = selected?.job?.status;
   const selectedPosition =
     selected && canvas.dragPosition?.id === selected.id ? canvas.dragPosition : selected;
-  const removeSelected = useCallback(() => {
-    const id = projectRef.current.selected;
-    if (!id) return;
-    if (active) {
-      toast('先停止本页等待，再删除素材');
-      return;
-    }
-    cancelGesture();
-    update(draft => {
-      draft.cards = draft.cards.filter(c => c.id !== id);
-      draft.sequence = draft.sequence.filter(s => s.cardId !== id);
-      draft.selected = null;
-      if (draft.consistency)
-        draft.consistency.references = draft.consistency.references.filter(ref => ref !== id);
-    });
-  }, [projectRef, active, cancelGesture, update, toast]);
+  const { removeSelected, toggleReference, arrangeCards, tidyCanvas } = useCardActions({
+    projectRef,
+    update,
+    toast,
+    active,
+    cancelGesture,
+    fitCanvas,
+    provider: generation.config.provider,
+  });
   // Stable callbacks let memoized cards and the sequence skip renders; they call the latest handlers.
   const cardActions = useRef<{
     openPreview: (card?: Card) => void;
@@ -263,50 +256,6 @@ export default function Studio({
     },
     [update],
   );
-  const toggleReference = useCallback(
-    (id: string) => {
-      const references = projectRef.current.consistency?.references ?? [];
-      const adding = !references.includes(id);
-      if (adding && referenceCards(projectRef.current).length >= MAX_REFERENCES) {
-        toast(`最多 ${MAX_REFERENCES} 张参考图，请先移除一张`);
-        return;
-      }
-      update(draft => {
-        const consistency = (draft.consistency ??= { notes: '', references: [] });
-        consistency.references = adding
-          ? [...consistency.references.filter(ref => draft.cards.some(card => card.id === ref)), id]
-          : consistency.references.filter(ref => ref !== id);
-      });
-      toast(
-        adding
-          ? supportsReferences(generation.config.provider)
-            ? '已设为参考 · 之后生成的图片会参照它'
-            : '已设为参考 · 当前服务只使用统一设定'
-          : '已取消参考',
-      );
-    },
-    [projectRef, update, toast, generation.config.provider],
-  );
-  const arrangeCards = (ids: string[], mode: ArrangeMode) => {
-    const positions = arrange(
-      projectRef.current.cards.filter(card => ids.includes(card.id)),
-      mode,
-    );
-    update(draft => {
-      for (const card of draft.cards) Object.assign(card, positions.get(card.id));
-    });
-  };
-  const tidyCanvas = useCallback(() => {
-    const placed = tidy(projectRef.current);
-    if (!placed.cards.size && !placed.notes.size) return;
-    cancelGesture();
-    update(draft => {
-      for (const card of draft.cards) Object.assign(card, placed.cards.get(card.id));
-      for (const note of draft.notes ?? []) Object.assign(note, placed.notes.get(note.id));
-    });
-    fitCanvas();
-    toast('已整理画布 · 可以撤销');
-  }, [projectRef, update, cancelGesture, fitCanvas, toast]);
   const guardedUndo = () => {
     canvas.cancelGesture();
     if (!active) undo();
