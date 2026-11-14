@@ -1,0 +1,162 @@
+/* The list view: the same cards and notes as the canvas, as rows. Covers the canvas viewport. */
+.fo-shot-list {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  overflow-y: auto;
+  padding: 56px max(24px, calc((100% - 880px) / 2)) 260px;
+  background: var(--fo-canvas);
+  color: var(--fo-text-2);
+  font-size: 12px;
+}
+.is-desktop .fo-shot-list {
+  padding-bottom: 40px;
+}
+.fo-shot-list section + section {
+  margin-top: 28px;
+}
+.fo-shot-list header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--fo-line);
+}
+.fo-shot-list h2 {
+  margin: 0;
+  color: var(--fo-text-1);
+  font-size: 14px;
+  font-weight: 600;
+}
+.fo-shot-list header span {
+  color: var(--fo-text-faint);
+  font-size: 11px;
+}
+.fo-shot-list header button {
+  margin-left: auto;
+  background: none;
+  color: var(--fo-text-5);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.fo-shot-list ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.fo-shot-list li {
+  display: grid;
+  grid-template-columns: 28px auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--fo-line);
+}
+.fo-shot-number {
+  font:
+    11px 'Courier New',
+    monospace;
+  color: var(--fo-text-faint);
+}
+.fo-shot-media {
+  display: flex;
+  gap: 6px;
+}
+.fo-shot-thumb {
+  position: relative;
+  width: 128px;
+  height: 72px;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--fo-thumb-bg);
+  cursor: pointer;
+}
+.fo-shot-thumb:disabled {
+  cursor: default;
+}
+.fo-shot-thumb img,
+.fo-shot-thumb video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.fo-shot-thumb > span {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: 2px 4px;
+  border-radius: 2px;
+  background: var(--fo-media-label);
+  color: var(--fo-media-text);
+  font-size: 9px;
+}
+.fo-shot-list li > p {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  line-height: 1.6;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.fo-shot-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.fo-shot-actions button {
+  padding: 5px 11px;
+  border: 1px solid var(--fo-line-3);
+  border-radius: 4px;
+  background: none;
+  color: var(--fo-text-2);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.fo-shot-actions button:hover:not(:disabled) {
+  background: var(--fo-hover);
+}
+.fo-shot-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.fo-shot-actions .is-primary {
+  border-color: var(--fo-lime);
+  background: var(--fo-lime);
+  color: var(--fo-ink);
+  font-weight: 600;
+}
+.fo-shot-actions .is-primary:hover:not(:disabled) {
+  background: var(--fo-lime);
+  filter: brightness(1.08);
+}
+.fo-shot-empty {
+  margin: 0;
+  padding: 18px 0;
+  color: var(--fo-text-6);
+}
+@media (max-width: 720px) {
+  .fo-shot-list li {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+  .fo-shot-list li > p,
+  .fo-shot-actions {
+    grid-column: 2;
+  }
+  .fo-shot-actions {
+    flex-direction: row;
+  }
+}
+/* Canvas-only controls step aside while the list is showing; the prompt box stays. */
+.fo-viewport.is-list > .fo-selection-actions,
+.fo-viewport.is-list > .fo-card-prompt,
+.fo-viewport.is-list > .fo-camera-tools,
+.fo-viewport.is-list > .fo-canvas-hint,
+.fo-viewport.is-list > .fo-canvas-tools,
+.fo-viewport.is-list > .fo-canvas-intro,
+.fo-viewport.is-list > .fo-canvas-empty {
+  display: none;
+}

@@ -37,7 +37,8 @@ import ConsistencyDialog from './ConsistencyDialog';
 import { MAX_REFERENCES, referenceCards, supportsReferences } from '../lib/consistency';
 import WorkflowPanel from './WorkflowPanel';
 import AssetLibrary from './AssetLibrary';
-import StudioHeader from './StudioHeader';
+import StudioHeader, { type StudioView } from './StudioHeader';
+import ShotList from './ShotList';
 import CanvasTools, { type PanelTab } from './CanvasTools';
 import SelectionActions from './SelectionActions';
 import MultiSelectionBar, { SelectionMarquee } from './MultiSelectionBar';
@@ -114,6 +115,7 @@ export default function Studio({
   const [consistencyOpen, setConsistencyOpen] = useState(false);
   const [panelTab, setPanelTab] = useState<PanelTab | null>(null);
   const [assetsOpen, setAssetsOpen] = useState(false);
+  const [view, setView] = useState<StudioView>('canvas');
   const [timelineOpen, setTimelineOpen] = useState(() => project.sequence.length > 0);
   const [preview, setPreview] = useState<{ items: PreviewItem[]; title: string } | null>(null);
   const [exporting, setExporting] = useState<{ items: PreviewItem[]; skipped: number } | null>(
@@ -689,6 +691,8 @@ export default function Studio({
       onUpload={() => fileInput.current?.click()}
       onAddNote={notes.add}
       onTidy={tidyCanvas}
+      listView={view === 'list'}
+      onToggleList={() => setView(value => (value === 'list' ? 'canvas' : 'list'))}
       assetsOpen={assetsOpen}
       onToggleAssets={() => {
         setPanelTab(null);
@@ -742,6 +746,8 @@ export default function Studio({
           saveStatus={saveStatus}
           hasShots={project.sequence.length > 0}
           workflowOpen={panelTab !== null}
+          view={view}
+          onView={setView}
           onHome={() => {
             canvas.cancelGesture();
             onClose();
@@ -772,7 +778,7 @@ export default function Studio({
           <div className="fo-workspace-center">
             <main
               ref={viewportRef}
-              className={`fo-viewport${canvas.tool === 'hand' || canvas.space ? ' is-hand' : ''}${canvas.panning ? ' is-panning' : ''}${canvas.fileDrop ? ' is-file-drop' : ''}`}
+              className={`fo-viewport${canvas.tool === 'hand' || canvas.space ? ' is-hand' : ''}${canvas.panning ? ' is-panning' : ''}${canvas.fileDrop ? ' is-file-drop' : ''}${view === 'list' ? ' is-list' : ''}`}
               aria-label="无限创作画布"
               style={{
                 backgroundSize: `${26 * canvas.camera.zoom}px ${26 * canvas.camera.zoom}px`,
@@ -784,6 +790,18 @@ export default function Studio({
                 <span className="fo-canvas-count">{project.cards.length} 个素材</span>
                 <BrowserStorageNotice />
               </div>
+              {view === 'list' && (
+                <ShotList
+                  project={project}
+                  onPreview={previewShot}
+                  onAddShot={addToSequence}
+                  onLocate={({ card, noteId }) => {
+                    setView('canvas');
+                    if (card) focusCard(card);
+                    else if (noteId) notes.select(noteId);
+                  }}
+                />
+              )}
               <div className="fo-stage" style={sceneStyle}>
                 {visibleCards(project.cards, canvas.camera, layout.width, layout.height, [
                   project.selected,

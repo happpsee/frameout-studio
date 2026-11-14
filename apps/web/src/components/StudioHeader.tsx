@@ -11,6 +11,9 @@ interface StudioHeaderProps {
   /** Whether the sequence has shots to preview or export. */
   hasShots: boolean;
   workflowOpen: boolean;
+  /** The canvas, or the same project as a plain list of shots. */
+  view?: StudioView;
+  onView?: (view: StudioView) => void;
   /** Back to the project list. */
   onHome: () => void;
   onHelp: () => void;
@@ -21,6 +24,8 @@ interface StudioHeaderProps {
   onPreview: () => void;
 }
 
+export type StudioView = 'canvas' | 'list';
+
 /** The project file is not a backup: say so before people rely on it. */
 const EXPORT_PROJECT_NOTE = '只含画布布局和设置，不含图片和视频，目前也还不能导回来。';
 
@@ -30,6 +35,8 @@ export default function StudioHeader({
   saveStatus,
   hasShots,
   workflowOpen,
+  view = 'canvas',
+  onView,
   onHome,
   onHelp,
   onToggleWorkflow,
@@ -66,9 +73,17 @@ export default function StudioHeader({
       </div>
       {!desktop && (
         <nav className="fo-workspace-tabs" aria-label="工作区">
-          <button type="button" className="is-active" aria-current="page">
-            画布
-          </button>
+          {(['canvas', 'list'] as const).map(item => (
+            <button
+              key={item}
+              type="button"
+              className={view === item ? 'is-active' : undefined}
+              aria-current={view === item ? 'page' : undefined}
+              onClick={() => onView?.(item)}
+            >
+              {item === 'canvas' ? '画布' : '列表'}
+            </button>
+          ))}
           <button type="button" onClick={onHelp}>
             使用指南 <Icon name="arrow-up-right" />
           </button>

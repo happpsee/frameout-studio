@@ -42,6 +42,9 @@ interface CanvasToolsProps {
   onUpload: () => void;
   onAddNote: (kind: 'text' | 'script') => void;
   onTidy: () => void;
+  /** Desktop only: the header has no view tabs there. */
+  listView: boolean;
+  onToggleList: () => void;
   assetsOpen: boolean;
   onToggleAssets: () => void;
   panelTab: PanelTab | null;
@@ -62,6 +65,13 @@ export default function CanvasTools(props: CanvasToolsProps) {
   if (isDesktop()) {
     desktopPanels = (
       <>
+        <ToolButton
+          icon="list"
+          label="列表视图"
+          title="列表视图：按脚本和镜头查看"
+          pressed={props.listView}
+          onClick={props.onToggleList}
+        />
         <ToolButton
           icon="grid"
           label="项目素材"

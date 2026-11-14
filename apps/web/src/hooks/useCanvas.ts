@@ -14,7 +14,7 @@ import { useMultiSelection } from './useMultiSelection';
 import { useClipboardImport } from './useClipboardImport';
 
 const blocked =
-  '.fo-composer,.fo-selection-actions,.fo-card-prompt,.fo-canvas-tools,.fo-camera-tools,.fo-canvas-intro';
+  '.fo-composer,.fo-selection-actions,.fo-card-prompt,.fo-shot-list,.fo-canvas-tools,.fo-camera-tools,.fo-canvas-intro';
 /** Notes handle their own pointer input: typing, and dragging by the header. */
 const ownInput = `${blocked},.fo-note`;
 type Point = { x: number; y: number };
