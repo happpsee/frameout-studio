@@ -78,14 +78,6 @@ export function useLandingMotion(rootRef: RefObject<HTMLDivElement | null>) {
         ),
       );
       animate(
-        query('.hero-outline'),
-        [
-          { clipPath: 'inset(0 100% 0 0)', opacity: 0 },
-          { clipPath: 'inset(0)', opacity: 1 },
-        ],
-        { duration: 1100, delay: 330 },
-      );
-      animate(
         query('.hero-photo-frame'),
         [
           {
@@ -103,22 +95,6 @@ export function useLandingMotion(rootRef: RefObject<HTMLDivElement | null>) {
           { transform: 'translate(0,0) rotate(-8deg)', opacity: 1 },
         ],
         { duration: 950, delay: 510 },
-      );
-      animate(
-        query('.mini-frame'),
-        [
-          { transform: 'translate(-55px,70px) rotate(-22deg)', opacity: 0 },
-          { transform: 'translate(0,0) rotate(-10deg)', opacity: 1 },
-        ],
-        { duration: 1000, delay: 590 },
-      );
-      animate(
-        query('.hero-sticker'),
-        [
-          { transform: 'rotate(-70deg) scale(.2)', opacity: 0 },
-          { transform: 'rotate(14deg) scale(1)', opacity: 1 },
-        ],
-        { duration: 1000, delay: 550 },
       );
       [
         '.site-header',
@@ -202,7 +178,6 @@ export function useLandingMotion(rootRef: RefObject<HTMLDivElement | null>) {
       const heroProgress = clamp(-heroBox.top / Math.max(1, heroBox.height));
       variables(hero, {
         'copy-y': `${-heroProgress * 55}px`,
-        'sticker-rotate': `${heroProgress * 95}deg`,
       });
       if (heroBox.bottom > 0)
         variables(hero, {
@@ -246,8 +221,6 @@ export function useLandingMotion(rootRef: RefObject<HTMLDivElement | null>) {
         'art-rotate': `${pointer.x * 1.2}deg`,
         'note-x': `${pointer.x * -8}px`,
         'note-y': `${pointer.y * -7}px`,
-        'mini-x': `${pointer.x * -12}px`,
-        'mini-y': `${pointer.y * -9}px`,
       });
       if (Math.abs(pointer.targetX - pointer.x) + Math.abs(pointer.targetY - pointer.y) > 0.002)
         pointerFrame = requestAnimationFrame(updatePointer);

@@ -24,12 +24,6 @@
 .has-motion .floating-note {
   translate: var(--note-x, 0px) var(--note-y, 0px);
 }
-.has-motion .mini-frame {
-  translate: var(--mini-x, 0px) var(--mini-y, 0px);
-}
-.has-motion .hero-sticker > svg {
-  rotate: var(--sticker-rotate, 0deg);
-}
 .has-motion .hero-art:hover .hero-photo-frame {
   transform: rotate(6deg);
 }
@@ -363,11 +357,8 @@ body[data-studio] .motion-scroll-line {
   .showcase-card:hover .showcase-tag {
     translate: 0 -4px;
   }
-  :is(.floating-note, .mini-frame):hover {
+  .floating-note:hover {
     transform: rotate(-5deg) translateY(-5px);
-  }
-  .hero-sticker:hover > svg {
-    scale: 1.1;
   }
 }
 @media (max-width: 800px) {
@@ -451,7 +442,6 @@ body[data-studio] .motion-scroll-line {
   }
   .has-motion .hero-photo-frame,
   .has-motion .floating-note,
-  .has-motion .mini-frame,
   .has-motion .hero-copy,
   .has-motion .showcase-card {
     translate: none !important;
@@ -469,9 +459,6 @@ body[data-studio] .motion-scroll-line {
   }
   .motion-timeline {
     display: none;
-  }
-  .hero-sticker > svg {
-    rotate: none !important;
   }
 }
 @media (min-width: 581px) {

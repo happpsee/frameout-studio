@@ -211,30 +211,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
                   <DisplayLine text="拍一场" />
                   <DisplayLine text="好戏。" className="lime-text" />
                 </h1>
-                <span className="hero-sticker" aria-hidden="true">
-                  <svg viewBox="0 0 110 110">
-                    <path
-                      d="m55 2 10 27 26-13-13 27 30 12-30 11 13 27-26-13-10 28-11-28-27 13 13-27L2 55l28-12-13-27 27 13Z"
-                      fill="currentColor"
-                    />
-                    <path
-                      d="M39 46v5m30-5v5M36 63q19 20 38 0"
-                      stroke="#151613"
-                      strokeWidth="4"
-                      strokeLinecap="round"
-                      fill="none"
-                    />
-                  </svg>
-                  <span>
-                    保持
-                    <br />
-                    好奇
-                  </span>
-                </span>
               </div>
-              <p className="hero-outline" aria-hidden="true">
-                随你拍。
-              </p>
               <div className="hero-description">
                 <h2>
                   把灵感摊开。
@@ -263,14 +240,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
               </p>
             </div>
             <div className="hero-art" id="hero-art">
-              <span className="art-coordinate coordinate-top">[ 想法 → 画面 ]</span>
               <div className="orbit-ring" aria-hidden="true" />
-              <div className="art-cross cross-one" aria-hidden="true">
-                +
-              </div>
-              <div className="art-cross cross-two" aria-hidden="true">
-                +
-              </div>
               <div className="hero-photo-frame">
                 <div className="film-top">
                   <span>
@@ -318,11 +288,6 @@ export default function Landing({ onOpenStudio }: LandingProps) {
                   />
                 </svg>
               </div>
-              <div className="mini-frame">
-                <img src={`${ASSETS}still-ocean.webp`} alt="蓝绿色海浪" width="300" height="200" />
-                <span>潮汐之后</span>
-              </div>
-              <span className="art-coordinate coordinate-bottom">拖动想法，连成故事。</span>
             </div>
           </div>
           <div className="hero-footer">

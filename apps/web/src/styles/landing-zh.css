@@ -10,7 +10,6 @@
   font-weight: 400;
 }
 #landing .hero h1,
-#landing .hero-outline,
 #landing .section-heading h2,
 #landing .cta-main h2,
 #landing .marquee-track {
@@ -23,9 +22,6 @@
 }
 #landing .cta-main h2 {
   letter-spacing: -0.02em;
-}
-#landing .hero-outline {
-  letter-spacing: 0.04em;
 }
 
 /* Who it is for and what to prepare: plain and quiet, under the start button. */
