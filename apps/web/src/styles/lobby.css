@@ -321,22 +321,25 @@
   height: 100%;
   object-fit: cover;
 }
+/* Nothing made yet: the studio's empty canvas, with one frame waiting for a picture. */
 .fo-lobby .fo-lobby-cover.is-blank {
-  --fo-lobby-glow: color-mix(in srgb, var(--fo-accent) 16%, transparent);
-  display: flex;
-  align-items: flex-end;
-  padding: 10px 16px;
-  background:
-    radial-gradient(120% 120% at 100% 0%, var(--fo-lobby-glow), transparent 60%), var(--fo-media-bg);
+  display: grid;
+  place-items: center;
+  background: var(--fo-canvas) radial-gradient(var(--fo-canvas-dot) 1px, transparent 1px) 0 0 / 18px
+    18px;
 }
-/* The project's initial: Latin in the brand face, Chinese in the greeting's serif. */
 .fo-lobby .fo-lobby-cover.is-blank > span {
-  font-family: Anton, var(--fo-lobby-serif);
-  font-size: 64px;
+  display: grid;
+  place-items: center;
+  width: 34%;
+  aspect-ratio: 16 / 9;
+  border: 1px dashed var(--fo-line-5);
+  border-radius: var(--fo-radius-s);
+  background: var(--fo-canvas);
+  color: var(--fo-text-dim);
+  font-size: var(--fo-t-xl);
+  font-weight: 300;
   line-height: 1;
-  color: color-mix(in srgb, var(--fo-text-1) 24%, transparent);
-  text-transform: uppercase;
-  transform-origin: left bottom;
 }
 .fo-lobby .fo-lobby-card-body {
   display: flex;
@@ -504,7 +507,7 @@
 .fo-lobby .fo-lobby-link {
   padding: 2px 0;
   font-size: var(--fo-t-xs);
-  color: var(--fo-accent);
+  color: var(--fo-accent-text);
   background: transparent;
   text-decoration: underline;
   text-decoration-color: var(--fo-accent-a50);

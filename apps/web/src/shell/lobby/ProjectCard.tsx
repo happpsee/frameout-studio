@@ -48,7 +48,7 @@ function ProjectCover({ project }: { project: ProjectSummary }) {
           <img src={url} alt="" loading="lazy" onError={() => setFailed(url)} />
         )
       ) : (
-        <span>{Array.from(project.title.trim())[0]}</span>
+        <span>+</span>
       )}
     </div>
   );
