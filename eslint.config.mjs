@@ -90,6 +90,7 @@ export default tseslint.config(
       'tools/**/*.mts',
       '**/vite.config.ts',
       '*.mjs',
+      'apps/web/scripts/*.mjs',
     ],
     languageOptions: { globals: globals.node },
   },

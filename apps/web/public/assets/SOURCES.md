@@ -21,6 +21,15 @@
 - 授权：SIL Open Font License 1.1，完整文本已保存为 `ANTON-LICENSE.txt`。
 - 授权原文：https://raw.githubusercontent.com/google/fonts/main/ofl/anton/OFL.txt 。
 
+### 中文标题字体
+
+- 本地文件：`huangyou-display.woff2`，68,632 字节，WOFF2 格式。只包含介绍页用到的 294 个字符。
+- 字体：站酷庆科黄油体（ZCOOL QingKe HuangYou），字重 400。
+- 原文件：`ZCOOLQingKeHuangYou-Regular.ttf`（8,328,684 字节），来自 https://github.com/google/fonts/tree/main/ofl/zcoolqingkehuangyou ，没有放进仓库。
+- 生成方式：`node apps/web/scripts/subset-display-font.mjs <原文件路径>`。介绍页的文案改了之后要重新生成，否则新出现的字会落回系统字体。
+- 版权：Copyright 2018 The ZCOOL QingKe HuangYou Project Authors，项目地址：https://www.github.com/googlefonts/zcool-qingke-huangyou 。
+- 授权：SIL Open Font License 1.1，完整文本已保存为 `HUANGYOU-LICENSE.txt`。
+
 ```css
 @font-face {
   font-family: "Anton";

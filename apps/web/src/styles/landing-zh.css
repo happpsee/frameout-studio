@@ -1,13 +1,22 @@
 /*
- * The landing's display face (Anton) only covers Latin letters. The big headlines are
- * Chinese now, so name a Chinese fallback and add weight to keep the same heavy look.
+ * The landing's display face (Anton) only covers Latin letters, and the headlines are Chinese.
+ * They use ZCOOL QingKe HuangYou, cut down to the characters on this page: after changing the
+ * page's copy, rebuild the file with apps/web/scripts/subset-display-font.mjs.
  */
+@font-face {
+  font-family: HuangYou;
+  src: url('/assets/huangyou-display.woff2') format('woff2');
+  font-display: swap;
+  font-weight: 400;
+}
 #landing .hero h1,
 #landing .hero-outline,
+#landing .section-heading h2,
 #landing .cta-main h2,
 #landing .marquee-track {
-  font-family: Anton, var(--font-body);
-  font-weight: 800;
+  font-family: Anton, HuangYou, var(--font-body);
+  /* The face has one weight; asking for more makes the browser smear a fake bold. */
+  font-weight: 400;
 }
 #landing .hero h1 {
   letter-spacing: -0.02em;
@@ -24,12 +33,11 @@
   max-width: 470px;
   margin: 22px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--t-xs);
   line-height: 1.8;
 }
 @media (max-width: 580px) {
   #landing .hero-fit {
-    font-size: 11px;
     margin-top: 18px;
   }
 }
