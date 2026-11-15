@@ -99,6 +99,7 @@ export function useLandingMotion(rootRef: RefObject<HTMLDivElement | null>) {
       [
         '.site-header',
         '.hero-topline',
+        '.hero-zh',
         '.hero-description',
         '.hero-actions',
         '.hero-footer',

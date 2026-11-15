@@ -207,10 +207,11 @@ export default function Landing({ onOpenStudio }: LandingProps) {
           <div className="hero-layout">
             <div className="hero-copy">
               <div className="headline-wrap">
-                <h1 id="hero-title" aria-label="拍一场好戏。">
-                  <DisplayLine text="拍一场" />
-                  <DisplayLine text="好戏。" className="lime-text" />
+                <h1 id="hero-title" aria-label="Make a scene. 拍一场好戏。">
+                  <DisplayLine text="MAKE A" />
+                  <DisplayLine text="SCENE." className="lime-text" />
                 </h1>
+                <p className="hero-zh">拍一场好戏。</p>
               </div>
               <div className="hero-description">
                 <h2>

@@ -17,8 +17,12 @@
   /* The face has one weight; asking for more makes the browser smear a fake bold. */
   font-weight: 400;
 }
-#landing .hero h1 {
-  letter-spacing: -0.02em;
+/* The hero headline is English, like the wordmark; the Chinese line sits under it. */
+#landing .hero-zh {
+  margin: 14px 0 0;
+  font-size: var(--t-xl);
+  font-weight: 600;
+  letter-spacing: 0.2em;
 }
 #landing .cta-main h2 {
   letter-spacing: -0.02em;
