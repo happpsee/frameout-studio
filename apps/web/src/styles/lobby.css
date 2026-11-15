@@ -10,7 +10,20 @@
   --fo-lobby-serif: 'Songti SC', 'STSong', 'Noto Serif SC', 'Source Han Serif SC', serif;
   overflow-x: hidden;
   overflow-y: auto;
-  background: var(--fo-ink);
+  background-color: var(--fo-ink);
+  background-image:
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--fo-paper) 3%, transparent) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--fo-paper) 3%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 24px 24px;
+  background-attachment: local;
   font-size: var(--fo-t-sm);
   font-variant-numeric: tabular-nums;
 }
@@ -19,7 +32,7 @@
   transition: var(--fo-fast) var(--fo-ease-press);
   transition-property: color, background-color, border-color, box-shadow, opacity, scale;
 }
-.fo-lobby button:not(.fo-lobby-card-open, .fo-lobby-link, :disabled):active {
+.fo-lobby button:not(.fo-lobby-card-open, :disabled):active {
   scale: 0.97;
 }
 .fo-studio.fo-lobby :is(button, input, a):focus-visible {
@@ -45,7 +58,8 @@
   gap: 24px;
   height: var(--fo-lobby-header-height);
   padding: 0 var(--fo-lobby-gutter);
-  background: var(--fo-ink);
+  background: color-mix(in srgb, var(--fo-ink) 80%, transparent);
+  backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--fo-line);
 }
 .fo-lobby .fo-lobby-header .fo-brand {
@@ -171,42 +185,24 @@
   background: var(--fo-lime-active);
 }
 
-/* Greeting and toolbar */
+/* Toolbar */
 .fo-lobby .fo-lobby-main {
   max-width: 1240px;
   margin: 0 auto;
   padding: 0 var(--fo-lobby-gutter) 64px;
 }
-.fo-lobby .fo-lobby-greeting {
-  padding: 44px 0 24px;
-}
-.fo-lobby .fo-lobby-greeting h1 {
-  margin: 0 0 10px;
-  font-family: var(--fo-lobby-serif);
-  font-size: var(--fo-t-2xl);
+.fo-lobby .fo-lobby-toolbar h1 {
+  flex: none;
+  margin: 0 6px 0 0;
+  font-size: var(--fo-t-md);
   font-weight: 500;
-  letter-spacing: 1px;
   color: var(--fo-text-1);
 }
-.fo-lobby .fo-lobby-greeting p {
-  margin: 0;
-  font-size: var(--fo-t-sm);
-  line-height: 1.7;
-  color: var(--fo-text-6);
-  overflow-wrap: anywhere;
-}
 .fo-lobby .fo-lobby-toolbar {
-  position: sticky;
-  top: var(--fo-lobby-header-height);
-  z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 20px;
-  padding: 10px 0;
-  background: var(--fo-ink);
-  border-bottom: 1px solid var(--fo-line);
+  gap: 12px;
+  padding: 36px 0 16px;
 }
 .fo-lobby .fo-lobby-filters {
   display: flex;
@@ -222,21 +218,19 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
+  padding: 5px 11px;
   font-size: var(--fo-t-xs);
-  color: var(--fo-text-5);
-  background: var(--fo-surface);
+  color: var(--fo-text-6);
+  background: transparent;
   border-radius: 999px;
-  box-shadow: var(--fo-elevation-1);
   white-space: nowrap;
 }
 .fo-lobby .fo-lobby-filters button:hover {
   color: var(--fo-text-1);
-  background: var(--fo-hover);
 }
 .fo-lobby .fo-lobby-filters button[aria-pressed='true'] {
-  color: var(--fo-ink);
-  background: var(--fo-text-1);
+  color: var(--fo-text-1);
+  background: color-mix(in srgb, var(--fo-paper) 10%, transparent);
 }
 .fo-lobby .fo-lobby-filters button > span {
   font-size: var(--fo-t-xs);
@@ -247,6 +241,7 @@
 }
 .fo-lobby .fo-lobby-sort {
   flex: none;
+  margin-left: auto;
   font-size: var(--fo-t-xs);
   color: var(--fo-text-faint);
 }
@@ -254,22 +249,34 @@
 /* Project grid */
 .fo-lobby .fo-lobby-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+  gap: 18px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
+/* A pane of frosted glass over the grid: the cover and the text sit in one card. */
 .fo-lobby .fo-lobby-card {
   position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--fo-paper) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fo-paper) 8%, transparent);
+  border-radius: var(--fo-radius-l);
+  backdrop-filter: blur(20px);
   /* Never `none`: the card stays the containing block of its fixed-position menu. */
   translate: 0 0;
+  transition: border-color var(--fo-fast) var(--fo-ease-press);
 }
 .fo-lobby .fo-lobby-card:is(:hover, :has(:focus-visible, [data-state='open'])) {
   z-index: 1;
+  border-color: color-mix(in srgb, var(--fo-paper) 18%, transparent);
+}
+/* The open menu must not be clipped by the card. */
+.fo-lobby .fo-lobby-card:has([data-state='open']) {
+  overflow: visible;
 }
 /* Cards rise in once; ProjectCard drops .is-arriving when the animation ends. */
 @media (prefers-reduced-motion: no-preference) {
@@ -285,61 +292,86 @@
   }
 }
 .fo-lobby .fo-lobby-cover {
-  aspect-ratio: 16 / 10;
+  position: relative;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   background: var(--fo-media-bg);
-  border-radius: var(--fo-radius-m);
-  box-shadow: inset 0 0 0 1px var(--fo-card-outline);
-  transition: box-shadow var(--fo-fast) var(--fo-ease-press);
+  border-radius: var(--fo-radius-l) var(--fo-radius-l) 0 0;
 }
-.fo-lobby .fo-lobby-card:hover .fo-lobby-cover {
-  box-shadow: inset 0 0 0 1px var(--fo-line-4);
-}
-.fo-lobby .fo-lobby-cover > * {
-  transition: scale var(--fo-slow) var(--fo-ease-out);
-}
-.fo-lobby .fo-lobby-card:hover .fo-lobby-cover > * {
-  scale: 1.03;
-}
-.fo-lobby .fo-lobby-cover img,
-.fo-lobby .fo-lobby-cover video {
+.fo-lobby .fo-lobby-cover > :is(img, video) {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: scale var(--fo-slow) var(--fo-ease-out);
 }
-/* Nothing made yet: the title written on the poster, instead of an empty box. */
+.fo-lobby .fo-lobby-card:hover .fo-lobby-cover > :is(img, video) {
+  scale: 1.04;
+}
+/* 成片 / 素材 / 示例, over the picture. */
+.fo-lobby .fo-lobby-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  padding: 2px 8px;
+  font-size: var(--fo-t-xs);
+  color: #ededed;
+  background: #00000080;
+  border-radius: var(--fo-radius-s);
+  backdrop-filter: blur(6px);
+}
+/* Nothing made yet: light falls in from a corner, in a colour of this project's own. */
 .fo-lobby .fo-lobby-cover.is-blank {
   display: flex;
   align-items: flex-end;
-  padding: 16px 18px;
-  background: linear-gradient(150deg, var(--fo-hover), var(--fo-panel-deep) 70%);
+  padding: 14px 16px;
+  background:
+    radial-gradient(90% 120% at 0% 0%, oklch(0.5 0.09 var(--hue) / 0.55), transparent 70%),
+    linear-gradient(160deg, oklch(0.24 0.03 var(--hue)), #151515 75%);
 }
-.fo-lobby .fo-lobby-cover.is-blank > span {
+.fo-lobby .fo-lobby-cover.is-blank > span:last-child {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   font-family: var(--fo-lobby-serif);
-  font-size: var(--fo-t-2xl);
+  font-size: var(--fo-t-xl);
   line-height: 1.25;
-  color: var(--fo-text-3);
+  color: #ffffffd9;
   overflow-wrap: anywhere;
 }
+/* The new-project card: the brightest thing in the grid, a white plus over two lights. */
+.fo-lobby .fo-lobby-new {
+  border-color: color-mix(in srgb, var(--fo-paper) 16%, transparent);
+}
+.fo-lobby .fo-lobby-new .fo-lobby-cover {
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(70% 90% at 0% 0%, oklch(0.55 0.1 250 / 0.55), transparent 70%),
+    radial-gradient(70% 90% at 100% 100%, oklch(0.55 0.1 35 / 0.45), transparent 70%), #161616;
+}
+.fo-lobby .fo-lobby-new .fo-lobby-cover > span {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  color: #0d0d0d;
+  background: #f2f2f2;
+  border-radius: 50%;
+  box-shadow: 0 8px 24px #0008;
+  transition: scale var(--fo-base) var(--fo-ease-out);
+}
+.fo-lobby .fo-lobby-new:hover .fo-lobby-cover > span {
+  scale: 1.08;
+}
+.fo-lobby .fo-lobby-new .fo-lobby-cover svg {
+  width: 24px;
+  height: 24px;
+}
 .fo-lobby .fo-lobby-card-body {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 8px;
-  padding: 12px 2px 0;
-}
-.fo-lobby .fo-lobby-card-body > h3 {
-  flex-basis: 100%;
-}
-/* Status and time on one line: 空白 · 8 分钟前更新 */
-.fo-lobby .fo-lobby-updated::before {
-  content: '·';
-  margin-right: 8px;
+  padding: 10px 14px 12px;
 }
 .fo-lobby .fo-lobby-card h3 {
   margin: 0;
@@ -371,32 +403,15 @@
   outline: 2px solid var(--fo-accent);
   outline-offset: 2px;
 }
-.fo-lobby .fo-lobby-status,
-.fo-lobby .fo-lobby-updated {
-  margin: 0;
-  font-size: var(--fo-t-xs);
-  color: var(--fo-text-5);
-}
-.fo-lobby .fo-lobby-status {
+.fo-lobby .fo-lobby-meta {
   display: flex;
-  align-items: center;
-  gap: 7px;
-}
-.fo-lobby .fo-lobby-status i {
-  flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--fo-line-5);
-}
-.fo-lobby .fo-lobby-status.is-material i {
-  background: var(--fo-text-5);
-}
-.fo-lobby .fo-lobby-status.is-film i {
-  background: var(--fo-lime-mark);
-}
-.fo-lobby .fo-lobby-updated {
+  gap: 12px;
+  margin: 4px 0 0;
+  overflow: hidden;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-7);
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 .fo-lobby .fo-lobby-card-menu {
   position: absolute;
@@ -454,8 +469,7 @@
   color: var(--fo-danger);
 }
 
-/* Empty and no-match states */
-.fo-lobby .fo-lobby-empty,
+/* No project matches the search or filter */
 .fo-lobby .fo-lobby-no-match {
   display: flex;
   flex-direction: column;
@@ -463,48 +477,13 @@
   text-align: center;
   padding: 56px 16px;
   border: 1px dashed var(--fo-line-2);
-  border-radius: var(--fo-radius-m);
+  border-radius: var(--fo-radius-l);
 }
-.fo-lobby .fo-lobby-empty > [data-icon] {
-  color: var(--fo-text-faint);
-}
-.fo-lobby .fo-lobby-empty > [data-icon] svg {
-  width: 32px;
-  height: 32px;
-}
-.fo-lobby .fo-lobby-empty h2 {
-  margin: 16px 0 8px;
-  font-size: var(--fo-t-md);
-  font-weight: 500;
-  color: var(--fo-text-1);
-}
-.fo-lobby .fo-lobby-empty p,
 .fo-lobby .fo-lobby-no-match p {
-  margin: 0 0 20px;
+  margin: 0 0 12px;
   font-size: var(--fo-t-xs);
   line-height: 1.8;
   color: var(--fo-text-6);
-}
-.fo-lobby .fo-lobby-examples {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 4px 12px;
-  margin-top: 20px;
-  font-size: var(--fo-t-xs);
-  color: var(--fo-text-6);
-}
-.fo-lobby .fo-lobby-link {
-  padding: 2px 0;
-  font-size: var(--fo-t-xs);
-  color: var(--fo-accent);
-  background: transparent;
-  text-decoration: underline;
-  text-decoration-color: var(--fo-accent-a50);
-  text-underline-offset: 3px;
-}
-.fo-lobby .fo-lobby-link:hover {
-  text-decoration-color: currentColor;
 }
 
 /* Dialogs */
@@ -649,7 +628,7 @@ html[data-desktop-platform='darwin'] .fo-lobby-header :is(button, input) {
   .fo-lobby {
     --fo-lobby-gutter: 16px;
   }
-  /* Two rows that scroll away; only the filter bar stays. */
+  /* Two rows that scroll away. */
   .fo-lobby .fo-lobby-header {
     position: static;
     flex-wrap: wrap;
@@ -659,7 +638,7 @@ html[data-desktop-platform='darwin'] .fo-lobby-header :is(button, input) {
     padding-bottom: 12px;
   }
   .fo-lobby .fo-lobby-toolbar {
-    top: 0;
+    padding-top: 24px;
   }
   .fo-lobby .fo-lobby-actions {
     margin-left: auto;
@@ -672,11 +651,8 @@ html[data-desktop-platform='darwin'] .fo-lobby-header :is(button, input) {
   .fo-lobby .fo-lobby-search kbd {
     display: none;
   }
-  .fo-lobby .fo-lobby-greeting {
-    padding: 28px 0 16px;
-  }
-  .fo-lobby .fo-lobby-greeting h1 {
-    font-size: var(--fo-t-xl);
+  .fo-lobby .fo-lobby-toolbar h1 {
+    display: none;
   }
   .fo-lobby .fo-lobby-sort {
     display: none;

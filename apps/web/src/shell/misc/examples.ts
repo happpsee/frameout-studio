@@ -5,6 +5,8 @@ import { EXAMPLE_LABEL, uid } from '../../core/project/project';
 export interface StudioExample {
   id: 'forest' | 'ocean' | 'city';
   name: string;
+  /** One line under the name on the project list. */
+  summary: string;
   /** Images under /assets/, added to the canvas in this order. */
   images: { file: string; name: string }[];
   /** Next step put in the prompt box: a motion description for "图生视频". */
@@ -16,18 +18,21 @@ export const STUDIO_EXAMPLES: readonly StudioExample[] = [
   {
     id: 'forest',
     name: '森林来信',
+    summary: '薄雾森林里来了一位宇航员',
     images: [{ file: 'forest-astronaut.webp', name: '森林来信 · 薄雾森林' }],
     prompt: '镜头缓缓推近，探索者拨开薄雾向森林深处走去，阳光从树梢间洒下',
   },
   {
     id: 'ocean',
     name: '潮汐之后',
+    summary: '蓝绿浪花，一段安静的海',
     images: [{ file: 'still-ocean.webp', name: '潮汐之后 · 蓝绿浪花' }],
     prompt: '海浪一层层涌上来又退去，镜头贴着水面慢慢平移，浪花在阳光下闪光',
   },
   {
     id: 'city',
     name: '夜游计划',
+    summary: '雨后的城市夜色',
     images: [{ file: 'still-city.webp', name: '夜游计划 · 夜色城市' }],
     prompt: '镜头沿着街道缓缓向前，霓虹灯光在湿润的路面上流动，行人匆匆走过',
   },

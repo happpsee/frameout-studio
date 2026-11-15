@@ -11,11 +11,10 @@ import {
   restoreDeletedProject,
   subscribeProjects,
 } from '../../core/project/projects';
-import Icon from '../../ui/Icon';
 import { DeleteDialog, RenameDialog, TrashDialog } from './LobbyDialogs';
 import LobbyHeader from './LobbyHeader';
-import ProjectCard from './ProjectCard';
-import { type ProjectStage, greeting, projectStage, timeAgo } from './format';
+import ProjectCard, { ExampleCard, NewProjectCard } from './ProjectCard';
+import { type ProjectStage, projectStage } from './format';
 import '../../styles/lobby.css';
 
 interface LobbyProps {
@@ -59,44 +58,6 @@ function useNow(): number {
   return now;
 }
 
-function summaryLine(projects: readonly ProjectSummary[], now: number): string {
-  if (!projects.length) return '还没有项目。新建一个，把想法放上画布。';
-  const latest = projects.reduce((a, b) => (b.updatedAt > a.updatedAt ? b : a));
-  return `${projects.length} 个项目，最近在做「${latest.title}」，${timeAgo(latest.updatedAt, now)}更新。`;
-}
-
-interface EmptyStateProps {
-  onCreate: () => void;
-  onExample: (example: StudioExample) => void;
-}
-
-function EmptyState({ onCreate, onExample }: EmptyStateProps) {
-  return (
-    <section className="fo-lobby-empty" aria-labelledby="fo-lobby-empty-heading">
-      <Icon name="film" />
-      <h2 id="fo-lobby-empty-heading">还没有项目</h2>
-      <p>一个项目就是一块画布：放参考图、生成镜头，再排成片。</p>
-      <button type="button" className="fo-primary-button" onClick={onCreate}>
-        <Icon name="plus" />
-        新建项目
-      </button>
-      <div className="fo-lobby-examples">
-        <span>或者从示例开始：</span>
-        {STUDIO_EXAMPLES.map(example => (
-          <button
-            key={example.id}
-            type="button"
-            className="fo-lobby-link"
-            onClick={() => onExample(example)}
-          >
-            {example.name}
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 export default function Lobby({ onOpenProject, onShowIntro }: LobbyProps) {
   const { projects, deleted, refresh } = useProjectLists();
   const now = useNow();
@@ -133,63 +94,64 @@ export default function Lobby({ onOpenProject, onShowIntro }: LobbyProps) {
         deletedCount={deleted.length}
         onShowIntro={onShowIntro}
         onShowTrash={() => setPending({ kind: 'trash' })}
-        onCreate={() => create()}
       />
       <main className="fo-lobby-main">
-        <section className="fo-lobby-greeting">
-          <h1>{greeting(new Date(now).getHours())}。</h1>
-          <p>{summaryLine(projects, now)}</p>
-        </section>
-        {projects.length ? (
-          <>
-            <div className="fo-lobby-toolbar">
-              <div className="fo-lobby-filters" role="group" aria-label="按状态筛选">
-                {FILTERS.map(({ id, label }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    aria-pressed={filter === id}
-                    onClick={() => setFilter(id)}
-                  >
-                    {label}
-                    <span>{counts[id]}</span>
-                  </button>
-                ))}
-              </div>
-              <span className="fo-lobby-sort">按最近更新排序</span>
-            </div>
-            {visible.length ? (
-              <ul className="fo-lobby-grid" aria-label="项目">
-                {visible.map((project, index) => (
-                  <ProjectCard
-                    key={project.id}
-                    project={project}
-                    index={index}
-                    now={now}
-                    onOpen={() => onOpenProject(project.id)}
-                    onRename={() => setPending({ kind: 'rename', project })}
-                    onDelete={() => setPending({ kind: 'delete', project })}
-                  />
-                ))}
-              </ul>
-            ) : (
-              <div className="fo-lobby-no-match" role="status">
-                <p>{needle ? `没有名字包含「${query.trim()}」的项目。` : '这一类还没有项目。'}</p>
-                <button
-                  type="button"
-                  className="fo-lobby-link"
-                  onClick={() => {
-                    setQuery('');
-                    setFilter('all');
-                  }}
-                >
-                  显示全部项目
-                </button>
-              </div>
-            )}
-          </>
+        <div className="fo-lobby-toolbar">
+          <h1>全部项目</h1>
+          <div className="fo-lobby-filters" role="group" aria-label="按状态筛选">
+            {FILTERS.map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                aria-pressed={filter === id}
+                onClick={() => setFilter(id)}
+              >
+                {label}
+                <span>{counts[id]}</span>
+              </button>
+            ))}
+          </div>
+          <span className="fo-lobby-sort">
+            {projects.length ? '按最近更新排序' : '还没有项目：新建一个，或者打开示例试试'}
+          </span>
+        </div>
+        {projects.length && !visible.length ? (
+          <div className="fo-lobby-no-match" role="status">
+            <p>{needle ? `没有名字包含「${query.trim()}」的项目。` : '这一类还没有项目。'}</p>
+            <button
+              type="button"
+              className="fo-text-button"
+              onClick={() => {
+                setQuery('');
+                setFilter('all');
+              }}
+            >
+              显示全部项目
+            </button>
+          </div>
         ) : (
-          <EmptyState onCreate={() => create()} onExample={startExample} />
+          <ul className="fo-lobby-grid" aria-label="项目">
+            <NewProjectCard onCreate={() => create()} />
+            {visible.map((project, index) => (
+              <ProjectCard
+                key={project.id}
+                project={project}
+                index={index + 1}
+                now={now}
+                onOpen={() => onOpenProject(project.id)}
+                onRename={() => setPending({ kind: 'rename', project })}
+                onDelete={() => setPending({ kind: 'delete', project })}
+              />
+            ))}
+            {!projects.length &&
+              STUDIO_EXAMPLES.map(example => (
+                <ExampleCard
+                  key={example.id}
+                  example={example}
+                  onOpen={() => startExample(example)}
+                />
+              ))}
+          </ul>
         )}
       </main>
       {pending?.kind === 'rename' && (

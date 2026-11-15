@@ -11,7 +11,6 @@ interface LobbyHeaderProps {
   deletedCount: number;
   onShowIntro: () => void;
   onShowTrash: () => void;
-  onCreate: () => void;
 }
 
 /** ⌘K / Ctrl+K focuses the search field from anywhere in the lobby. */
@@ -38,7 +37,6 @@ export default function LobbyHeader({
   deletedCount,
   onShowIntro,
   onShowTrash,
-  onCreate,
 }: LobbyHeaderProps) {
   useSearchShortcut(searchRef);
   const shortcut = isApplePlatform() ? '⌘K' : 'Ctrl K';
@@ -89,10 +87,6 @@ export default function LobbyHeader({
           {deletedCount > 0 && <span aria-hidden="true">{deletedCount}</span>}
         </button>
         <ThemeToggle />
-        <button type="button" className="fo-primary-button fo-lobby-create" onClick={onCreate}>
-          <Icon name="plus" />
-          新建项目
-        </button>
       </nav>
     </header>
   );

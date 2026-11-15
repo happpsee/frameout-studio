@@ -107,11 +107,11 @@ afterEach(() => {
 });
 
 describe('project lobby', () => {
-  it('shows an empty state that creates and opens a project', async () => {
+  it('shows the new-project card and the examples when there are no projects', async () => {
     const user = userEvent.setup();
     const { onOpenProject } = renderLobby();
-    const empty = screen.getByRole('region', { name: '还没有项目' });
-    await user.click(within(empty).getByRole('button', { name: '新建项目' }));
+    expect(cards()).toEqual(['新建项目', '森林来信', '潮汐之后', '夜游计划']);
+    await user.click(screen.getByRole('button', { name: '新建项目' }));
     expect(projects.createProject).toHaveBeenCalledWith(undefined);
     expect(onOpenProject).toHaveBeenCalledWith('new-1');
   });
@@ -144,7 +144,7 @@ describe('project lobby', () => {
     await user.click(within(dialog).getByRole('button', { name: '保存' }));
     expect(projects.renameProject).toHaveBeenCalledWith('a', '海边日落');
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(cards()).toEqual(['海边日落']);
+    expect(cards()).toEqual(['新建项目', '海边日落']);
   });
 
   it('moves a deleted project to the trash and restores it', async () => {
@@ -158,7 +158,7 @@ describe('project lobby', () => {
     expect(confirm.textContent).toContain('会移入已删除项目，保留 30 天，可以恢复');
     await user.click(within(confirm).getByRole('button', { name: '删除' }));
     expect(projects.deleteProject).toHaveBeenCalledWith('a');
-    expect(cards()).toEqual(['雨夜']);
+    expect(cards()).toEqual(['新建项目', '雨夜']);
 
     await user.click(screen.getByRole('button', { name: '已删除项目（2 个）' }));
     const trash = screen.getByRole('dialog', { name: '已删除项目' });
@@ -169,6 +169,6 @@ describe('project lobby', () => {
     await user.click(within(trash).getByRole('button', { name: '恢复「海边」' }));
     expect(projects.restoreDeletedProject).toHaveBeenCalledWith('a');
     expect(within(trash).getAllByRole('listitem')).toHaveLength(1);
-    expect(cards()).toEqual(['海边', '雨夜']);
+    expect(cards()).toEqual(['新建项目', '海边', '雨夜']);
   });
 });

@@ -6,15 +6,6 @@ const DAY = 24 * HOUR;
 /** How long a deleted project stays restorable. */
 export const TRASH_DAYS = 30;
 
-/** A plain greeting for the hour of day. */
-export function greeting(hour: number): string {
-  if (hour >= 5 && hour < 11) return '早上好';
-  if (hour >= 11 && hour < 13) return '中午好';
-  if (hour >= 13 && hour < 18) return '下午好';
-  if (hour >= 18 && hour < 23) return '晚上好';
-  return '夜深了';
-}
-
 /** 00:12 or 1:02:03. */
 function formatDuration(seconds: number): string {
   const total = Math.max(0, Math.round(seconds));
@@ -47,11 +38,11 @@ export function projectStage(project: ProjectSummary): ProjectStage {
   return project.cardCount > 0 ? 'material' : 'blank';
 }
 
-/** The short status under a card title. */
+/** The short status under a card title; the stage itself is the badge on the cover. */
 export function projectStatus(project: ProjectSummary): string {
   const stage = projectStage(project);
   if (stage === 'film')
-    return `成片 ${project.shotCount} 个镜头 · ${formatDuration(project.durationSeconds)}`;
+    return `${project.shotCount} 个镜头 · ${formatDuration(project.durationSeconds)}`;
   if (stage === 'material') return `${project.cardCount} 个素材`;
   return '空白';
 }

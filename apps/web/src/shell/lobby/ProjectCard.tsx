@@ -3,7 +3,21 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { getMedia } from '../../core/project/media-store';
 import type { ProjectSummary } from '../../core/project/projects';
 import Icon from '../../ui/Icon';
-import { projectStage, projectStatus, timeAgo } from './format';
+import type { StudioExample } from '../misc/examples';
+import { type ProjectStage, projectStage, projectStatus, timeAgo } from './format';
+
+const STAGE_BADGE: Record<ProjectStage, string | null> = {
+  film: '成片',
+  material: '素材',
+  blank: null,
+};
+
+/** A fixed hue per project, so each blank cover keeps its own colour. */
+function hueOf(id: string): number {
+  let hash = 0;
+  for (const char of id) hash = (hash * 31 + char.charCodeAt(0)) % 360;
+  return hash;
+}
 
 /** Resolves the cover from the media store, falling back to `coverSrc`. */
 function useCoverUrl(project: ProjectSummary): string | undefined {
@@ -39,8 +53,14 @@ function ProjectCover({ project }: { project: ProjectSummary }) {
   const url = useCoverUrl(project);
   const [failed, setFailed] = useState<string>();
   const showMedia = url && failed !== url;
+  const badge = STAGE_BADGE[projectStage(project)];
   return (
-    <div className={`fo-lobby-cover${showMedia ? '' : ' is-blank'}`} aria-hidden="true">
+    <div
+      className={`fo-lobby-cover${showMedia ? '' : ' is-blank'}`}
+      style={{ '--hue': hueOf(project.id) } as CSSProperties}
+      aria-hidden="true"
+    >
+      {badge && <span className="fo-lobby-badge">{badge}</span>}
       {showMedia ? (
         project.coverKind === 'video' ? (
           <video src={url} muted playsInline preload="metadata" onError={() => setFailed(url)} />
@@ -98,7 +118,6 @@ export default function ProjectCard({
   onRename,
   onDelete,
 }: ProjectCardProps) {
-  const stage = projectStage(project);
   // The entrance plays once. A re-sort re-inserts the element, which would restart a CSS
   // animation, so the class that carries it is dropped as soon as it has finished.
   const [arriving, setArriving] = useState(true);
@@ -117,13 +136,53 @@ export default function ProjectCard({
             {project.title}
           </button>
         </h3>
-        <p className={`fo-lobby-status is-${stage}`}>
-          <i aria-hidden="true" />
-          {projectStatus(project)}
+        <p className="fo-lobby-meta">
+          <span>{projectStatus(project)}</span>
+          <span>{timeAgo(project.updatedAt, now)}</span>
         </p>
-        <p className="fo-lobby-updated">{timeAgo(project.updatedAt, now)}更新</p>
       </div>
       <CardMenu title={project.title} onRename={onRename} onDelete={onDelete} />
+    </li>
+  );
+}
+
+/** Always the first card: the one place to start a project. */
+export function NewProjectCard({ onCreate }: { onCreate: () => void }) {
+  return (
+    <li className="fo-lobby-card fo-lobby-new">
+      <div className="fo-lobby-cover" aria-hidden="true">
+        <span>
+          <Icon name="plus" />
+        </span>
+      </div>
+      <div className="fo-lobby-card-body">
+        <h3>
+          <button type="button" className="fo-lobby-card-open" onClick={onCreate}>
+            新建项目
+          </button>
+        </h3>
+        <p className="fo-lobby-meta">从一块空画布开始</p>
+      </div>
+    </li>
+  );
+}
+
+/** Shown after the new-project card while there are no projects, so the list is never bare. */
+export function ExampleCard({ example, onOpen }: { example: StudioExample; onOpen: () => void }) {
+  return (
+    <li className="fo-lobby-card">
+      <div className="fo-lobby-cover" aria-hidden="true">
+        <span className="fo-lobby-badge">示例</span>
+        <img src={`/assets/${example.images[0].file}`} alt="" loading="lazy" />
+      </div>
+      <div className="fo-lobby-card-body">
+        <h3>
+          <button type="button" className="fo-lobby-card-open" onClick={onOpen}>
+            {example.name}
+          </button>
+        </h3>
+        <p className="fo-lobby-meta">{example.summary}</p>
+      </div>
     </li>
   );
 }
