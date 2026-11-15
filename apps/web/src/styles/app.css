@@ -20,8 +20,19 @@
   --cta-fill: var(--lime);
   --font-display: Anton, Impact, 'Arial Narrow', sans-serif;
   --font-body: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
-  --font-serif: 'Songti SC', 'STSong', 'Noto Serif SC', 'Source Han Serif SC', serif;
+  /* Songti on a Mac; elsewhere Noto Serif SC, which main.tsx loads on demand. */
+  --font-serif: 'Songti SC', 'Noto Serif SC', serif;
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  /* The canvas preview's surfaces; theme.css gives 军绿 its olive versions. */
+  --preview-bg: #1f1f1f;
+  --preview-border: #353535;
+  --preview-line: #393939;
+  --preview-dots: #5a5a5a4d;
+  --preview-group: #80808070;
+  --preview-media: #323232;
+  --preview-media-line: #404040;
+  --orbit-line: #444444;
+  --preview-shadow: #0000001a;
   color-scheme: dark;
 }
 * {
@@ -306,7 +317,7 @@ select:focus-visible {
   aspect-ratio: 1;
   top: 11%;
   left: 2%;
-  border: 1px solid #424939;
+  border: 1px solid var(--orbit-line);
   border-radius: 50%;
   transform: rotate(-24deg) scaleY(0.82);
   z-index: -1;
@@ -572,12 +583,12 @@ select:focus-visible {
 .canvas-preview {
   max-width: 1440px;
   margin: auto;
-  background: #21231e;
+  background: var(--preview-bg);
   color: var(--paper);
-  border: 1px solid #35392d;
+  border: 1px solid var(--preview-border);
   border-radius: 9px;
   overflow: hidden;
-  box-shadow: 0 22px 42px #1b28101a;
+  box-shadow: 0 22px 42px var(--preview-shadow);
 }
 .preview-topbar {
   height: 49px;
@@ -585,7 +596,7 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #393c31;
+  border-bottom: 1px solid var(--preview-line);
 }
 .preview-project {
   display: flex;
@@ -618,7 +629,7 @@ select:focus-visible {
   height: 445px;
   position: relative;
   overflow: hidden;
-  background-image: radial-gradient(#555e454d 1px, transparent 1px);
+  background-image: radial-gradient(var(--preview-dots) 1px, transparent 1px);
   background-size: 20px 20px;
 }
 .preview-label {
@@ -636,14 +647,14 @@ select:focus-visible {
   top: 22px;
   width: 53%;
   height: 382px;
-  border: 1px dashed #5e813d70;
+  border: 1px dashed var(--preview-group);
   border-radius: 6px;
 }
 .preview-group > span {
   position: absolute;
   top: -10px;
   left: 12px;
-  background: #21231e;
+  background: var(--preview-bg);
   padding: 0 8px;
   color: var(--muted);
   font-size: var(--t-xs);
@@ -672,11 +683,11 @@ select:focus-visible {
 }
 .preview-image {
   padding: 0;
-  background: #30352a;
+  background: var(--preview-media);
   position: absolute;
   text-align: left;
   box-shadow: 0 14px 30px #0003;
-  border: 1px solid #3b4331;
+  border: 1px solid var(--preview-media-line);
   border-radius: 3px;
   overflow: hidden;
   transition: transform 0.25s;
@@ -728,7 +739,7 @@ select:focus-visible {
 .preview-image-detail > span {
   position: relative;
   z-index: 2;
-  background: #30352a;
+  background: var(--preview-media);
 }
 .preview-image-ocean {
   width: 18%;
@@ -778,7 +789,7 @@ select:focus-visible {
   align-items: center;
   gap: 17px;
   padding: 0 22px;
-  border-top: 1px solid #393c31;
+  border-top: 1px solid var(--preview-line);
   color: var(--muted);
   font-size: var(--t-xs);
 }

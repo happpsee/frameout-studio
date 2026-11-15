@@ -219,6 +219,15 @@
   --fo-lime-mark: #b5ff2a;
   --fo-on-lime: #151613;
   /* The landing page's own base colours (app.css). */
+  --preview-bg: #21231e;
+  --preview-border: #35392d;
+  --preview-line: #393c31;
+  --preview-dots: #555e454d;
+  --preview-group: #5e813d70;
+  --preview-media: #30352a;
+  --preview-media-line: #3b4331;
+  --orbit-line: #424939;
+  --preview-shadow: #1b28101a;
   --ink: #151613;
   --muted: #a5a79d;
   --faint: #6c7262;

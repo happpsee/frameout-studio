@@ -12,6 +12,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
+    "@fontsource/noto-serif-sc": "^5.3.1",
     "@frameout/shared": "workspace:*",
     "@radix-ui/react-dropdown-menu": "^2.2.1",
     "@radix-ui/react-select": "^2.4.1",

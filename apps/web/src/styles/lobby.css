@@ -7,7 +7,7 @@
 .fo-lobby {
   --fo-lobby-gutter: 32px;
   --fo-lobby-header-height: 56px;
-  --fo-lobby-serif: 'Songti SC', 'STSong', 'Noto Serif SC', 'Source Han Serif SC', serif;
+  --fo-lobby-serif: 'Songti SC', 'Noto Serif SC', serif;
   overflow-x: hidden;
   overflow-y: auto;
   background-color: var(--fo-ink);
