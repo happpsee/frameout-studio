@@ -265,29 +265,11 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  background: var(--fo-card);
-  border-radius: var(--fo-radius-m);
-  box-shadow:
-    var(--fo-elevation-1),
-    0 0 0 1px var(--fo-card-outline);
   /* Never `none`: the card stays the containing block of its fixed-position menu. */
   translate: 0 0;
-  transition: var(--fo-fast) var(--fo-ease-press);
-  transition-property: translate, box-shadow;
 }
 .fo-lobby .fo-lobby-card:is(:hover, :has(:focus-visible, [data-state='open'])) {
   z-index: 1;
-  translate: 0 -2px;
-  box-shadow:
-    var(--fo-elevation-2),
-    0 0 0 1px var(--fo-line-3);
-}
-/* Pressing the card itself (not its menu) sets it back down. */
-.fo-lobby .fo-lobby-card:has(.fo-lobby-card-open:active) {
-  translate: 0 0;
-  box-shadow:
-    var(--fo-elevation-1),
-    0 0 0 1px var(--fo-card-outline);
 }
 /* Cards rise in once; ProjectCard drops .is-arriving when the animation ends. */
 @media (prefers-reduced-motion: no-preference) {
@@ -303,10 +285,15 @@
   }
 }
 .fo-lobby .fo-lobby-cover {
-  aspect-ratio: 2 / 1;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   background: var(--fo-media-bg);
-  border-radius: var(--fo-radius-m) var(--fo-radius-m) 0 0;
+  border-radius: var(--fo-radius-m);
+  box-shadow: inset 0 0 0 1px var(--fo-card-outline);
+  transition: box-shadow var(--fo-fast) var(--fo-ease-press);
+}
+.fo-lobby .fo-lobby-card:hover .fo-lobby-cover {
+  box-shadow: inset 0 0 0 1px var(--fo-line-4);
 }
 .fo-lobby .fo-lobby-cover > * {
   transition: scale var(--fo-slow) var(--fo-ease-out);
@@ -321,31 +308,38 @@
   height: 100%;
   object-fit: cover;
 }
-/* Nothing made yet: the studio's empty canvas, with one frame waiting for a picture. */
+/* Nothing made yet: the title written on the poster, instead of an empty box. */
 .fo-lobby .fo-lobby-cover.is-blank {
-  display: grid;
-  place-items: center;
-  background: var(--fo-canvas) radial-gradient(var(--fo-canvas-dot) 1px, transparent 1px) 0 0 / 18px
-    18px;
+  display: flex;
+  align-items: flex-end;
+  padding: 16px 18px;
+  background: linear-gradient(150deg, var(--fo-hover), var(--fo-panel-deep) 70%);
 }
 .fo-lobby .fo-lobby-cover.is-blank > span {
-  display: grid;
-  place-items: center;
-  width: 34%;
-  aspect-ratio: 16 / 9;
-  border: 1px dashed var(--fo-line-5);
-  border-radius: var(--fo-radius-s);
-  background: var(--fo-canvas);
-  color: var(--fo-text-dim);
-  font-size: var(--fo-t-xl);
-  font-weight: 300;
-  line-height: 1;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-family: var(--fo-lobby-serif);
+  font-size: var(--fo-t-2xl);
+  line-height: 1.25;
+  color: var(--fo-text-3);
+  overflow-wrap: anywhere;
 }
 .fo-lobby .fo-lobby-card-body {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 12px 14px 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 12px 2px 0;
+}
+.fo-lobby .fo-lobby-card-body > h3 {
+  flex-basis: 100%;
+}
+/* Status and time on one line: 空白 · 8 分钟前更新 */
+.fo-lobby .fo-lobby-updated::before {
+  content: '·';
+  margin-right: 8px;
 }
 .fo-lobby .fo-lobby-card h3 {
   margin: 0;
@@ -363,14 +357,11 @@
   color: var(--fo-text-1);
   background: transparent;
 }
-/*
- * The whole card opens the project; the menu sits above this layer. It reaches 2px below
- * the card so the hover lift cannot pull the card out from under the pointer.
- */
+/* The whole card opens the project; the menu sits above this layer. */
 .fo-lobby .fo-lobby-card-open::after {
   content: '';
   position: absolute;
-  inset: 0 0 -2px;
+  inset: 0;
   z-index: 1;
 }
 .fo-studio.fo-lobby .fo-lobby-card-open:focus-visible {
@@ -399,13 +390,12 @@
   background: var(--fo-line-5);
 }
 .fo-lobby .fo-lobby-status.is-material i {
-  background: var(--fo-green-2);
+  background: var(--fo-text-5);
 }
 .fo-lobby .fo-lobby-status.is-film i {
   background: var(--fo-lime-mark);
 }
 .fo-lobby .fo-lobby-updated {
-  font-size: var(--fo-t-xs);
   color: var(--fo-text-7);
 }
 .fo-lobby .fo-lobby-card-menu {
@@ -507,7 +497,7 @@
 .fo-lobby .fo-lobby-link {
   padding: 2px 0;
   font-size: var(--fo-t-xs);
-  color: var(--fo-accent-text);
+  color: var(--fo-accent);
   background: transparent;
   text-decoration: underline;
   text-decoration-color: var(--fo-accent-a50);
