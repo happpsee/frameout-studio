@@ -9,6 +9,7 @@ import './styles/studio.css';
 import './styles/select-control.css';
 import './styles/ai-settings.css';
 import './styles/motion.css';
+import './styles/transition.css';
 import './styles/react.css';
 import './styles/workflow.css';
 import './styles/desktop.css';

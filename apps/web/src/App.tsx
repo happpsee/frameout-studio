@@ -29,6 +29,7 @@ function Pages() {
     startsWithIntro,
     kept,
     studioActive,
+    phase,
     notice,
     openProject,
     showLobby,
@@ -71,6 +72,11 @@ function Pages() {
           onShowIntro={() => showIntro(kept)}
         />
       )}
+      <div className="fo-curtain" data-phase={phase} aria-hidden="true">
+        <i className="fo-curtain-block" />
+        <i className="fo-curtain-block" />
+        <span className="fo-curtain-mark">Frameout</span>
+      </div>
       {notice && (
         <div className="fo-toast fo-app-notice is-visible" role="status" aria-live="polite">
           {notice}

@@ -23,6 +23,15 @@ const MISSING_PROJECT_NOTICE = '没有找到这个项目，已回到项目列表
 const DELETED_PROJECT_NOTICE = '这个项目已删除，可在「已删除项目」里恢复';
 const UNREADABLE_PROJECT_NOTICE = '项目读取失败，请检查应用数据目录后重试';
 
+/** The page-change curtain: its blocks and timings are in styles/transition.css. */
+export type CurtainPhase = 'idle' | 'cover' | 'uncover';
+const COVER_MS = 350;
+const UNCOVER_MS = 530;
+/** Motion is welcome. A browser without `matchMedia`, or a test stub answering yes to everything, gets none. */
+const curtainAllowed = () =>
+  !!window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches &&
+  !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 const introSeen = () => readStoredValue(DESKTOP_INTRO_KEY) === 'seen';
 export function markIntroSeen() {
   if (introSeen()) return;
@@ -84,16 +93,34 @@ export function useProjectRoute() {
   const opening = useRef(0);
   const returnTo = useRef<string | null>(null);
   const scroll = useRef(0);
+  const [phase, setPhase] = useState<CurtainPhase>('idle');
+  const target = useRef<string | null>(null);
+  const timer = useRef<number | undefined>(undefined);
 
   const go = useCallback(
     (to: string) => {
       // A desktop project still being read must not open over the page chosen since.
       opening.current++;
       if (here.current.view === 'intro') scroll.current = window.scrollY;
-      if (to !== here.current.pathname) navigate(to);
+      if (to === here.current.pathname && target.current === null) return;
+      if (!curtainAllowed()) return void navigate(to);
+      // Already covering: the latest destination wins when the curtain has closed.
+      const covering = target.current !== null;
+      target.current = to;
+      if (covering) return;
+      clearTimeout(timer.current);
+      setPhase('cover');
+      timer.current = window.setTimeout(() => {
+        const latest = target.current;
+        target.current = null;
+        if (latest && latest !== here.current.pathname) void navigate(latest);
+        setPhase('uncover');
+        timer.current = window.setTimeout(() => setPhase('idle'), UNCOVER_MS);
+      }, COVER_MS);
     },
     [navigate],
   );
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   const openProject = useCallback(
     (id: string) => {
@@ -176,6 +203,7 @@ export function useProjectRoute() {
     /** The studio to draw, and whether it is the page on screen. */
     kept,
     studioActive: view === 'studio' && kept === studioId,
+    phase,
     notice,
     openProject,
     showLobby,
