@@ -1,5 +1,5 @@
 /*
- * Studio color tokens. The default is a neutral black with lime kept for accents. On <html>
+ * Studio color tokens. The default is black and white only, no lime. On <html>
  * (set by shell/misc/useTheme.ts), [data-theme='olive'] swaps in the original olive-tinted dark
  * palette and [data-theme='light'] the light one. The landing page keeps its own palette in
  * app.css; it follows the dark themes and ignores the light one.
@@ -9,7 +9,7 @@
   /* Base */
   --fo-ink: #0e0e0e; /* app background (header, studio shell) */
   --fo-paper: #f2f2f2; /* primary text */
-  --fo-lime: #b5ff2a; /* brand fill: primary buttons, active toggles */
+  --fo-lime: #f2f2f2; /* brand fill: primary buttons, active toggles */
   --fo-line: #272727;
   --fo-muted: #888888;
   --fo-surface: #161616;
@@ -34,11 +34,11 @@
   --fo-selected: #272727;
   --fo-pressed: #303030;
   --fo-pressed-strong: #484848;
-  --fo-accent-soft: #1b1d19;
-  --fo-accent-soft-2: #21241e;
-  --fo-accent-tint: #2a2f27;
+  --fo-accent-soft: #1c1c1c;
+  --fo-accent-soft-2: #232323;
+  --fo-accent-tint: #2d2d2d;
   --fo-warn-soft: #2d2919;
-  --fo-drop-overlay: #1d211cd9;
+  --fo-drop-overlay: #202020d9;
   --fo-scrim: #090909d9;
 
   /* Lines */
@@ -46,8 +46,8 @@
   --fo-line-3: #3d3d3d;
   --fo-line-4: #4e4e4e;
   --fo-line-5: #616161;
-  --fo-line-green: #363a33;
-  --fo-line-green-strong: #596151;
+  --fo-line-green: #393939;
+  --fo-line-green-strong: #5e5e5e;
   --fo-line-focus: #888888;
   --fo-focus-ring: #99999926;
   --fo-focus-inset: #a6a6a6;
@@ -65,26 +65,22 @@
   --fo-text-faint: #7a7a7a;
   --fo-text-dim: #636363;
   --fo-text-dimmer: #474747; /* decorative only: dividers, arrows */
-  --fo-green-1: #d2d8cb;
-  --fo-green-2: #b0b7a8;
+  --fo-green-1: #d6d6d6;
+  --fo-green-2: #b4b4b4;
   --fo-warn: #dcbc80;
   --fo-danger: #f4a690;
 
   /* Accent: --fo-accent is for text, outlines and borders; --fo-lime-mark for small dots and bars */
-  --fo-accent: #b5ff2a;
-  --fo-accent-muted: #b5ff2a9e;
-  --fo-accent-a03: #b5ff2a03;
-  --fo-accent-a08: #b5ff2a13;
-  --fo-accent-a50: #b5ff2a80;
-  --fo-lime-hover: #c8ff68;
-  --fo-lime-active: #9fe91e;
-  --fo-lime-mark: #b5ff2a;
+  --fo-accent: #f2f2f2;
+  --fo-accent-muted: #f2f2f29e;
+  --fo-accent-a03: #f2f2f203;
+  --fo-accent-a08: #f2f2f213;
+  --fo-accent-a50: #f2f2f280;
+  --fo-lime-hover: #ffffff;
+  --fo-lime-active: #d6d6d6;
+  --fo-lime-mark: #f2f2f2;
   --fo-on-lime: #0e0e0e; /* text on --fo-lime */
-  /* Lime is kept for the main action of a panel, selection and progress. Labels, links, tabs
-     and switched-on toggles use these two, which are neutral here and lime in the other themes. */
-  --fo-accent-text: var(--fo-paper);
-  --fo-active-fill: var(--fo-paper);
-  --fo-on-lime-ring: #262824;
+  --fo-on-lime-ring: #3a3a3a;
 
   /* Shadows */
   --fo-shadow-1: #0002;
@@ -122,9 +118,9 @@
   --fo-radius-l: 14px;
 
   /* Same in both themes: paper notes, the selection bar, toasts and labels over media */
-  --fo-toast-bg: #daded4;
-  --fo-toast-text: #1a1c18;
-  --fo-toast-line: #abb2a1;
+  --fo-toast-bg: #dcdcdc;
+  --fo-toast-text: #1b1b1b;
+  --fo-toast-line: #afafaf;
   --fo-sheet-bg: #eeeeee;
   --fo-sheet-text: #171717;
   --fo-sheet-text-2: #222222;
@@ -132,7 +128,7 @@
   --fo-sheet-muted: #767676;
   --fo-sheet-line: #c7c7c7;
   --fo-sheet-hover: #d7d7d7;
-  --fo-sheet-accent: #cbd5bb;
+  --fo-sheet-accent: #d1d1d1;
   --fo-media-line: #fff8;
   --fo-media-scrim: #0e0e0e44;
   --fo-media-label: #0c0c0cbb;
@@ -211,8 +207,17 @@
   --fo-media-label: #10170cbb;
   --fo-media-text: #d4e1c3;
   --fo-media-black: #080d07;
-  --fo-accent-text: var(--fo-accent);
-  --fo-active-fill: var(--fo-lime);
+  /* Lime, for actions, selection and progress. */
+  --fo-lime: #b5ff2a;
+  --fo-accent: #b5ff2a;
+  --fo-accent-muted: #b5ff2a9e;
+  --fo-accent-a03: #b5ff2a03;
+  --fo-accent-a08: #b5ff2a13;
+  --fo-accent-a50: #b5ff2a80;
+  --fo-lime-hover: #c8ff68;
+  --fo-lime-active: #9fe91e;
+  --fo-lime-mark: #b5ff2a;
+  --fo-on-lime: #151613;
   /* The landing page's own base colours (app.css). */
   --ink: #151613;
   --muted: #a5a79d;
@@ -227,8 +232,8 @@
   --cta-fill: var(--paper);
 }
 :root[data-theme='light'] {
-  --fo-accent-text: var(--fo-accent);
-  --fo-active-fill: var(--fo-lime);
+  --fo-lime: #b5ff2a;
+  --fo-on-lime: #151613;
   --fo-ink: #f4f5ef;
   --fo-paper: #1b1e16;
   --fo-line: #dcdfd3;

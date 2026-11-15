@@ -177,7 +177,7 @@
   white-space: nowrap;
 }
 .fo-workspace-tabs button.is-active {
-  color: var(--fo-accent-text);
+  color: var(--fo-accent);
 }
 .fo-workspace-tabs button.is-active:after {
   position: absolute;
@@ -270,7 +270,7 @@
     .fo-inline-button,
     .fo-zoom-fit
   ):not(:disabled):hover {
-  color: var(--fo-accent-text);
+  color: var(--fo-accent);
 }
 .fo-viewport {
   flex: 1;
@@ -488,11 +488,11 @@
   color: var(--fo-paper) !important;
 }
 .fo-icon-button.is-active {
-  background: var(--fo-active-fill);
+  background: var(--fo-lime);
   color: var(--fo-on-lime) !important;
 }
 .fo-icon-button.is-active:hover {
-  background: color-mix(in srgb, var(--fo-active-fill), white 25%);
+  background: var(--fo-lime-hover);
   color: var(--fo-on-lime) !important;
 }
 .fo-tool-divider {
@@ -706,7 +706,7 @@
 .fo-timeline-label .fo-eyebrow {
   font-size: var(--fo-t-xs);
   letter-spacing: 0.5px;
-  color: var(--fo-accent-text);
+  color: var(--fo-accent);
 }
 .fo-timeline-label strong {
   font-size: var(--fo-t-xs);
@@ -1086,7 +1086,7 @@
   top: 14px;
 }
 .fo-help-dialog > .fo-eyebrow {
-  color: var(--fo-accent-text);
+  color: var(--fo-accent);
 }
 .fo-help-dialog h2 {
   font-size: var(--fo-t-2xl) !important;
@@ -1865,7 +1865,7 @@
   min-height: 36px;
   padding: 7px 10px;
   border-radius: var(--fo-radius-s);
-  background: var(--fo-active-fill);
+  background: var(--fo-lime);
   color: var(--fo-on-lime);
   font-size: var(--fo-t-xs);
   font-weight: 600;
@@ -2123,7 +2123,7 @@
   min-width: 0;
   padding: 4px 0;
   background: none;
-  color: var(--fo-accent-text);
+  color: var(--fo-accent);
   font-size: var(--fo-t-xs);
   font-weight: 600;
   text-decoration: underline;
@@ -2268,7 +2268,7 @@
   color: var(--fo-text-7);
 }
 .fo-consistency-bar.is-set .fo-consistency-state {
-  color: var(--fo-accent-text);
+  color: var(--fo-accent);
 }
 .fo-consistency-bar img {
   width: 22px;
