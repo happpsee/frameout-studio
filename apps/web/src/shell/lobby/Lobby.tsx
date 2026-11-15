@@ -160,10 +160,11 @@ export default function Lobby({ onOpenProject, onShowIntro }: LobbyProps) {
             </div>
             {visible.length ? (
               <ul className="fo-lobby-grid" aria-label="项目">
-                {visible.map(project => (
+                {visible.map((project, index) => (
                   <ProjectCard
                     key={project.id}
                     project={project}
+                    index={index}
                     now={now}
                     onOpen={() => onOpenProject(project.id)}
                     onRename={() => setPending({ kind: 'rename', project })}

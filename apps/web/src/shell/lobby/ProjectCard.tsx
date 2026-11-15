@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type CSSProperties, useEffect, useState } from 'react';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { getMedia } from '../../core/project/media-store';
 import type { ProjectSummary } from '../../core/project/projects';
@@ -48,7 +48,7 @@ function ProjectCover({ project }: { project: ProjectSummary }) {
           <img src={url} alt="" loading="lazy" onError={() => setFailed(url)} />
         )
       ) : (
-        <span>{project.title}</span>
+        <span>{Array.from(project.title.trim())[0]}</span>
       )}
     </div>
   );
@@ -82,6 +82,8 @@ function CardMenu({ title, onRename, onDelete }: CardMenuProps) {
 
 interface ProjectCardProps {
   project: ProjectSummary;
+  /** Position in the grid: later cards rise in a little later. */
+  index: number;
   now: number;
   onOpen: () => void;
   onRename: () => void;
@@ -90,14 +92,24 @@ interface ProjectCardProps {
 
 export default function ProjectCard({
   project,
+  index,
   now,
   onOpen,
   onRename,
   onDelete,
 }: ProjectCardProps) {
   const stage = projectStage(project);
+  // The entrance plays once. A re-sort re-inserts the element, which would restart a CSS
+  // animation, so the class that carries it is dropped as soon as it has finished.
+  const [arriving, setArriving] = useState(true);
   return (
-    <li className="fo-lobby-card">
+    <li
+      className={`fo-lobby-card${arriving ? ' is-arriving' : ''}`}
+      style={{ '--i': index } as CSSProperties}
+      onAnimationEnd={event => {
+        if (event.target === event.currentTarget) setArriving(false);
+      }}
+    >
       <ProjectCover project={project} />
       <div className="fo-lobby-card-body">
         <h3>

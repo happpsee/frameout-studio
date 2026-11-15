@@ -12,6 +12,15 @@
   overflow-y: auto;
   background: var(--fo-ink);
   font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+/* Every control answers the pointer with the same timing and the same press. */
+.fo-lobby :is(button, input) {
+  transition: var(--fo-fast) var(--fo-ease-press);
+  transition-property: color, background-color, border-color, box-shadow, opacity, scale;
+}
+.fo-lobby button:not(.fo-lobby-card-open, .fo-lobby-link, :disabled):active {
+  scale: 0.97;
 }
 .fo-studio.fo-lobby :is(button, input, a):focus-visible {
   outline: 2px solid var(--fo-accent);
@@ -79,13 +88,14 @@
   color: var(--fo-text-1);
   background: var(--fo-field);
   border: 1px solid var(--fo-line-2);
-  border-radius: 6px;
+  border-radius: var(--fo-radius-s);
   font-size: 12px;
 }
 .fo-lobby .fo-lobby-search input::placeholder {
   color: var(--fo-text-faint);
 }
 .fo-lobby .fo-lobby-search input:hover {
+  background: var(--fo-field-hover);
   border-color: var(--fo-line-3);
 }
 .fo-lobby .fo-lobby-search input::-webkit-search-cancel-button {
@@ -102,7 +112,7 @@
     sans-serif;
   color: var(--fo-text-6);
   border: 1px solid var(--fo-line-2);
-  border-radius: 4px;
+  border-radius: var(--fo-radius-s);
   pointer-events: none;
 }
 .fo-lobby .fo-lobby-actions {
@@ -111,12 +121,11 @@
   gap: 8px;
   white-space: nowrap;
 }
-.fo-lobby .fo-lobby-intro {
-  padding: 8px 6px;
+.fo-lobby .fo-lobby-intro,
+.fo-lobby .fo-theme-toggle {
+  padding: 8px;
   color: var(--fo-text-5);
-}
-.fo-lobby .fo-lobby-intro:hover {
-  color: var(--fo-text-1);
+  border-radius: var(--fo-radius-s);
 }
 .fo-lobby .fo-lobby-icon-button {
   position: relative;
@@ -128,9 +137,9 @@
   padding: 0;
   color: var(--fo-text-4);
   background: transparent;
-  border-radius: 6px;
+  border-radius: var(--fo-radius-s);
 }
-.fo-lobby .fo-lobby-icon-button:hover {
+.fo-lobby :is(.fo-lobby-intro, .fo-theme-toggle, .fo-lobby-icon-button):hover {
   color: var(--fo-text-1);
   background: var(--fo-hover);
 }
@@ -147,18 +156,19 @@
   background: var(--fo-pressed);
   border-radius: 7px;
 }
-.fo-lobby .fo-theme-toggle {
-  padding: 8px 6px;
-  color: var(--fo-text-5);
-}
 .fo-lobby .fo-primary-button {
   gap: 6px;
   min-height: 34px;
   padding: 8px 14px;
-  border-radius: 6px;
+  border-radius: var(--fo-radius-s);
+  /* A hairline of light on the top edge; lime is the same in both themes. */
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--fo-lime), white 45%);
 }
 .fo-lobby .fo-primary-button:not(:disabled):hover {
   transform: none;
+}
+.fo-lobby .fo-primary-button:not(:disabled):active {
+  background: var(--fo-lime-active);
 }
 
 /* Greeting and toolbar */
@@ -202,6 +212,9 @@
   display: flex;
   gap: 6px;
   min-width: 0;
+  /* Room for the focus ring, which this scroll container would otherwise clip. */
+  margin: -4px;
+  padding: 4px;
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -209,22 +222,21 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 11px;
+  padding: 6px 12px;
   font-size: 12px;
   color: var(--fo-text-5);
-  background: transparent;
-  border: 1px solid var(--fo-line-2) !important;
+  background: var(--fo-surface);
   border-radius: 999px;
+  box-shadow: var(--fo-elevation-1);
   white-space: nowrap;
 }
 .fo-lobby .fo-lobby-filters button:hover {
   color: var(--fo-text-1);
-  border-color: var(--fo-line-4) !important;
+  background: var(--fo-hover);
 }
 .fo-lobby .fo-lobby-filters button[aria-pressed='true'] {
-  color: var(--fo-accent);
-  background: var(--fo-accent-soft);
-  border-color: var(--fo-line-green-strong) !important;
+  color: var(--fo-ink);
+  background: var(--fo-text-1);
 }
 .fo-lobby .fo-lobby-filters button > span {
   font-size: 11px;
@@ -253,25 +265,54 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
-  overflow: hidden;
   background: var(--fo-card);
-  border: 1px solid var(--fo-line);
-  border-radius: 8px;
-  transition:
-    border-color 0.15s,
-    box-shadow 0.15s;
+  border-radius: var(--fo-radius-m);
+  box-shadow:
+    var(--fo-elevation-1),
+    0 0 0 1px var(--fo-card-outline);
+  /* Never `none`: the card stays the containing block of its fixed-position menu. */
+  translate: 0 0;
+  transition: var(--fo-fast) var(--fo-ease-press);
+  transition-property: translate, box-shadow;
 }
-.fo-lobby .fo-lobby-card:hover {
-  border-color: var(--fo-line-4);
-  box-shadow: 0 6px 20px var(--fo-shadow-2);
+.fo-lobby .fo-lobby-card:is(:hover, :has(:focus-visible, [data-state='open'])) {
+  z-index: 1;
+  translate: 0 -2px;
+  box-shadow:
+    var(--fo-elevation-2),
+    0 0 0 1px var(--fo-line-3);
 }
-.fo-lobby .fo-lobby-card:focus-within {
-  border-color: var(--fo-line-4);
+/* Pressing the card itself (not its menu) sets it back down. */
+.fo-lobby .fo-lobby-card:has(.fo-lobby-card-open:active) {
+  translate: 0 0;
+  box-shadow:
+    var(--fo-elevation-1),
+    0 0 0 1px var(--fo-card-outline);
+}
+/* Cards rise in once; ProjectCard drops .is-arriving when the animation ends. */
+@media (prefers-reduced-motion: no-preference) {
+  .fo-lobby .fo-lobby-card.is-arriving {
+    animation: fo-lobby-rise var(--fo-slow) var(--fo-ease-out) calc(min(var(--i, 0), 12) * 40ms)
+      backwards;
+  }
+}
+@keyframes fo-lobby-rise {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+  }
 }
 .fo-lobby .fo-lobby-cover {
   aspect-ratio: 2 / 1;
   overflow: hidden;
   background: var(--fo-media-bg);
+  border-radius: var(--fo-radius-m) var(--fo-radius-m) 0 0;
+}
+.fo-lobby .fo-lobby-cover > * {
+  transition: scale var(--fo-slow) var(--fo-ease-out);
+}
+.fo-lobby .fo-lobby-card:hover .fo-lobby-cover > * {
+  scale: 1.03;
 }
 .fo-lobby .fo-lobby-cover img,
 .fo-lobby .fo-lobby-cover video {
@@ -281,24 +322,21 @@
   object-fit: cover;
 }
 .fo-lobby .fo-lobby-cover.is-blank {
+  --fo-lobby-glow: color-mix(in srgb, var(--fo-accent) 16%, transparent);
   display: flex;
   align-items: flex-end;
-  padding: 16px 18px;
+  padding: 10px 16px;
   background:
-    radial-gradient(circle at 85% 15%, var(--fo-accent-a08), transparent 55%),
-    linear-gradient(140deg, var(--fo-accent-soft) 0%, var(--fo-panel-alt) 70%);
+    radial-gradient(120% 120% at 100% 0%, var(--fo-lobby-glow), transparent 60%), var(--fo-media-bg);
 }
+/* The project's initial: Latin in the brand face, Chinese in the greeting's serif. */
 .fo-lobby .fo-lobby-cover.is-blank > span {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  font-family: var(--fo-lobby-serif);
-  font-size: 26px;
-  line-height: 1.3;
-  letter-spacing: 1px;
-  color: var(--fo-text-3);
-  overflow-wrap: anywhere;
+  font-family: Anton, var(--fo-lobby-serif);
+  font-size: 64px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--fo-text-1) 24%, transparent);
+  text-transform: uppercase;
+  transform-origin: left bottom;
 }
 .fo-lobby .fo-lobby-card-body {
   display: flex;
@@ -322,20 +360,22 @@
   color: var(--fo-text-1);
   background: transparent;
 }
-/* The whole card opens the project; the menu sits above this layer. */
+/*
+ * The whole card opens the project; the menu sits above this layer. It reaches 2px below
+ * the card so the hover lift cannot pull the card out from under the pointer.
+ */
 .fo-lobby .fo-lobby-card-open::after {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: 0 0 -2px;
   z-index: 1;
-  border-radius: 8px;
 }
 .fo-studio.fo-lobby .fo-lobby-card-open:focus-visible {
   outline: none;
 }
-.fo-lobby .fo-lobby-card-open:focus-visible::after {
+.fo-lobby .fo-lobby-card:has(.fo-lobby-card-open:focus-visible) {
   outline: 2px solid var(--fo-accent);
-  outline-offset: -2px;
+  outline-offset: 2px;
 }
 .fo-lobby .fo-lobby-status,
 .fo-lobby .fo-lobby-updated {
@@ -374,9 +414,11 @@
 .fo-lobby .fo-lobby-card-menu > .fo-lobby-icon-button {
   color: var(--fo-text-2);
   background: var(--fo-raised);
-  border: 1px solid var(--fo-line-2);
+  box-shadow: var(--fo-elevation-1);
   opacity: 0;
-  transition: opacity 0.15s;
+}
+.fo-lobby .fo-lobby-card-menu > .fo-lobby-icon-button:hover {
+  background: var(--fo-hover);
 }
 .fo-lobby .fo-lobby-card:hover .fo-lobby-card-menu > button,
 .fo-lobby .fo-lobby-card:focus-within .fo-lobby-card-menu > button,
@@ -395,8 +437,8 @@
   padding: 4px;
   background: var(--fo-menu);
   border: 1px solid var(--fo-line-2);
-  border-radius: 6px;
-  box-shadow: 0 10px 30px var(--fo-shadow-4);
+  border-radius: var(--fo-radius-m);
+  box-shadow: var(--fo-elevation-2);
 }
 .fo-lobby .fo-lobby-card-menu [role='menuitem'] {
   cursor: pointer;
@@ -407,7 +449,7 @@
   text-align: left;
   color: var(--fo-text-2);
   background: transparent;
-  border-radius: 4px;
+  border-radius: var(--fo-radius-s);
 }
 .fo-lobby .fo-lobby-card-menu [role='menuitem'][data-highlighted],
 .fo-lobby .fo-lobby-card-menu [role='menuitem']:hover,
@@ -428,7 +470,7 @@
   text-align: center;
   padding: 56px 16px;
   border: 1px dashed var(--fo-line-2);
-  border-radius: 8px;
+  border-radius: var(--fo-radius-m);
 }
 .fo-lobby .fo-lobby-empty > [data-icon] {
   color: var(--fo-text-faint);
@@ -515,7 +557,7 @@
   color: var(--fo-text-1);
   background: var(--fo-field);
   border: 1px solid var(--fo-line-3);
-  border-radius: 6px;
+  border-radius: var(--fo-radius-s);
 }
 .fo-lobby .fo-lobby-dialog-actions {
   display: flex;
@@ -527,7 +569,7 @@
   min-height: 34px;
   padding: 7px 14px;
   font-size: 12px;
-  border-radius: 6px;
+  border-radius: var(--fo-radius-s);
 }
 .fo-lobby .fo-lobby-secondary {
   color: var(--fo-text-2);
@@ -654,11 +696,5 @@ html[data-desktop-platform='darwin'] .fo-lobby-header :is(button, input) {
   /* Beats .fo-brand > span:last-child in studio.css. */
   .fo-lobby .fo-brand > .fo-lobby-brand-word {
     display: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .fo-lobby .fo-lobby-card,
-  .fo-lobby .fo-lobby-card-menu > .fo-lobby-icon-button {
-    transition: none;
   }
 }
