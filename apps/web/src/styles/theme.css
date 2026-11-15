@@ -80,6 +80,10 @@
   --fo-lime-active: #9fe91e;
   --fo-lime-mark: #b5ff2a;
   --fo-on-lime: #0e0e0e; /* text on --fo-lime */
+  /* Lime is kept for the main action of a panel, selection and progress. Labels, links, tabs
+     and switched-on toggles use these two, which are neutral here and lime in the other themes. */
+  --fo-accent-text: var(--fo-paper);
+  --fo-active-fill: var(--fo-paper);
   --fo-on-lime-ring: #262824;
 
   /* Shadows */
@@ -207,6 +211,8 @@
   --fo-media-label: #10170cbb;
   --fo-media-text: #d4e1c3;
   --fo-media-black: #080d07;
+  --fo-accent-text: var(--fo-accent);
+  --fo-active-fill: var(--fo-lime);
   /* The landing page's own base colours (app.css). */
   --ink: #151613;
   --muted: #a5a79d;
@@ -221,6 +227,8 @@
   --cta-fill: var(--paper);
 }
 :root[data-theme='light'] {
+  --fo-accent-text: var(--fo-accent);
+  --fo-active-fill: var(--fo-lime);
   --fo-ink: #f4f5ef;
   --fo-paper: #1b1e16;
   --fo-line: #dcdfd3;

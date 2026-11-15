@@ -5,7 +5,7 @@
   border: 1px solid var(--fo-line-green-strong);
   border-radius: var(--fo-radius-s);
   background: var(--fo-accent-soft-2);
-  color: var(--fo-accent);
+  color: var(--fo-accent-text);
   font-size: var(--fo-t-xs);
   font-weight: 650;
 }

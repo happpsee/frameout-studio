@@ -124,8 +124,8 @@
   cursor: default;
 }
 .fo-shot-actions .is-primary {
-  border-color: var(--fo-lime);
-  background: var(--fo-lime);
+  border-color: var(--fo-active-fill);
+  background: var(--fo-active-fill);
   color: var(--fo-on-lime);
   font-weight: 600;
 }
