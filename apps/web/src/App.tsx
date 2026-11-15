@@ -74,8 +74,7 @@ function Pages() {
       )}
       <div className="fo-curtain" data-phase={phase} aria-hidden="true">
         <i className="fo-curtain-block" />
-        <i className="fo-curtain-block" />
-        <span className="fo-curtain-mark">Frameout</span>
+        <i className="fo-curtain-block">Frameout</i>
       </div>
       {notice && (
         <div className="fo-toast fo-app-notice is-visible" role="status" aria-live="polite">

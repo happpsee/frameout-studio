@@ -1,16 +1,14 @@
 /*
  * Changing page (run by `go` in shell/useProjectRoute.ts, which waits out these durations): a lime
  * block then an ink block slide in from the left, the page changes underneath, and they leave to
- * the right, ink first.
+ * the right, ink first. The ink block carries the name with it. The colours are the brand's own,
+ * the same in both themes. Clicks wait until it has gone.
  */
 .fo-curtain {
   position: fixed;
   inset: 0;
   z-index: 2000;
-  display: grid;
-  place-items: center;
   overflow: hidden;
-  pointer-events: none;
 }
 .fo-curtain[data-phase='idle'] {
   visibility: hidden;
@@ -18,23 +16,19 @@
 .fo-curtain-block {
   position: absolute;
   inset: 0;
-  background: var(--fo-lime);
+  background: #b5ff2a;
   /* The leading edge is rounded while moving and square once landed. */
   border-radius: 0 3rem 3rem 0;
   transform: translateX(-100%);
 }
 .fo-curtain-block + .fo-curtain-block {
-  background: var(--fo-ink);
-}
-.fo-curtain-mark {
-  position: relative;
-  color: var(--fo-lime);
+  display: grid;
+  place-items: center;
+  background: #151613;
+  color: #b5ff2a;
   font: 1.5rem var(--font-display);
   letter-spacing: 0.4em;
-  margin-right: -0.4em;
   text-transform: uppercase;
-  opacity: 0;
-  transition: opacity 0.1s;
 }
 [data-phase='cover'] > .fo-curtain-block {
   border-radius: 0;
@@ -52,8 +46,4 @@
 [data-phase='cover'] > .fo-curtain-block + .fo-curtain-block,
 [data-phase='uncover'] > .fo-curtain-block:first-child {
   transition-delay: 0.08s;
-}
-[data-phase='cover'] > .fo-curtain-mark {
-  opacity: 1;
-  transition: opacity 0.15s 0.2s;
 }
