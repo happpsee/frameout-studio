@@ -12,6 +12,12 @@
   --faint: #6b6b6b; /* decorative marks on dark */
   --muted-ink: #616161; /* secondary text on paper */
   --line: #333333;
+  /* Lime is an accent here: the scrolling band is dark and the closing section is paper. */
+  --band-bg: var(--ink);
+  --band-text: var(--paper);
+  --band-spark: var(--lime);
+  --cta-bg: var(--paper);
+  --cta-fill: var(--lime);
   --font-display: Anton, Impact, 'Arial Narrow', sans-serif;
   --font-body: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
   --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
@@ -482,8 +488,10 @@ select:focus-visible {
   width: 17px;
 }
 .marquee {
-  background: var(--lime);
-  color: var(--ink);
+  background: var(--band-bg);
+  color: var(--band-text);
+  --outline: var(--band-text);
+  border-block: 1px solid var(--line);
   overflow: hidden;
   padding: 14px 0;
   transform: rotate(-1.2deg);
@@ -502,9 +510,10 @@ select:focus-visible {
 }
 .outline-ink {
   color: transparent;
-  -webkit-text-stroke: 1px var(--ink);
+  -webkit-text-stroke: 1px var(--outline, var(--ink));
 }
 .marquee-spark {
+  color: var(--band-spark);
   font-family: Arial, sans-serif;
 }
 .paper-section {
@@ -897,7 +906,7 @@ select:focus-visible {
 }
 .final-cta {
   padding: 36px 5% 30px;
-  background: var(--lime);
+  background: var(--cta-bg);
   color: var(--ink);
 }
 .cta-topline,

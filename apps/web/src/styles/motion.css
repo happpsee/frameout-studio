@@ -314,6 +314,9 @@ body[data-studio] .motion-scroll-line {
 .cta-circle::before {
   background: var(--lime);
 }
+.cta-circle::after {
+  background: var(--cta-fill);
+}
 :is(.button, .text-button, .cta-circle, .showcase-meta, .back-to-top) svg {
   transition: transform var(--fo-slow) var(--fo-ease-out);
 }

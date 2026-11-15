@@ -213,6 +213,12 @@
   --faint: #6c7262;
   --muted-ink: #65685b;
   --line: #3a3b35;
+  /* And its two full lime blocks. */
+  --band-bg: var(--lime);
+  --band-text: var(--ink);
+  --band-spark: currentColor;
+  --cta-bg: var(--lime);
+  --cta-fill: var(--paper);
 }
 :root[data-theme='light'] {
   --fo-ink: #f4f5ef;
