@@ -25,8 +25,8 @@ const UNREADABLE_PROJECT_NOTICE = '项目读取失败，请检查应用数据目
 
 /** The page-change curtain: its blocks and timings are in styles/transition.css. */
 export type CurtainPhase = 'idle' | 'cover' | 'uncover';
-const COVER_MS = 350;
-const UNCOVER_MS = 530;
+const COVER_MS = 800;
+const UNCOVER_MS = 840;
 /** Motion is welcome. A browser without `matchMedia`, or a test stub answering yes to everything, gets none. */
 const curtainAllowed = () =>
   !!window.matchMedia?.('(prefers-reduced-motion: no-preference)').matches &&

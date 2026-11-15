@@ -33,17 +33,17 @@
 [data-phase='cover'] > .fo-curtain-block {
   border-radius: 0;
   transform: none;
-  transition: 0.35s var(--fo-ease-out);
+  transition: 0.6s var(--fo-ease-out);
   transition-property: transform, border-radius;
 }
 [data-phase='uncover'] > .fo-curtain-block {
   border-radius: 3rem 0 0 3rem;
   transform: translateX(100%);
-  transition: 0.45s var(--fo-ease-out);
+  transition: 0.7s var(--fo-ease-out);
   transition-property: transform, border-radius;
 }
 /* The ink block lands second and leaves first. */
 [data-phase='cover'] > .fo-curtain-block + .fo-curtain-block,
 [data-phase='uncover'] > .fo-curtain-block:first-child {
-  transition-delay: 0.08s;
+  transition-delay: 0.14s;
 }
