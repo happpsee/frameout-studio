@@ -1,71 +1,72 @@
 /*
- * Studio color tokens. Dark is the default; [data-theme='light'] on <html> (set by
- * hooks/useTheme.ts) swaps in the light palette. The landing page keeps its own
- * dark art palette in app.css and does not read these.
+ * Studio color tokens. The default is a neutral black with lime kept for accents. On <html>
+ * (set by shell/misc/useTheme.ts), [data-theme='olive'] swaps in the original olive-tinted dark
+ * palette and [data-theme='light'] the light one. The landing page keeps its own palette in
+ * app.css; it follows the dark themes and ignores the light one.
  * New studio styles should use these tokens instead of hardcoded colors.
  */
 :root {
   /* Base */
-  --fo-ink: #151613; /* app background (header, studio shell) */
-  --fo-paper: #f5f5f0; /* primary text */
+  --fo-ink: #0e0e0e; /* app background (header, studio shell) */
+  --fo-paper: #f2f2f2; /* primary text */
   --fo-lime: #b5ff2a; /* brand fill: primary buttons, active toggles */
-  --fo-line: #373a32;
-  --fo-muted: #8b9080;
-  --fo-surface: #20221c;
+  --fo-line: #272727;
+  --fo-muted: #888888;
+  --fo-surface: #161616;
 
   /* Surfaces */
-  --fo-canvas: #1b1e17;
-  --fo-canvas-deep: #181b16;
-  --fo-canvas-dot: #3a4031;
-  --fo-canvas-vignette: #15161345;
-  --fo-panel: #1b1f16; /* dialogs, side panels */
-  --fo-panel-deep: #171a14;
-  --fo-panel-alt: #20231c;
-  --fo-menu: #20261b;
-  --fo-raised: #242820; /* floating toolbars, popovers */
-  --fo-raised-2: #22291c;
-  --fo-card: #272b22;
-  --fo-field: #171c13; /* inputs and select triggers */
-  --fo-field-hover: #1b2117;
-  --fo-media-bg: #2c3422;
-  --fo-thumb-bg: #151a11;
-  --fo-hover: #303a26;
-  --fo-selected: #36422a;
-  --fo-pressed: #414936;
-  --fo-pressed-strong: #566544;
-  --fo-accent-soft: #25301e;
-  --fo-accent-soft-2: #2e3c22;
-  --fo-accent-tint: #384c29;
+  --fo-canvas: #131313;
+  --fo-canvas-deep: #111111;
+  --fo-canvas-dot: #292929;
+  --fo-canvas-vignette: #0e0e0e45;
+  --fo-panel: #131313; /* dialogs, side panels */
+  --fo-panel-deep: #101010;
+  --fo-panel-alt: #161616;
+  --fo-menu: #171717;
+  --fo-raised: #191919; /* floating toolbars, popovers */
+  --fo-raised-2: #181818;
+  --fo-card: #1b1b1b;
+  --fo-field: #101010; /* inputs and select triggers */
+  --fo-field-hover: #141414;
+  --fo-media-bg: #1e1e1e;
+  --fo-thumb-bg: #0f0f0f;
+  --fo-hover: #222222;
+  --fo-selected: #272727;
+  --fo-pressed: #303030;
+  --fo-pressed-strong: #484848;
+  --fo-accent-soft: #1b1d19;
+  --fo-accent-soft-2: #21241e;
+  --fo-accent-tint: #2a2f27;
   --fo-warn-soft: #2d2919;
-  --fo-drop-overlay: #26371fd9;
-  --fo-scrim: #0b0f0ad9;
+  --fo-drop-overlay: #1d211cd9;
+  --fo-scrim: #090909d9;
 
   /* Lines */
-  --fo-line-2: #404637;
-  --fo-line-3: #4c573f;
-  --fo-line-4: #59674a;
-  --fo-line-5: #6a7559;
-  --fo-line-green: #465436;
-  --fo-line-green-strong: #627f43;
-  --fo-line-focus: #89947b;
-  --fo-focus-ring: #9ba48e26;
-  --fo-focus-inset: #a9b39a;
-  --fo-card-outline: #4d554240;
+  --fo-line-2: #2f2f2f;
+  --fo-line-3: #3d3d3d;
+  --fo-line-4: #4e4e4e;
+  --fo-line-5: #616161;
+  --fo-line-green: #363a33;
+  --fo-line-green-strong: #596151;
+  --fo-line-focus: #888888;
+  --fo-focus-ring: #99999926;
+  --fo-focus-inset: #a6a6a6;
+  --fo-card-outline: #3e3e3e40;
   --fo-warn-line: #c79b45;
 
   /* Text, strongest to faintest */
-  --fo-text-1: #e8ecdf;
-  --fo-text-2: #d3dcc7;
-  --fo-text-3: #c4ceb7;
-  --fo-text-4: #b6bfa7;
-  --fo-text-5: #a8b59a;
-  --fo-text-6: #9aa68a;
-  --fo-text-7: #879a74;
-  --fo-text-faint: #7d8a6b;
-  --fo-text-dim: #67765a;
-  --fo-text-dimmer: #55594d; /* decorative only: dividers, arrows */
-  --fo-green-1: #d4e8bb;
-  --fo-green-2: #b2c996;
+  --fo-text-1: #e6e6e6;
+  --fo-text-2: #d2d2d2;
+  --fo-text-3: #c2c2c2;
+  --fo-text-4: #b3b3b3;
+  --fo-text-5: #a8a8a8;
+  --fo-text-6: #989898;
+  --fo-text-7: #878787;
+  --fo-text-faint: #7a7a7a;
+  --fo-text-dim: #636363;
+  --fo-text-dimmer: #474747; /* decorative only: dividers, arrows */
+  --fo-green-1: #d2d8cb;
+  --fo-green-2: #b0b7a8;
   --fo-warn: #dcbc80;
   --fo-danger: #f4a690;
 
@@ -78,8 +79,8 @@
   --fo-lime-hover: #c8ff68;
   --fo-lime-active: #9fe91e;
   --fo-lime-mark: #b5ff2a;
-  --fo-on-lime: #151613; /* text on --fo-lime */
-  --fo-on-lime-ring: #35402b;
+  --fo-on-lime: #0e0e0e; /* text on --fo-lime */
+  --fo-on-lime-ring: #262824;
 
   /* Shadows */
   --fo-shadow-1: #0002;
@@ -117,6 +118,80 @@
   --fo-radius-l: 14px;
 
   /* Same in both themes: paper notes, the selection bar, toasts and labels over media */
+  --fo-toast-bg: #daded4;
+  --fo-toast-text: #1a1c18;
+  --fo-toast-line: #abb2a1;
+  --fo-sheet-bg: #eeeeee;
+  --fo-sheet-text: #171717;
+  --fo-sheet-text-2: #222222;
+  --fo-sheet-icon: #737373;
+  --fo-sheet-muted: #767676;
+  --fo-sheet-line: #c7c7c7;
+  --fo-sheet-hover: #d7d7d7;
+  --fo-sheet-accent: #cbd5bb;
+  --fo-media-line: #fff8;
+  --fo-media-scrim: #0e0e0e44;
+  --fo-media-label: #0c0c0cbb;
+  --fo-media-text: #d2d2d2;
+  --fo-media-black: #070707;
+
+  --fo-color-scheme: dark;
+}
+/* 军绿: the palette the studio started with, olive-tinted greys under the same lime. */
+:root[data-theme='olive'] {
+  --fo-ink: #151613;
+  --fo-paper: #f5f5f0;
+  --fo-line: #373a32;
+  --fo-muted: #8b9080;
+  --fo-surface: #20221c;
+  --fo-canvas: #1b1e17;
+  --fo-canvas-deep: #181b16;
+  --fo-canvas-dot: #3a4031;
+  --fo-canvas-vignette: #15161345;
+  --fo-panel: #1b1f16;
+  --fo-panel-deep: #171a14;
+  --fo-panel-alt: #20231c;
+  --fo-menu: #20261b;
+  --fo-raised: #242820;
+  --fo-raised-2: #22291c;
+  --fo-card: #272b22;
+  --fo-field: #171c13;
+  --fo-field-hover: #1b2117;
+  --fo-media-bg: #2c3422;
+  --fo-thumb-bg: #151a11;
+  --fo-hover: #303a26;
+  --fo-selected: #36422a;
+  --fo-pressed: #414936;
+  --fo-pressed-strong: #566544;
+  --fo-accent-soft: #25301e;
+  --fo-accent-soft-2: #2e3c22;
+  --fo-accent-tint: #384c29;
+  --fo-drop-overlay: #26371fd9;
+  --fo-scrim: #0b0f0ad9;
+  --fo-line-2: #404637;
+  --fo-line-3: #4c573f;
+  --fo-line-4: #59674a;
+  --fo-line-5: #6a7559;
+  --fo-line-green: #465436;
+  --fo-line-green-strong: #627f43;
+  --fo-line-focus: #89947b;
+  --fo-focus-ring: #9ba48e26;
+  --fo-focus-inset: #a9b39a;
+  --fo-card-outline: #4d554240;
+  --fo-text-1: #e8ecdf;
+  --fo-text-2: #d3dcc7;
+  --fo-text-3: #c4ceb7;
+  --fo-text-4: #b6bfa7;
+  --fo-text-5: #a8b59a;
+  --fo-text-6: #9aa68a;
+  --fo-text-7: #879a74;
+  --fo-text-faint: #7d8a6b;
+  --fo-text-dim: #67765a;
+  --fo-text-dimmer: #55594d;
+  --fo-green-1: #d4e8bb;
+  --fo-green-2: #b2c996;
+  --fo-on-lime: #151613;
+  --fo-on-lime-ring: #35402b;
   --fo-toast-bg: #dcebc7;
   --fo-toast-text: #25301b;
   --fo-toast-line: #afc78c;
@@ -128,13 +203,16 @@
   --fo-sheet-line: #c9cfbf;
   --fo-sheet-hover: #d9dfcf;
   --fo-sheet-accent: #d1f29e;
-  --fo-media-line: #fff8;
   --fo-media-scrim: #15161344;
   --fo-media-label: #10170cbb;
   --fo-media-text: #d4e1c3;
   --fo-media-black: #080d07;
-
-  --fo-color-scheme: dark;
+  /* The landing page's own base colours (app.css). */
+  --ink: #151613;
+  --muted: #a5a79d;
+  --faint: #6c7262;
+  --muted-ink: #65685b;
+  --line: #3a3b35;
 }
 :root[data-theme='light'] {
   --fo-ink: #f4f5ef;

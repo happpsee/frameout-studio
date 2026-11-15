@@ -1,10 +1,10 @@
 import { useLayoutEffect, useSyncExternalStore } from 'react';
 import { THEME_KEY, readStoredValue, writeStoredValue } from '../../core/project/desktop-storage';
 
-type Theme = 'dark' | 'light';
+type Theme = 'dark' | 'olive' | 'light';
 export type ThemePreference = Theme | 'system';
 
-const PREFERENCES: readonly ThemePreference[] = ['dark', 'light', 'system'];
+const PREFERENCES: readonly ThemePreference[] = ['dark', 'olive', 'light', 'system'];
 const SYSTEM_LIGHT = '(prefers-color-scheme: light)';
 const listeners = new Set<() => void>();
 // A choice that storage refused to save; it still applies until the page reloads.
@@ -34,7 +34,7 @@ function resolveTheme(preference: ThemePreference, systemLight: boolean): Theme 
   return preference;
 }
 
-/** The studio palette in studio.css switches on this attribute. */
+/** The palettes in styles/theme.css switch on this attribute. */
 function applyTheme(theme: Theme): void {
   document.documentElement.dataset.theme = theme;
 }
