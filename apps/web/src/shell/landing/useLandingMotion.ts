@@ -191,14 +191,6 @@ export function useLandingMotion(rootRef: RefObject<HTMLDivElement | null>) {
         ? clamp((viewport * 0.85 - box.top) / Math.max(1, viewport * 0.9 + box.height * 0.25))
         : clamp((stickyTop - box.top) / Math.max(1, box.height - sticky.offsetHeight));
       drawScene(progress);
-      all('.showcase-card').forEach((card, index) => {
-        const cardBox = card.getBoundingClientRect();
-        if (!small.matches && cardBox.bottom > 0 && cardBox.top < viewport)
-          card.style.setProperty(
-            '--card-scroll-y',
-            `${(clamp((viewport - cardBox.top) / (viewport + cardBox.height)) - 0.5) * (index - 1) * -35}px`,
-          );
-      });
       const cta = query('.cta-main h2');
       const ctaBox = query('.final-cta')?.getBoundingClientRect();
       if (cta && ctaBox && ctaBox.bottom > 0 && ctaBox.top < viewport) {
