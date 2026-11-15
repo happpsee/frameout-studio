@@ -6,7 +6,7 @@
   border-radius: var(--fo-radius-s);
   background: var(--fo-accent-soft-2);
   color: var(--fo-accent);
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   font-weight: 650;
 }
 .fo-work-panel .fo-plan-sequence:disabled {

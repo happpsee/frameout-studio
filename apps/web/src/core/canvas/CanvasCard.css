@@ -18,7 +18,7 @@
 }
 .fo-failed-media strong {
   color: var(--fo-danger);
-  font-size: 13px;
+  font-size: var(--fo-t-sm);
   font-weight: 650;
 }
 .fo-failed-media span {
@@ -28,6 +28,6 @@
   overflow: hidden;
   overflow-wrap: anywhere;
   color: var(--fo-text-3);
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   line-height: 1.5;
 }

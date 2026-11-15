@@ -81,7 +81,7 @@
   gap: 10px;
   background: transparent;
   font-family: var(--font-display, Impact, sans-serif) !important;
-  font-size: 24px !important;
+  font-size: var(--fo-t-xl) !important;
   letter-spacing: 0.1px;
   padding: 0;
   white-space: nowrap;
@@ -93,7 +93,7 @@
 }
 .fo-brand-mark {
   font-family: var(--font-display, Impact, sans-serif);
-  font-size: 28px;
+  font-size: var(--fo-t-2xl);
   position: relative;
   width: 33px;
   height: 33px;
@@ -105,7 +105,7 @@
 }
 .fo-brand-mark > span {
   font:
-    18px Arial,
+    var(--fo-t-lg) Arial,
     sans-serif;
   color: var(--fo-accent);
   position: absolute;
@@ -117,7 +117,7 @@
 }
 .fo-brand-zh {
   font:
-    11px Arial,
+    var(--fo-t-xs) Arial,
     sans-serif;
   color: var(--fo-muted);
   border-left: 1px solid var(--fo-line-3);
@@ -128,11 +128,11 @@
   display: flex;
   align-items: center;
   gap: 22px;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   white-space: nowrap;
 }
 .fo-project-divider {
-  font-size: 29px;
+  font-size: var(--fo-t-2xl);
   color: var(--fo-text-dimmer);
   font-weight: 300;
 }
@@ -142,14 +142,14 @@
   gap: 7px;
 }
 .fo-project-title {
-  font-size: 13px;
+  font-size: var(--fo-t-sm);
   letter-spacing: 1px;
 }
 .fo-save {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-muted);
 }
 .fo-save i {
@@ -172,7 +172,7 @@
   position: relative;
   padding: 2px 0;
   background: transparent;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-muted);
   white-space: nowrap;
 }
@@ -205,7 +205,7 @@
   gap: 7px;
   padding: 12px 0;
   background: transparent;
-  font-size: 12px !important;
+  font-size: var(--fo-t-xs) !important;
 }
 .fo-primary-button {
   display: inline-flex;
@@ -216,7 +216,7 @@
   padding: 11px 18px;
   background: var(--fo-lime);
   color: var(--fo-on-lime) !important;
-  font-size: 12px !important;
+  font-size: var(--fo-t-xs) !important;
   font-weight: 600 !important;
   border-radius: var(--fo-radius-s);
 }
@@ -317,14 +317,14 @@
 }
 .fo-eyebrow {
   font:
-    9px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
-  letter-spacing: 1.7px;
+  letter-spacing: 1px;
   color: var(--fo-muted);
   white-space: nowrap;
 }
 .fo-canvas-count {
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-dim);
   border-left: 1px solid var(--fo-line-2);
   padding-left: 15px;
@@ -359,7 +359,7 @@
   height: 29px;
   padding: 0 10px;
   color: var(--fo-text-4);
-  font-size: 9px;
+  font-size: var(--fo-t-xs);
   background: var(--fo-card);
 }
 .fo-card-top > span:first-child {
@@ -375,10 +375,10 @@
 }
 .fo-card-top > span:last-child {
   font:
-    8px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
   color: var(--fo-text-faint);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 .fo-media {
   width: 100%;
@@ -411,7 +411,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   opacity: 0;
   transform: translateY(3px);
   transition: var(--fo-base) var(--fo-ease-out);
@@ -440,7 +440,7 @@
   gap: 7px;
 }
 .fo-card-bottom > span:first-child {
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-2);
   max-width: 170px;
   overflow: hidden;
@@ -449,10 +449,10 @@
 }
 .fo-card-bottom > span:last-child {
   font:
-    6px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
   color: var(--fo-text-faint);
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 .fo-canvas-tools {
   position: absolute;
@@ -480,7 +480,7 @@
   background: transparent;
   color: var(--fo-text-4) !important;
   border-radius: var(--fo-radius-s);
-  font-size: 17px !important;
+  font-size: var(--fo-t-md) !important;
   line-height: 1;
 }
 .fo-icon-button:not(:disabled):hover {
@@ -526,7 +526,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 9px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-faint);
   z-index: 3;
   pointer-events: none;
@@ -559,7 +559,7 @@
   margin-bottom: 9px;
 }
 .fo-composer-top label {
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-2);
   letter-spacing: 0.5px;
 }
@@ -572,7 +572,7 @@
   width: 100%;
   height: 28px;
   min-height: 28px;
-  font-size: 12px !important;
+  font-size: var(--fo-t-xs) !important;
   line-height: 20px;
   outline-offset: 2px !important;
   padding: 0;
@@ -591,7 +591,7 @@
 }
 .fo-generation-state {
   font:
-    8px Arial,
+    var(--fo-t-xs) Arial,
     sans-serif;
   color: var(--fo-text-faint);
 }
@@ -604,7 +604,7 @@
   background: var(--fo-lime);
   color: var(--fo-on-lime) !important;
   padding: 6px 10px;
-  font-size: 10px !important;
+  font-size: var(--fo-t-xs) !important;
   font-weight: 600 !important;
   white-space: nowrap;
 }
@@ -642,7 +642,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 0 10px;
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-sheet-muted);
   border-right: 1px solid var(--fo-sheet-line);
   white-space: nowrap;
@@ -655,7 +655,7 @@
   padding: 7px 9px;
   background: transparent;
   color: var(--fo-sheet-text-2) !important;
-  font-size: 10px !important;
+  font-size: var(--fo-t-xs) !important;
   border-radius: var(--fo-radius-s);
   white-space: nowrap;
 }
@@ -704,24 +704,24 @@
   gap: 8px;
 }
 .fo-timeline-label .fo-eyebrow {
-  font-size: 7px;
-  letter-spacing: 1px;
+  font-size: var(--fo-t-xs);
+  letter-spacing: 0.5px;
   color: var(--fo-accent);
 }
 .fo-timeline-label strong {
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   font-weight: 500;
   white-space: nowrap;
 }
 .fo-sequence-summary {
   font:
-    9px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
   color: var(--fo-text-5);
 }
 .fo-timeline-hint {
   color: var(--fo-text-dim);
-  font-size: 8px;
+  font-size: var(--fo-t-xs);
   margin-top: 11px;
 }
 .fo-timeline-track {
@@ -756,19 +756,19 @@
   stroke-width: 1;
 }
 .fo-sequence-empty > span:nth-child(2) {
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-5);
   letter-spacing: 0.6px;
 }
 .fo-sequence-empty small {
   display: block;
-  font-size: 9px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-dim);
   letter-spacing: 0;
   margin-top: 9px;
 }
 .fo-sequence-arrow {
-  font-size: 27px;
+  font-size: var(--fo-t-2xl);
   line-height: 1;
   color: var(--fo-text-dimmer);
   margin-left: auto;
@@ -803,7 +803,7 @@
 }
 .fo-seq-number {
   font:
-    9px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
   color: var(--fo-text-faint);
   align-self: flex-start;
@@ -837,7 +837,7 @@
   padding-top: 5px;
 }
 .fo-seq-detail > span {
-  font-size: 9px;
+  font-size: var(--fo-t-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -851,7 +851,7 @@
   border-radius: 0;
   color: var(--fo-text-7);
   font:
-    9px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
   padding: 0 14px 3px 0;
   cursor: pointer;
@@ -890,7 +890,7 @@
   background: var(--fo-toast-bg);
   color: var(--fo-toast-text);
   z-index: 60;
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   line-height: 1.6;
   border-radius: var(--fo-radius-m);
   box-shadow: var(--fo-elevation-2);
@@ -917,7 +917,7 @@
   align-items: center;
   justify-content: center;
   gap: 15px;
-  font-size: 22px;
+  font-size: var(--fo-t-xl);
   color: var(--fo-accent);
 }
 .fo-file-drop-hint svg {
@@ -942,7 +942,7 @@
   color: var(--fo-text-faint);
 }
 .fo-canvas-empty p {
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-7);
   margin: 10px 0 20px;
 }
@@ -976,13 +976,13 @@
   align-items: center;
 }
 .fo-preview-head h2 {
-  font-size: 14px !important;
+  font-size: var(--fo-t-sm) !important;
   margin: 0;
   font-weight: 500 !important;
   line-height: 1.4 !important;
 }
 .fo-preview-head .fo-eyebrow {
-  font-size: 8px;
+  font-size: var(--fo-t-xs);
 }
 .fo-preview-screen {
   width: 100%;
@@ -1006,7 +1006,7 @@
   justify-content: space-between;
   gap: 12px;
   padding: 16px 24px 0;
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-7);
 }
 .fo-preview-shot {
@@ -1017,7 +1017,7 @@
 }
 .fo-preview-description > span:last-child {
   white-space: nowrap;
-  font-size: 9px;
+  font-size: var(--fo-t-xs);
 }
 .fo-preview-controls {
   display: flex;
@@ -1070,7 +1070,7 @@
 }
 .fo-preview-time {
   font:
-    10px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
   color: var(--fo-text-5);
   white-space: nowrap;
@@ -1089,14 +1089,14 @@
   color: var(--fo-accent);
 }
 .fo-help-dialog h2 {
-  font-size: 28px !important;
+  font-size: var(--fo-t-2xl) !important;
   line-height: 1.6 !important;
   letter-spacing: 2px;
   margin: 18px 0 12px !important;
   font-weight: 500 !important;
 }
 .fo-help-dialog p {
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   line-height: 1.9;
   color: var(--fo-text-5);
   margin: 0 0 22px;
@@ -1110,7 +1110,7 @@
   gap: 20px;
   padding: 11px 0;
   border-bottom: 1px solid var(--fo-line);
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
 }
 .fo-help-dialog dt {
   white-space: nowrap;
@@ -1128,7 +1128,7 @@
   background: var(--fo-accent-soft-2);
   padding: 14px;
   margin-bottom: 24px;
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   line-height: 1.8;
   color: var(--fo-green-2);
 }
@@ -1157,7 +1157,7 @@
     gap: 17px;
   }
   .fo-save {
-    font-size: 8px;
+    font-size: var(--fo-t-xs);
   }
   .fo-composer {
     width: min(500px, calc(100% - 300px));
@@ -1194,7 +1194,7 @@
     gap: 14px;
   }
   .fo-brand {
-    font-size: 21px !important;
+    font-size: var(--fo-t-xl) !important;
   }
   .fo-brand-mark {
     transform: scale(0.85) skew(-8deg);
@@ -1209,13 +1209,13 @@
     gap: 12px;
   }
   .fo-project-title {
-    font-size: 11px;
+    font-size: var(--fo-t-xs);
   }
   .fo-project-divider {
-    font-size: 24px;
+    font-size: var(--fo-t-xl);
   }
   .fo-save {
-    font-size: 7px;
+    font-size: var(--fo-t-xs);
   }
   .fo-workspace-tabs {
     display: none;
@@ -1225,11 +1225,11 @@
     gap: 10px;
   }
   .fo-header-actions .fo-text-button {
-    font-size: 10px !important;
+    font-size: var(--fo-t-xs) !important;
   }
   .fo-primary-button {
     padding: 10px 12px;
-    font-size: 10px !important;
+    font-size: var(--fo-t-xs) !important;
     gap: 6px;
   }
   .fo-header-actions .fo-primary-button svg {
@@ -1277,26 +1277,26 @@
     min-width: 94px;
   }
   .fo-timeline-label strong {
-    font-size: 10px;
+    font-size: var(--fo-t-xs);
   }
   .fo-timeline-label .fo-eyebrow {
-    font-size: 7px;
+    font-size: var(--fo-t-xs);
   }
   .fo-timeline-hint {
-    font-size: 7px;
+    font-size: var(--fo-t-xs);
   }
   .fo-sequence-summary {
-    font-size: 8px;
+    font-size: var(--fo-t-xs);
   }
   .fo-sequence-empty {
     padding: 0 14px;
     gap: 10px;
   }
   .fo-sequence-empty > span:nth-child(2) {
-    font-size: 10px;
+    font-size: var(--fo-t-xs);
   }
   .fo-sequence-empty small {
-    font-size: 8px;
+    font-size: var(--fo-t-xs);
   }
   .fo-empty-film svg {
     width: 23px;
@@ -1317,19 +1317,19 @@
     gap: 10px;
   }
   .fo-brand > span:last-child {
-    font-size: 20px;
+    font-size: var(--fo-t-xl);
     gap: 0;
   }
   .fo-brand-mark {
     width: 26px;
     height: 28px;
     line-height: 27px;
-    font-size: 23px;
+    font-size: var(--fo-t-xl);
   }
   .fo-brand-mark > span {
     right: -7px;
     top: -5px;
-    font-size: 14px;
+    font-size: var(--fo-t-sm);
     width: 17px;
     height: 17px;
   }
@@ -1340,7 +1340,7 @@
     gap: 7px;
   }
   .fo-header-actions .fo-primary-button {
-    font-size: 10px !important;
+    font-size: var(--fo-t-xs) !important;
     min-height: 38px;
     padding: 9px 10px;
   }
@@ -1364,11 +1364,11 @@
     gap: 9px;
   }
   .fo-canvas-intro .fo-eyebrow {
-    font-size: 7px;
-    letter-spacing: 1px;
+    font-size: var(--fo-t-xs);
+    letter-spacing: 0.5px;
   }
   .fo-canvas-count {
-    font-size: 8px;
+    font-size: var(--fo-t-xs);
     padding-left: 9px;
   }
   .fo-canvas-tools {
@@ -1396,21 +1396,21 @@
     margin-bottom: 8px;
   }
   .fo-composer-top label {
-    font-size: 11px;
+    font-size: var(--fo-t-xs);
   }
   .fo-prompt {
-    font-size: 16px !important;
+    font-size: var(--fo-t-md) !important;
     height: 30px;
     line-height: 24px;
   }
   .fo-generation-state {
-    font-size: 7px;
+    font-size: var(--fo-t-xs);
     max-width: 160px;
   }
   .fo-generate-button {
     min-height: 36px;
     padding: 8px;
-    font-size: 10px !important;
+    font-size: var(--fo-t-xs) !important;
   }
   .fo-selection-actions {
     bottom: 218px;
@@ -1420,7 +1420,7 @@
     padding: 4px;
   }
   .fo-small-button {
-    font-size: 10px !important;
+    font-size: var(--fo-t-xs) !important;
     min-height: 38px;
     padding: 7px;
   }
@@ -1460,10 +1460,10 @@
     gap: 8px;
   }
   .fo-timeline-label .fo-eyebrow {
-    font-size: 7px;
+    font-size: var(--fo-t-xs);
   }
   .fo-timeline-label strong {
-    font-size: 10px;
+    font-size: var(--fo-t-xs);
   }
   .fo-sequence-summary {
     margin-left: auto;
@@ -1483,18 +1483,18 @@
     gap: 10px;
   }
   .fo-sequence-empty > span:nth-child(2) {
-    font-size: 11px;
+    font-size: var(--fo-t-xs);
   }
   .fo-sequence-empty small {
-    font-size: 8px;
+    font-size: var(--fo-t-xs);
   }
   .fo-sequence-arrow {
-    font-size: 23px;
+    font-size: var(--fo-t-xl);
   }
   .fo-toast {
     top: 78px;
     width: max-content;
-    font-size: 10px;
+    font-size: var(--fo-t-xs);
     max-width: calc(100% - 24px);
     padding: 10px 13px;
   }
@@ -1505,7 +1505,7 @@
     font-size: 39px;
   }
   .fo-canvas-empty p {
-    font-size: 11px;
+    font-size: var(--fo-t-xs);
   }
   .fo-preview-head {
     padding: 16px;
@@ -1516,10 +1516,10 @@
     flex-direction: column;
   }
   .fo-preview-head h2 {
-    font-size: 12px !important;
+    font-size: var(--fo-t-xs) !important;
   }
   .fo-preview-head .fo-eyebrow {
-    font-size: 7px;
+    font-size: var(--fo-t-xs);
   }
   .fo-preview-controls {
     padding: 12px;
@@ -1534,15 +1534,15 @@
     margin: 0 8px;
   }
   .fo-preview-time {
-    font-size: 8px;
+    font-size: var(--fo-t-xs);
   }
   .fo-preview-description {
     padding: 12px 14px 0;
     gap: 8px;
-    font-size: 9px;
+    font-size: var(--fo-t-xs);
   }
   .fo-preview-description > span:last-child {
-    font-size: 7px;
+    font-size: var(--fo-t-xs);
   }
   .fo-preview-play {
     width: 32px;
@@ -1553,20 +1553,20 @@
     padding: 28px 21px !important;
   }
   .fo-help-dialog h2 {
-    font-size: 23px !important;
+    font-size: var(--fo-t-xl) !important;
   }
   .fo-help-dialog dl > div {
     gap: 12px;
-    font-size: 10px;
+    font-size: var(--fo-t-xs);
   }
   .fo-help-dialog p {
-    font-size: 11px;
+    font-size: var(--fo-t-xs);
   }
   .fo-help-note {
-    font-size: 9px;
+    font-size: var(--fo-t-xs);
   }
   .fo-file-drop-hint {
-    font-size: 16px;
+    font-size: var(--fo-t-md);
   }
   .fo-file-drop-hint svg {
     width: 24px;
@@ -1804,7 +1804,7 @@
   background: transparent;
   color: var(--fo-text-3);
   font:
-    10px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
   text-align: center;
 }
@@ -1833,7 +1833,7 @@
   display: block;
   margin-bottom: 9px;
   color: var(--fo-text-4);
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
 }
 .fo-zoom-form > div {
   display: flex;
@@ -1851,13 +1851,13 @@
   background: var(--fo-field);
   color: var(--fo-paper);
   font:
-    12px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
 }
 .fo-zoom-form > div > span {
   color: var(--fo-text-6);
   font:
-    11px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
 }
 .fo-zoom-form button {
@@ -1867,7 +1867,7 @@
   border-radius: var(--fo-radius-s);
   background: var(--fo-lime);
   color: var(--fo-on-lime);
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   font-weight: 600;
 }
 .fo-zoom-presets {
@@ -1884,7 +1884,7 @@
   box-shadow: var(--fo-elevation-1);
   color: var(--fo-text-3);
   font:
-    10px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
 }
 .fo-zoom-presets button:hover,
@@ -1905,13 +1905,13 @@
   border-radius: 0;
   background: transparent;
   color: var(--fo-text-2);
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   text-align: left;
 }
 .fo-zoom-fit > span {
   color: var(--fo-text-7);
   font:
-    8px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
   white-space: nowrap;
 }
@@ -1919,7 +1919,7 @@
   display: block;
   margin-top: 10px;
   color: var(--fo-text-7);
-  font-size: 9px;
+  font-size: var(--fo-t-xs);
   line-height: 1.7;
 }
 @keyframes fo-selection-reveal {
@@ -1945,7 +1945,7 @@
   }
   .fo-zoom-form .fo-zoom-input {
     height: 40px;
-    font-size: 16px;
+    font-size: var(--fo-t-md);
   }
   .fo-zoom-form button,
   .fo-zoom-presets button {
@@ -1966,7 +1966,7 @@
   background: var(--fo-panel-alt);
   color: var(--fo-green-2);
   font:
-    10px Arial,
+    var(--fo-t-xs) Arial,
     sans-serif !important;
   padding: 4px 5px;
   cursor: pointer;
@@ -1975,7 +1975,7 @@
   height: 47px;
   line-height: 22px;
   overflow: auto;
-  font-size: 12px !important;
+  font-size: var(--fo-t-xs) !important;
 }
 .fo-generation-state {
   overflow: hidden;
@@ -1992,7 +1992,7 @@
   background: var(--fo-pressed);
   box-shadow: var(--fo-elevation-1);
   color: var(--fo-text-2) !important;
-  font-size: 9px !important;
+  font-size: var(--fo-t-xs) !important;
   white-space: nowrap;
 }
 .fo-cancel-generation:hover {
@@ -2003,7 +2003,7 @@
   max-height: 44px;
   overflow: auto;
   overflow-wrap: anywhere;
-  font-size: 9px;
+  font-size: var(--fo-t-xs);
   line-height: 1.6;
   color: var(--fo-green-2);
 }
@@ -2015,7 +2015,7 @@
   color: var(--fo-media-text);
   text-align: center;
   font:
-    11px Arial,
+    var(--fo-t-xs) Arial,
     sans-serif;
   pointer-events: none;
 }
@@ -2065,35 +2065,35 @@
     gap: 5px;
   }
   .fo-composer-top > label {
-    font-size: 10px;
+    font-size: var(--fo-t-xs);
     white-space: nowrap;
   }
   .fo-generation-mode {
     max-width: 90px;
-    font-size: 10px !important;
+    font-size: var(--fo-t-xs) !important;
   }
   .fo-composer .fo-prompt {
-    font-size: 16px !important;
+    font-size: var(--fo-t-md) !important;
     height: 49px;
     line-height: 23px;
   }
   .fo-generation-state {
-    font-size: 8px;
+    font-size: var(--fo-t-xs);
     max-width: 155px;
   }
   .fo-cancel-generation {
-    font-size: 8px !important;
+    font-size: var(--fo-t-xs) !important;
     padding: 5px;
   }
   .fo-task-note {
-    font-size: 9px;
+    font-size: var(--fo-t-xs);
   }
   .fo-api-button {
     width: 29px;
     min-width: 29px;
   }
   .fo-selection-actions .fo-small-button {
-    font-size: 9px !important;
+    font-size: var(--fo-t-xs) !important;
     padding: 7px 6px;
   }
   .fo-selection-actions .fo-small-button svg {
@@ -2124,7 +2124,7 @@
   padding: 4px 0;
   background: none;
   color: var(--fo-accent);
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -2147,19 +2147,19 @@
 }
 .fo-export-head h2 {
   margin: 8px 0 0;
-  font-size: 26px;
+  font-size: var(--fo-t-2xl);
   font-weight: 650;
 }
 .fo-export-summary {
   margin: 16px 0 0;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-3);
 }
 .fo-export-summary span {
   display: block;
   margin-top: 6px;
   color: var(--fo-warn);
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
 }
 .fo-export-options {
   display: grid;
@@ -2170,7 +2170,7 @@
 .fo-export-options label {
   display: grid;
   gap: 7px;
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-5);
 }
 .fo-export-note {
@@ -2179,7 +2179,7 @@
   border-left: 2px solid var(--fo-line-green-strong);
   background: var(--fo-accent-soft);
   color: var(--fo-text-5);
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   line-height: 1.8;
 }
 .fo-export-progress {
@@ -2189,7 +2189,7 @@
   border: 1px solid var(--fo-line-green);
   border-radius: var(--fo-radius-s);
   overflow: hidden;
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
 }
 .fo-export-progress i {
   position: absolute;
@@ -2207,7 +2207,7 @@
 }
 .fo-export-status {
   margin: 14px 0 0;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   line-height: 1.7;
   color: var(--fo-text-3);
   overflow-wrap: anywhere;
@@ -2247,7 +2247,7 @@
   border-radius: var(--fo-radius-s);
   background: transparent;
   color: var(--fo-text-5);
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   text-align: left;
 }
 .fo-consistency-bar.is-set {
@@ -2283,7 +2283,7 @@
 }
 .fo-consistency-intro {
   margin: 12px 0 0;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   line-height: 1.8;
   color: var(--fo-text-5);
 }
@@ -2291,7 +2291,7 @@
   display: flex;
   justify-content: space-between;
   margin: 20px 0 8px;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   font-weight: 600;
   color: var(--fo-green-1);
 }
@@ -2308,13 +2308,13 @@
   border-radius: var(--fo-radius-s);
   background: var(--fo-field);
   color: var(--fo-paper);
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   line-height: 1.7;
 }
 .fo-consistency-hint {
   display: block;
   margin-top: 6px;
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-7);
 }
 .fo-reference-list {
@@ -2331,7 +2331,7 @@
   padding: 6px;
   border: 1px solid var(--fo-line);
   border-radius: var(--fo-radius-s);
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
 }
 .fo-reference-list img {
   width: 44px;
@@ -2352,7 +2352,7 @@
   border: 1px dashed var(--fo-line-green);
   border-radius: var(--fo-radius-s);
   color: var(--fo-text-7);
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   text-align: center;
 }
 .fo-export-note.is-warning {
@@ -2368,9 +2368,9 @@
   border-radius: var(--fo-radius-s);
   background: var(--fo-lime);
   color: var(--fo-on-lime);
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   font-weight: 700;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 .fo-card.is-reference .fo-media {
   outline: 2px solid var(--fo-accent);
@@ -2401,7 +2401,7 @@ body[data-studio='true'] {
   border-radius: var(--fo-radius-s);
   background: transparent;
   color: var(--fo-paper);
-  font-size: 13px;
+  font-size: var(--fo-t-sm);
   white-space: nowrap;
   cursor: pointer;
 }

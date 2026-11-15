@@ -7,7 +7,7 @@
   padding: 56px max(24px, calc((100% - 880px) / 2)) 260px;
   background: var(--fo-canvas);
   color: var(--fo-text-2);
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
 }
 .is-desktop .fo-shot-list {
   padding-bottom: 40px;
@@ -25,12 +25,12 @@
 .fo-shot-list h2 {
   margin: 0;
   color: var(--fo-text-1);
-  font-size: 14px;
+  font-size: var(--fo-t-sm);
   font-weight: 600;
 }
 .fo-shot-list header span {
   color: var(--fo-text-faint);
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
 }
 .fo-shot-list header button {
   margin-left: auto;
@@ -55,7 +55,7 @@
 }
 .fo-shot-number {
   font:
-    11px 'Courier New',
+    var(--fo-t-xs) 'Courier New',
     monospace;
   color: var(--fo-text-faint);
 }
@@ -91,7 +91,7 @@
   border-radius: var(--fo-radius-s);
   background: var(--fo-media-label);
   color: var(--fo-media-text);
-  font-size: 9px;
+  font-size: var(--fo-t-xs);
 }
 .fo-shot-list li > p {
   display: -webkit-box;

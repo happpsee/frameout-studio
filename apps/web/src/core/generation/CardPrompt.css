@@ -9,7 +9,7 @@
   background: var(--fo-raised);
   box-shadow: var(--fo-elevation-2);
   color: var(--fo-text-2);
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
 }
 .fo-card-prompt.is-docked {
   box-shadow:
@@ -21,7 +21,7 @@
   margin: 0 2px 6px;
   overflow: hidden;
   color: var(--fo-text-5);
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -54,7 +54,7 @@
 .fo-card-prompt-actions > span {
   margin-right: auto;
   color: var(--fo-text-faint);
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
 }
 .fo-card-prompt-actions button {
   padding: 5px 11px;

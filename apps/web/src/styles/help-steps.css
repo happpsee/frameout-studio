@@ -8,7 +8,7 @@
 .fo-help-steps h3,
 .fo-help-subheading {
   margin: 0 0 12px;
-  font-size: 13px;
+  font-size: var(--fo-t-sm);
   font-weight: 500;
   color: var(--fo-paper);
 }
@@ -27,7 +27,7 @@
   flex-direction: column;
   gap: 3px;
   padding: 0 0 12px 30px;
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   line-height: 1.7;
   counter-increment: fo-help-step;
 }
@@ -41,7 +41,7 @@
   border: 1px solid var(--fo-accent);
   border-radius: 50%;
   color: var(--fo-accent);
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   line-height: 18px;
   text-align: center;
 }

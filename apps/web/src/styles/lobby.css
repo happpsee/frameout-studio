@@ -11,7 +11,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   background: var(--fo-ink);
-  font-size: 13px;
+  font-size: var(--fo-t-sm);
   font-variant-numeric: tabular-nums;
 }
 /* Every control answers the pointer with the same timing and the same press. */
@@ -49,12 +49,12 @@
   border-bottom: 1px solid var(--fo-line);
 }
 .fo-lobby .fo-lobby-header .fo-brand {
-  font-size: 22px !important;
+  font-size: var(--fo-t-xl) !important;
 }
 .fo-lobby .fo-lobby-header .fo-brand-mark {
   width: 28px;
   height: 28px;
-  font-size: 24px;
+  font-size: var(--fo-t-xl);
   line-height: 26px;
 }
 .fo-lobby .fo-lobby-brand-word {
@@ -89,7 +89,7 @@
   background: var(--fo-field);
   border: 1px solid var(--fo-line-2);
   border-radius: var(--fo-radius-s);
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
 }
 .fo-lobby .fo-lobby-search input::placeholder {
   color: var(--fo-text-faint);
@@ -108,7 +108,7 @@
   transform: translateY(-50%);
   padding: 2px 6px;
   font:
-    10px Arial,
+    var(--fo-t-xs) Arial,
     sans-serif;
   color: var(--fo-text-6);
   border: 1px solid var(--fo-line-2);
@@ -147,14 +147,14 @@
   position: absolute;
   top: 2px;
   right: 1px;
-  min-width: 14px;
-  height: 14px;
+  min-width: 16px;
+  height: 16px;
   padding: 0 3px;
-  font-size: 9px;
-  line-height: 14px;
+  font-size: var(--fo-t-xs);
+  line-height: 16px;
   color: var(--fo-text-2);
   background: var(--fo-pressed);
-  border-radius: 7px;
+  border-radius: 8px;
 }
 .fo-lobby .fo-primary-button {
   gap: 6px;
@@ -183,14 +183,14 @@
 .fo-lobby .fo-lobby-greeting h1 {
   margin: 0 0 10px;
   font-family: var(--fo-lobby-serif);
-  font-size: 30px;
+  font-size: var(--fo-t-2xl);
   font-weight: 500;
   letter-spacing: 1px;
   color: var(--fo-text-1);
 }
 .fo-lobby .fo-lobby-greeting p {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fo-t-sm);
   line-height: 1.7;
   color: var(--fo-text-6);
   overflow-wrap: anywhere;
@@ -223,7 +223,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-5);
   background: var(--fo-surface);
   border-radius: 999px;
@@ -239,7 +239,7 @@
   background: var(--fo-text-1);
 }
 .fo-lobby .fo-lobby-filters button > span {
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-faint);
 }
 .fo-lobby .fo-lobby-filters button[aria-pressed='true'] > span {
@@ -247,7 +247,7 @@
 }
 .fo-lobby .fo-lobby-sort {
   flex: none;
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-faint);
 }
 
@@ -346,7 +346,7 @@
 }
 .fo-lobby .fo-lobby-card h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fo-t-sm);
   font-weight: 500;
 }
 .fo-lobby .fo-lobby-card-open {
@@ -380,7 +380,7 @@
 .fo-lobby .fo-lobby-status,
 .fo-lobby .fo-lobby-updated {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-5);
 }
 .fo-lobby .fo-lobby-status {
@@ -402,7 +402,7 @@
   background: var(--fo-lime-mark);
 }
 .fo-lobby .fo-lobby-updated {
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-7);
 }
 .fo-lobby .fo-lobby-card-menu {
@@ -445,7 +445,7 @@
   user-select: none;
   outline: none;
   padding: 8px 10px;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   text-align: left;
   color: var(--fo-text-2);
   background: transparent;
@@ -481,14 +481,14 @@
 }
 .fo-lobby .fo-lobby-empty h2 {
   margin: 16px 0 8px;
-  font-size: 16px;
+  font-size: var(--fo-t-md);
   font-weight: 500;
   color: var(--fo-text-1);
 }
 .fo-lobby .fo-lobby-empty p,
 .fo-lobby .fo-lobby-no-match p {
   margin: 0 0 20px;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   line-height: 1.8;
   color: var(--fo-text-6);
 }
@@ -498,12 +498,12 @@
   justify-content: center;
   gap: 4px 12px;
   margin-top: 20px;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-6);
 }
 .fo-lobby .fo-lobby-link {
   padding: 2px 0;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-accent);
   background: transparent;
   text-decoration: underline;
@@ -528,7 +528,7 @@
 }
 .fo-lobby .fo-lobby-dialog h2 {
   margin: 4px 0 0;
-  font-size: 15px;
+  font-size: var(--fo-t-md);
   font-weight: 500;
   color: var(--fo-text-1);
   overflow-wrap: anywhere;
@@ -538,7 +538,7 @@
 }
 .fo-lobby .fo-lobby-dialog-text {
   margin: 0 0 20px;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   line-height: 1.8;
   color: var(--fo-text-5);
 }
@@ -547,13 +547,13 @@
   flex-direction: column;
   gap: 8px;
   margin-bottom: 20px;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-5);
 }
 .fo-lobby .fo-lobby-field input {
   height: 36px;
   padding: 0 10px;
-  font-size: 13px;
+  font-size: var(--fo-t-sm);
   color: var(--fo-text-1);
   background: var(--fo-field);
   border: 1px solid var(--fo-line-3);
@@ -568,7 +568,7 @@
 .fo-lobby .fo-lobby-danger {
   min-height: 34px;
   padding: 7px 14px;
-  font-size: 12px;
+  font-size: var(--fo-t-xs);
   border-radius: var(--fo-radius-s);
 }
 .fo-lobby .fo-lobby-secondary {
@@ -612,7 +612,7 @@
 }
 .fo-lobby .fo-lobby-trash-list strong {
   overflow: hidden;
-  font-size: 13px;
+  font-size: var(--fo-t-sm);
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -620,7 +620,7 @@
 }
 .fo-lobby .fo-lobby-trash-list span,
 .fo-lobby .fo-lobby-trash-empty {
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   color: var(--fo-text-6);
 }
 .fo-lobby .fo-lobby-trash-empty {
@@ -683,7 +683,7 @@ html[data-desktop-platform='darwin'] .fo-lobby-header :is(button, input) {
     padding: 28px 0 16px;
   }
   .fo-lobby .fo-lobby-greeting h1 {
-    font-size: 24px;
+    font-size: var(--fo-t-xl);
   }
   .fo-lobby .fo-lobby-sort {
     display: none;

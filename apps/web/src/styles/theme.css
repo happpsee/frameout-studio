@@ -104,6 +104,13 @@
     inset 0 1px 0 #ffffff0f, 0 8px 24px var(--fo-shadow-4), 0 2px 6px var(--fo-shadow-2);
   --fo-elevation-3:
     inset 0 1px 0 #ffffff14, 0 24px 60px var(--fo-shadow-6), 0 4px 12px var(--fo-shadow-3);
+  /* Type: six sizes only. Nothing below 12px. */
+  --fo-t-xs: 12px;
+  --fo-t-sm: 14px;
+  --fo-t-md: 16px;
+  --fo-t-lg: 18px;
+  --fo-t-xl: 22px;
+  --fo-t-2xl: 28px;
   /* Corners: three sizes only. */
   --fo-radius-s: 4px;
   --fo-radius-m: 8px;

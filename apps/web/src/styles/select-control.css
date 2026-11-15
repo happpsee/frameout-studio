@@ -17,7 +17,7 @@
   background: var(--fo-field);
   color: var(--fo-text-1);
   font:
-    12px/20px Arial,
+    var(--fo-t-xs)/20px Arial,
     'PingFang SC',
     sans-serif;
   text-align: left;
@@ -79,7 +79,7 @@
   padding: 10px 11px;
   border-radius: var(--fo-radius-s);
   font:
-    12px/18px Arial,
+    var(--fo-t-xs)/18px Arial,
     'PingFang SC',
     sans-serif;
   cursor: pointer;
@@ -120,12 +120,12 @@
 @media (max-width: 540px) {
   .fo-studio .fo-select-trigger {
     min-height: 43px;
-    font-size: 16px;
+    font-size: var(--fo-t-md);
     padding: 10px;
   }
   .fo-studio .fo-select-option {
     min-height: 44px;
-    font-size: 14px;
+    font-size: var(--fo-t-sm);
     padding: 11px 10px;
   }
 }
@@ -155,7 +155,7 @@
   gap: 7px;
   border-color: var(--fo-line-4);
   background: var(--fo-panel-alt);
-  font-size: 10px;
+  font-size: var(--fo-t-xs);
   line-height: 18px;
   color: var(--fo-text-2);
 }
@@ -175,7 +175,7 @@
   padding: 3px 6px;
   gap: 6px;
   font:
-    10px/18px 'Courier New',
+    var(--fo-t-xs)/18px 'Courier New',
     monospace;
   color: var(--fo-text-4);
   background: var(--fo-raised-2);
@@ -184,13 +184,13 @@
 .fo-studio .fo-select-menu[data-variant='duration'] .fo-select-option {
   min-height: 32px;
   padding: 7px 9px;
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   line-height: 18px;
 }
 .fo-studio .fo-select-menu[data-variant='compact'] .fo-select-option {
   min-height: 36px;
   padding: 9px 10px;
-  font-size: 11px;
+  font-size: var(--fo-t-xs);
   line-height: 18px;
 }
 .fo-studio .fo-select[data-variant] .fo-select-trigger:focus-visible,
@@ -205,7 +205,7 @@
   }
   .fo-studio .fo-select[data-variant='compact'] .fo-select-trigger {
     min-height: 30px;
-    font-size: 10px;
+    font-size: var(--fo-t-xs);
   }
   .fo-studio .fo-select[data-variant='duration'] .fo-select-trigger {
     min-height: 28px;
@@ -213,7 +213,7 @@
   .fo-studio .fo-select-menu[data-variant='duration'] .fo-select-option,
   .fo-studio .fo-select-menu[data-variant='compact'] .fo-select-option {
     min-height: 40px;
-    font-size: 12px;
+    font-size: var(--fo-t-xs);
   }
 }
 @media (pointer: coarse) {
