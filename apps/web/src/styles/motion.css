@@ -48,9 +48,7 @@
   align-items: center;
   gap: 9px;
   padding: 9px 0;
-  color: #a8ac9f;
   font-family: var(--font-mono);
-  font-size: 9px;
   letter-spacing: 0.5px;
 }
 .motion-replay svg {
@@ -146,13 +144,13 @@ body[data-studio] .motion-scroll-line {
   display: flex;
   align-items: center;
   gap: 16px;
-  font-size: 15px;
+  font-size: var(--t-md);
   font-weight: 550;
   letter-spacing: 0.5px;
 }
 .motion-story-heading b {
   font-family: var(--font-display);
-  font-size: 32px;
+  font-size: var(--t-2xl);
   font-weight: 400;
   line-height: 1;
 }
@@ -162,8 +160,8 @@ body[data-studio] .motion-scroll-line {
   justify-content: flex-end;
   gap: 24px;
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: #858b78;
+  font-size: var(--t-xs);
+  color: var(--muted-ink);
 }
 .motion-story-track span {
   position: relative;
@@ -206,7 +204,7 @@ body[data-studio] .motion-scroll-line {
   position: absolute;
   top: -18px;
   font-family: var(--font-mono);
-  font-size: 7px;
+  font-size: var(--t-xs);
   letter-spacing: 1px;
   color: var(--lime);
 }
@@ -232,8 +230,8 @@ body[data-studio] .motion-scroll-line {
   bottom: 4px;
   left: 5px;
   font-family: var(--font-mono);
-  font-size: 7px;
-  color: #fff;
+  font-size: var(--t-xs);
+  color: var(--paper);
 }
 .motion-playhead {
   position: absolute;
@@ -384,15 +382,14 @@ body[data-studio] .motion-scroll-line {
     height: 315px;
   }
   .motion-story-heading {
-    font-size: 12px;
+    font-size: var(--t-base);
     gap: 10px;
   }
   .motion-story-heading b {
-    font-size: 26px;
+    font-size: var(--t-xl);
   }
   .motion-story-track {
     gap: 14px;
-    font-size: 8px;
   }
   .has-motion .showcase-card:nth-child(2) {
     padding-top: 35px;
@@ -402,9 +399,6 @@ body[data-studio] .motion-scroll-line {
   }
 }
 @media (max-width: 580px) {
-  .motion-replay {
-    font-size: 7px;
-  }
   .hero-footer > span:nth-child(2) {
     display: none;
   }
@@ -424,26 +418,15 @@ body[data-studio] .motion-scroll-line {
     margin-top: 17px;
     gap: 9px;
   }
-  .motion-story-heading {
-    font-size: 12px;
-  }
   .motion-story-track {
     justify-content: flex-start;
     gap: 26px;
-    font-size: 8px;
   }
   .motion-timeline {
     left: 10%;
     right: 7%;
     height: 39px;
     bottom: 16px;
-  }
-  .motion-timeline:before {
-    font-size: 6px;
-    top: -14px;
-  }
-  .motion-timeline-shot span {
-    font-size: 6px;
   }
   .has-motion .showcase-card:nth-child(2),
   .has-motion .showcase-card:nth-child(3) {
