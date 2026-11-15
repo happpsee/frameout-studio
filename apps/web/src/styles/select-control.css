@@ -13,7 +13,7 @@
   min-height: 42px;
   padding: 10px 12px;
   border: 1px solid var(--fo-line-2);
-  border-radius: 4px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-field);
   color: var(--fo-text-1);
   font:
@@ -22,9 +22,6 @@
     sans-serif;
   text-align: left;
   box-shadow: none;
-  transition:
-    border-color 0.16s,
-    background 0.16s;
 }
 .fo-studio .fo-select-trigger:hover:not(:disabled) {
   border-color: var(--fo-line-5);
@@ -32,6 +29,7 @@
 }
 .fo-studio .fo-select-trigger:focus-visible,
 .fo-studio .fo-select-trigger[aria-expanded='true'] {
+  outline: none;
   border-color: var(--fo-line-focus);
   box-shadow: inset 0 0 0 1px var(--fo-focus-ring);
 }
@@ -47,7 +45,7 @@
   width: 14px;
   height: 14px;
   color: var(--fo-text-7);
-  transition: transform 0.16s;
+  transition: transform var(--fo-base) var(--fo-ease-out);
 }
 .fo-select-trigger[aria-expanded='true'] .fo-select-chevron {
   transform: rotate(180deg);
@@ -58,19 +56,14 @@
   max-height: min(260px, var(--radix-select-content-available-height));
   z-index: 30;
   margin: 0;
-  padding: 5px;
-  border: 1px solid var(--fo-line-3);
-  border-radius: 7px;
+  padding: 6px;
+  border-radius: var(--fo-radius-m);
   background: var(--fo-menu);
   color: var(--fo-text-1);
-  box-shadow:
-    0 12px 32px var(--fo-shadow-4),
-    0 2px 5px var(--fo-shadow-2);
+  box-shadow: var(--fo-elevation-2);
   overflow: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--fo-line-4) transparent;
-  animation: fo-select-reveal 0.13s ease-out;
+  animation: fo-select-reveal var(--fo-base) var(--fo-ease-out);
   box-sizing: border-box;
 }
 .fo-studio .fo-select-option {
@@ -84,7 +77,7 @@
   gap: 12px;
   min-height: 38px;
   padding: 10px 11px;
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
   font:
     12px/18px Arial,
     'PingFang SC',
@@ -95,9 +88,6 @@
   box-sizing: border-box;
   color: var(--fo-text-3);
   overflow-wrap: anywhere;
-  transition:
-    background 0.1s,
-    color 0.1s;
 }
 .fo-studio .fo-select-option[data-highlighted],
 .fo-studio .fo-select-option:hover {
@@ -145,16 +135,7 @@
     min-height: 44px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .fo-studio .fo-select-trigger,
-  .fo-studio .fo-select-chevron,
-  .fo-studio .fo-select-option {
-    transition: none;
-  }
-  .fo-studio .fo-select-menu {
-    animation: none;
-  }
-}
+/* Reduced motion: studio.css switches off every transition and animation inside .fo-studio. */
 
 .fo-studio .fo-select-chevron svg {
   display: block;

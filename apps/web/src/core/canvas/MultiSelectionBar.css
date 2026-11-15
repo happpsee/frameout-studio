@@ -13,5 +13,5 @@
   pointer-events: none;
   border: 1px solid var(--fo-accent);
   background: var(--fo-accent-a08);
-  border-radius: 2px;
+  border-radius: var(--fo-radius-s);
 }

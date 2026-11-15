@@ -5,19 +5,18 @@
   pointer-events: auto;
   background: var(--fo-card);
   outline: 1px solid var(--fo-card-outline);
-  box-shadow: 0 10px 30px var(--fo-shadow-1);
-  border-radius: 5px;
+  box-shadow: var(--fo-elevation-1);
+  border-radius: var(--fo-radius-s);
   color: var(--fo-text-2);
-  transition:
-    box-shadow 0.18s,
-    outline-color 0.18s;
+  transition: var(--fo-fast) var(--fo-ease-press);
+  transition-property: box-shadow, outline-color;
 }
 .fo-note.is-script {
   border-top: 2px solid var(--fo-accent-muted);
 }
 .fo-note.is-selected {
   outline: 2px solid var(--fo-accent);
-  box-shadow: 0 5px 24px var(--fo-shadow-4);
+  box-shadow: var(--fo-elevation-2);
   z-index: 5;
 }
 .fo-note.is-linked,
@@ -26,7 +25,7 @@
 }
 .fo-note.is-dragging {
   z-index: 10;
-  box-shadow: 0 15px 35px var(--fo-shadow-5);
+  box-shadow: var(--fo-elevation-3);
   transition: none;
 }
 .fo-note-top {
@@ -52,7 +51,7 @@
   max-width: 60%;
   padding: 2px 4px;
   border: 0;
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
   background: none;
   color: var(--fo-text-1);
   font: inherit;
@@ -150,7 +149,7 @@
 .fo-note-actions button {
   padding: 5px 10px;
   border: 1px solid var(--fo-line-3);
-  border-radius: 4px;
+  border-radius: var(--fo-radius-s);
   background: none;
   color: var(--fo-text-2);
   font: inherit;
@@ -166,12 +165,8 @@
 .fo-note-actions .fo-note-primary {
   border-color: var(--fo-lime);
   background: var(--fo-lime);
-  color: var(--fo-ink);
+  color: var(--fo-on-lime);
   font-weight: 600;
-}
-.fo-note-actions .fo-note-primary:hover:not(:disabled) {
-  background: var(--fo-lime);
-  filter: brightness(1.08);
 }
 .fo-note-actions label {
   display: flex;

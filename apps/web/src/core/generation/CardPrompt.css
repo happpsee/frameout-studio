@@ -4,16 +4,17 @@
   z-index: 7;
   width: 360px;
   max-width: calc(100% - 24px);
-  padding: 8px;
-  border: 1px solid var(--fo-line-3);
-  border-radius: 8px;
+  padding: 9px;
+  border-radius: var(--fo-radius-m);
   background: var(--fo-raised);
-  box-shadow: 0 10px 30px var(--fo-shadow-4);
+  box-shadow: var(--fo-elevation-2);
   color: var(--fo-text-2);
   font-size: 12px;
 }
 .fo-card-prompt.is-docked {
-  border-color: var(--fo-accent-muted);
+  box-shadow:
+    0 0 0 1px var(--fo-accent-muted),
+    var(--fo-elevation-2);
 }
 .fo-card-prompt-name {
   display: block;
@@ -30,7 +31,7 @@
   max-height: 120px;
   padding: 7px 9px;
   border: 1px solid var(--fo-line);
-  border-radius: 5px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-field);
   color: var(--fo-text-1);
   font: inherit;
@@ -58,7 +59,7 @@
 .fo-card-prompt-actions button {
   padding: 5px 11px;
   border: 1px solid var(--fo-line-3);
-  border-radius: 4px;
+  border-radius: var(--fo-radius-s);
   background: none;
   color: var(--fo-text-2);
   font: inherit;
@@ -77,10 +78,6 @@
 .fo-card-prompt-actions .is-primary {
   border-color: var(--fo-lime);
   background: var(--fo-lime);
-  color: var(--fo-ink);
+  color: var(--fo-on-lime);
   font-weight: 600;
-}
-.fo-card-prompt-actions .is-primary:hover:not(:disabled) {
-  background: var(--fo-lime);
-  filter: brightness(1.08);
 }

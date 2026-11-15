@@ -3,7 +3,7 @@
   margin-bottom: 8px;
   padding: 10px 12px;
   border: 1px solid var(--fo-line-green-strong);
-  border-radius: 5px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-accent-soft-2);
   color: var(--fo-accent);
   font-size: 12px;

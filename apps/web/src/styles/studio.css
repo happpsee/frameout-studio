@@ -4,6 +4,7 @@
   font-family: Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif;
   text-align: left;
   color-scheme: var(--fo-color-scheme);
+  font-variant-numeric: tabular-nums;
 }
 .fo-studio * {
   box-sizing: border-box;
@@ -26,12 +27,26 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
-.fo-studio button:focus-visible,
-.fo-studio textarea:focus-visible,
-.fo-studio select:focus-visible,
-.fo-studio input:focus-visible {
+/* Feel: buttons and rows answer the pointer the same way. Zero specificity, so any rule can refine it.
+   The lobby is left out: it has its own controls and its cards stretch a button over the whole card. */
+:where(.fo-studio:not(.fo-lobby))
+  :where(button, .fo-select-option, .fo-seq-item, .fo-card-top, .fo-card-bottom) {
+  transition: var(--fo-fast) var(--fo-ease-press);
+  transition-property: background-color, border-color, color, box-shadow, transform;
+}
+:where(.fo-studio:not(.fo-lobby) button:not(:disabled, .fo-media)):active {
+  transform: scale(0.97);
+}
+.fo-studio :is(button, select):focus-visible {
+  outline: 2px solid var(--fo-focus-inset);
+  outline-offset: 2px;
+}
+.fo-studio :is(.fo-media, .fo-library-grid > button):focus-visible {
+  outline-offset: -2px;
+}
+.fo-studio :is(input, textarea):focus-visible {
   outline: none;
-  outline-offset: 0;
+  border-color: var(--fo-line-focus);
   box-shadow: inset 0 0 0 1px var(--fo-focus-inset);
 }
 .fo-studio button svg {
@@ -203,14 +218,59 @@
   color: var(--fo-on-lime) !important;
   font-size: 12px !important;
   font-weight: 600 !important;
-  border-radius: 3px;
-  transition:
-    background 0.16s,
-    transform 0.16s;
+  border-radius: var(--fo-radius-s);
 }
-.fo-primary-button:not(:disabled):hover {
+/* Lime primary buttons: a hairline of light on the top edge, a brighter fill on hover. */
+.fo-studio
+  :where(
+    .fo-primary-button,
+    .fo-generate-button,
+    .fo-preview-play,
+    .fo-plan-start,
+    .fo-zoom-form button,
+    .fo-note-primary,
+    :is(.fo-shot-actions, .fo-card-prompt-actions) .is-primary
+  ) {
+  box-shadow: inset 0 1px 0 #ffffff66;
+}
+.fo-studio
+  :is(
+    .fo-primary-button,
+    .fo-generate-button,
+    .fo-preview-play,
+    .fo-plan-start,
+    .fo-zoom-form button,
+    .fo-note-primary,
+    :is(.fo-shot-actions, .fo-card-prompt-actions) .is-primary
+  ):not(:disabled):hover {
   background: var(--fo-lime-hover);
-  transform: translateY(-1px);
+}
+/* Quiet buttons: boxed ones darken on hover, bare text ones take the accent. */
+.fo-studio
+  :is(
+    :is(.fo-work-confirm, .fo-version-form) button,
+    .fo-plan-preview,
+    .fo-plan-sequence,
+    .fo-library-upload,
+    .fo-library-grid > button,
+    .fo-service-connection,
+    .fo-consistency-bar,
+    .fo-help-intro,
+    .fo-api-reveal,
+    .is-desktop .fo-canvas-empty .fo-primary-button
+  ):not(:disabled):hover {
+  background: var(--fo-pressed);
+}
+.fo-studio
+  :where(
+    .fo-text-button,
+    :is(.fo-workspace-tabs, .fo-work-tabs) button,
+    .fo-work-panel-head > button,
+    .fo-timeline-toggle,
+    .fo-inline-button,
+    .fo-zoom-fit
+  ):not(:disabled):hover {
+  color: var(--fo-accent);
 }
 .fo-viewport {
   flex: 1;
@@ -275,23 +335,21 @@
   pointer-events: auto;
   background: var(--fo-card);
   outline: 1px solid var(--fo-card-outline);
-  box-shadow: 0 10px 30px var(--fo-shadow-1);
-  border-radius: 5px;
+  box-shadow: var(--fo-elevation-1);
+  border-radius: var(--fo-radius-s);
   overflow: hidden;
-  transition:
-    box-shadow 0.18s,
-    outline-color 0.18s;
+  transition: var(--fo-fast) var(--fo-ease-press);
+  transition-property: box-shadow, outline-color;
   user-select: none;
 }
 .fo-card.is-selected {
   outline: 2px solid var(--fo-accent);
-  box-shadow: 0 5px 24px var(--fo-shadow-4);
   z-index: 5;
 }
 .fo-card.is-dragging {
   cursor: grabbing;
   z-index: 10;
-  box-shadow: 0 15px 35px var(--fo-shadow-5);
+  box-shadow: var(--fo-elevation-3);
   transition: none;
 }
 .fo-card-top {
@@ -356,9 +414,8 @@
   font-size: 10px;
   opacity: 0;
   transform: translateY(3px);
-  transition:
-    opacity 0.2s,
-    transform 0.2s;
+  transition: var(--fo-base) var(--fo-ease-out);
+  transition-property: opacity, transform;
   background: var(--fo-media-scrim);
 }
 .fo-media:hover .fo-media-marker,
@@ -406,12 +463,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 4px;
+  padding: 5px;
   background: var(--fo-raised);
-  border: 1px solid var(--fo-line-2);
-  border-radius: 6px;
+  border-radius: var(--fo-radius-m);
   gap: 3px;
-  box-shadow: 0 4px 14px var(--fo-shadow-1);
+  box-shadow: var(--fo-elevation-2);
 }
 .fo-icon-button {
   display: inline-flex;
@@ -423,10 +479,7 @@
   padding: 8px;
   background: transparent;
   color: var(--fo-text-4) !important;
-  border-radius: 3px;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  border-radius: var(--fo-radius-s);
   font-size: 17px !important;
   line-height: 1;
 }
@@ -456,23 +509,15 @@
   z-index: 5;
   right: 22px;
   bottom: 20px;
-  padding: 3px;
+  padding: 4px;
   background: var(--fo-raised);
-  border: 1px solid var(--fo-line-2);
-  border-radius: 4px;
+  border-radius: var(--fo-radius-m);
+  box-shadow: var(--fo-elevation-2);
 }
 .fo-camera-tools .fo-tool-divider {
   height: 17px;
   width: 1px;
   margin: 0 4px;
-}
-.fo-zoom-label {
-  font:
-    10px 'Courier New',
-    monospace;
-  color: var(--fo-text-3);
-  width: 42px;
-  text-align: center;
 }
 .fo-canvas-hint {
   position: absolute;
@@ -498,12 +543,13 @@
   width: min(560px, calc(100% - 450px));
   transform: translateX(-50%);
   background: var(--fo-card);
-  border: 1px solid var(--fo-line-green);
-  border-radius: 9px;
-  box-shadow: 0 10px 26px var(--fo-shadow-3);
+  border-radius: var(--fo-radius-m);
+  box-shadow: var(--fo-elevation-2);
   overflow: hidden;
   margin: 0;
-  padding: 12px 15px 10px;
+  padding: 13px 16px 11px;
+  transition: var(--fo-base) var(--fo-ease-out);
+  transition-property: box-shadow, background-color;
 }
 .fo-composer-top {
   display: flex;
@@ -554,7 +600,7 @@
   align-items: center;
   gap: 7px;
   min-height: 30px;
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-lime);
   color: var(--fo-on-lime) !important;
   padding: 6px 10px;
@@ -574,9 +620,6 @@
   height: 2px;
   background: var(--fo-lime-mark);
 }
-.fo-composer.is-busy .fo-generation-line {
-  animation: fo-generating 1.1s ease-out forwards;
-}
 .fo-selection-actions {
   display: flex;
   align-items: center;
@@ -588,8 +631,8 @@
   padding: 5px;
   background: var(--fo-sheet-bg);
   color: var(--fo-sheet-text);
-  box-shadow: 0 4px 20px var(--fo-shadow-3);
-  border-radius: 5px;
+  box-shadow: var(--fo-elevation-2);
+  border-radius: var(--fo-radius-m);
   gap: 5px;
   white-space: nowrap;
   max-width: calc(100% - 100px);
@@ -613,7 +656,7 @@
   background: transparent;
   color: var(--fo-sheet-text-2) !important;
   font-size: 10px !important;
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
   white-space: nowrap;
 }
 .fo-small-button:hover {
@@ -686,14 +729,12 @@
   flex: 1;
   min-width: 0;
   overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--fo-line-3) transparent;
 }
 .fo-sequence-empty {
   position: absolute;
   inset: 0;
   border: 1px dashed var(--fo-line-3);
-  border-radius: 5px;
+  border-radius: var(--fo-radius-s);
   display: flex;
   align-items: center;
   padding: 0 22px;
@@ -746,9 +787,9 @@
   min-width: 242px;
   height: 84px;
   background: var(--fo-card);
-  border: 1px solid var(--fo-line-2);
-  border-radius: 4px;
-  padding: 8px;
+  border-radius: var(--fo-radius-s);
+  box-shadow: var(--fo-elevation-1);
+  padding: 9px;
   position: relative;
   cursor: grab;
   user-select: none;
@@ -774,7 +815,7 @@
   min-width: 68px;
   height: 50px;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: var(--fo-radius-s);
   padding: 0;
   background: var(--fo-accent-tint);
 }
@@ -845,20 +886,18 @@
   left: 50%;
   top: 96px;
   transform: translate(-50%, -6px);
-  padding: 11px 16px;
+  padding: 12px 17px;
   background: var(--fo-toast-bg);
   color: var(--fo-toast-text);
   z-index: 60;
   font-size: 11px;
   line-height: 1.6;
-  border: 1px solid var(--fo-toast-line);
-  border-radius: 4px;
-  box-shadow: 0 4px 20px var(--fo-shadow-3);
+  border-radius: var(--fo-radius-m);
+  box-shadow: var(--fo-elevation-2);
   pointer-events: none;
   opacity: 0;
-  transition:
-    opacity 0.2s,
-    transform 0.2s;
+  transition: var(--fo-base) var(--fo-ease-out);
+  transition-property: opacity, transform;
   max-width: calc(100% - 40px);
   text-align: center;
 }
@@ -872,7 +911,7 @@
   z-index: 12;
   pointer-events: none;
   border: 2px dashed var(--fo-accent);
-  border-radius: 10px;
+  border-radius: var(--fo-radius-l);
   background: var(--fo-drop-overlay);
   display: none;
   align-items: center;
@@ -910,12 +949,12 @@
 .fo-studio dialog {
   color: var(--fo-paper);
   background: var(--fo-panel);
-  border: 1px solid var(--fo-line-green);
+  border: 0;
   padding: 0;
   max-width: calc(100vw - 32px);
   max-height: calc(100dvh - 32px);
-  border-radius: 8px;
-  box-shadow: 0 30px 100px var(--fo-shadow-6);
+  border-radius: var(--fo-radius-l);
+  box-shadow: var(--fo-elevation-3);
   overflow: auto;
 }
 .fo-studio dialog::backdrop {
@@ -1100,20 +1139,6 @@
 .fo-help-dialog > .fo-primary-button {
   width: 100%;
 }
-@keyframes fo-generating {
-  0% {
-    width: 0;
-  }
-  60% {
-    width: 70%;
-  }
-  95% {
-    width: 90%;
-  }
-  100% {
-    width: 100%;
-  }
-}
 @media (max-width: 1100px) {
   .fo-header {
     gap: 19px;
@@ -1231,7 +1256,7 @@
   .fo-camera-tools {
     right: 16px;
     bottom: 12px;
-    padding: 1px;
+    padding: 2px;
   }
   .fo-selection-actions {
     bottom: 203px;
@@ -1351,7 +1376,7 @@
     left: 12px;
     width: 40px;
     gap: 0;
-    padding: 2px;
+    padding: 3px;
   }
   .fo-canvas-tools .fo-icon-button {
     min-height: 38px;
@@ -1365,7 +1390,7 @@
     width: calc(100% - 28px);
     left: 50%;
     bottom: 64px;
-    padding: 12px 12px 9px;
+    padding: 13px 13px 10px;
   }
   .fo-composer-top {
     margin-bottom: 8px;
@@ -1471,7 +1496,7 @@
     width: max-content;
     font-size: 10px;
     max-width: calc(100% - 24px);
-    padding: 9px 12px;
+    padding: 10px 13px;
   }
   .fo-canvas-empty {
     top: 30%;
@@ -1583,24 +1608,18 @@
 /* A calm arrival, then immediate canvas control. Camera and drag coordinates stay unanimated. */
 .fo-card:not(.is-dragging):hover {
   outline-color: var(--fo-accent-a50);
-  box-shadow: 0 14px 36px var(--fo-shadow-4);
+  box-shadow: var(--fo-elevation-2);
 }
 .fo-card.is-selected:not(.is-dragging) {
   box-shadow:
     0 0 0 4px var(--fo-accent-a08),
-    0 12px 34px var(--fo-shadow-4);
-}
-.fo-card-top,
-.fo-card-bottom {
-  transition:
-    background 0.2s,
-    color 0.2s;
+    var(--fo-elevation-2);
 }
 .fo-card.is-selected .fo-card-top {
   background: var(--fo-selected);
 }
 .fo-media:not(.is-motion) img {
-  transition: transform 0.65s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: transform var(--fo-slow) var(--fo-ease-out);
 }
 @media (hover: hover) {
   .fo-card:not(.is-dragging):hover .fo-media:not(.is-motion) img {
@@ -1608,51 +1627,31 @@
   }
 }
 .fo-studio:not([hidden]) .fo-header {
-  animation: fo-chrome-arrive 0.55s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: fo-chrome-arrive var(--fo-slow) var(--fo-ease-out) backwards;
 }
 .fo-studio:not([hidden]) .fo-canvas-tools {
-  animation: fo-tools-arrive 0.55s cubic-bezier(0.16, 1, 0.3, 1) 0.12s backwards;
+  animation: fo-tools-arrive var(--fo-slow) var(--fo-ease-out) var(--fo-fast) backwards;
 }
 .fo-studio:not([hidden]) .fo-composer {
-  animation: fo-chrome-arrive 0.65s cubic-bezier(0.16, 1, 0.3, 1) 0.2s backwards;
+  animation: fo-chrome-arrive var(--fo-slow) var(--fo-ease-out) var(--fo-base) backwards;
 }
 .fo-studio:not([hidden]) .fo-timeline {
-  animation: fo-chrome-arrive 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.13s backwards;
+  animation: fo-chrome-arrive var(--fo-slow) var(--fo-ease-out) var(--fo-fast) backwards;
 }
-.fo-selection-actions:not([hidden]) {
-  animation: fo-chrome-arrive 0.28s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
-.fo-composer {
-  transition:
-    border-color 0.25s,
-    box-shadow 0.25s,
-    background 0.25s;
+/* The composer has no border of its own; an edge appears while it is in use. */
+.fo-composer:focus-within,
+.fo-composer.is-busy {
+  box-shadow:
+    0 0 0 1px var(--fo-line-focus),
+    var(--fo-elevation-2);
 }
 .fo-composer:focus-within {
-  border-color: var(--fo-line-focus);
-  box-shadow: 0 12px 30px var(--fo-shadow-3);
   background: var(--fo-hover);
-}
-.fo-composer.is-busy {
-  border-color: var(--fo-line-focus);
-  box-shadow: 0 12px 30px var(--fo-shadow-3);
-}
-.fo-generate-button {
-  transition:
-    background 0.18s,
-    box-shadow 0.18s;
-}
-.fo-generate-button:not(:disabled):hover {
-  background: var(--fo-lime-hover);
-  box-shadow: 0 0 0 3px var(--fo-accent-a08);
-}
-.fo-generate-button:not(:disabled):active {
-  background: var(--fo-lime-active);
 }
 .fo-icon-button > svg,
 .fo-small-button > svg,
 .fo-text-button > svg {
-  transition: transform 0.2s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: transform var(--fo-fast) var(--fo-ease-press);
 }
 .fo-icon-button:not(:disabled):hover > svg,
 .fo-small-button:not(:disabled):hover > svg {
@@ -1663,17 +1662,10 @@
 }
 .fo-workspace-tabs button:after {
   transform-origin: left center;
-  animation: fo-tab-line 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
-}
-.fo-seq-item {
-  transition:
-    background 0.2s,
-    border-color 0.2s,
-    box-shadow 0.2s;
+  animation: fo-tab-line var(--fo-base) var(--fo-ease-out) backwards;
 }
 .fo-seq-item:hover {
   background: var(--fo-hover);
-  border-color: var(--fo-line-green-strong);
 }
 .fo-seq-item.is-drop-target {
   background: var(--fo-accent-tint);
@@ -1684,20 +1676,20 @@
 }
 .fo-seq-thumb img,
 .fo-seq-thumb video {
-  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.2, 1);
+  transition: transform var(--fo-slow) var(--fo-ease-out);
 }
 .fo-seq-thumb:hover img,
 .fo-seq-thumb:hover video {
   transform: scale(1.07);
 }
 .fo-studio dialog[open] {
-  animation: fo-dialog-arrive 0.45s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: fo-dialog-arrive var(--fo-slow) var(--fo-ease-out) backwards;
 }
 .fo-studio dialog[open]::backdrop {
-  animation: fo-backdrop-arrive 0.3s ease-out backwards;
+  animation: fo-backdrop-arrive var(--fo-base) var(--fo-ease-out) backwards;
 }
 .fo-viewport.is-file-drop .fo-file-drop-hint {
-  animation: fo-drop-arrive 0.2s ease-out backwards;
+  animation: fo-drop-arrive var(--fo-base) var(--fo-ease-out) backwards;
 }
 @keyframes fo-chrome-arrive {
   from {
@@ -1756,6 +1748,7 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .fo-toast,
   .fo-studio *,
   .fo-studio *:before,
   .fo-studio *:after {
@@ -1779,7 +1772,7 @@
   z-index: 7;
 }
 .fo-selection-actions:not([hidden]) {
-  animation: fo-selection-reveal 0.16s ease-out backwards;
+  animation: fo-selection-reveal var(--fo-base) var(--fo-ease-out) backwards;
 }
 .fo-selection-actions.is-outside {
   visibility: hidden;
@@ -1807,7 +1800,7 @@
   width: 49px;
   min-height: 34px;
   padding: 0 5px;
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
   background: transparent;
   color: var(--fo-text-3);
   font:
@@ -1822,15 +1815,14 @@
 }
 .fo-zoom-popover {
   position: absolute;
-  right: -1px;
+  right: 0;
   bottom: calc(100% + 10px);
   width: 220px;
   max-width: calc(100vw - 28px);
-  padding: 14px;
+  padding: 15px;
   background: var(--fo-raised);
-  border: 1px solid var(--fo-line-3);
-  border-radius: 7px;
-  box-shadow: 0 12px 38px var(--fo-shadow-5);
+  border-radius: var(--fo-radius-m);
+  box-shadow: var(--fo-elevation-2);
   z-index: 12;
   cursor: default;
 }
@@ -1855,7 +1847,7 @@
   height: 36px;
   padding: 8px 9px;
   border: 1px solid var(--fo-line-4);
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-field);
   color: var(--fo-paper);
   font:
@@ -1872,14 +1864,11 @@
   flex: none;
   min-height: 36px;
   padding: 7px 10px;
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-lime);
   color: var(--fo-on-lime);
   font-size: 10px;
   font-weight: 600;
-}
-.fo-zoom-form button:hover {
-  background: var(--fo-lime-hover);
 }
 .fo-zoom-presets {
   display: grid;
@@ -1890,9 +1879,9 @@
 .fo-zoom-presets button {
   min-height: 36px;
   padding: 7px 5px;
-  border: 1px solid var(--fo-line-2);
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-hover);
+  box-shadow: var(--fo-elevation-1);
   color: var(--fo-text-3);
   font:
     10px 'Courier New',
@@ -1900,7 +1889,6 @@
 }
 .fo-zoom-presets button:hover,
 .fo-zoom-presets button[aria-pressed='true'] {
-  border-color: var(--fo-line-focus);
   background: var(--fo-pressed);
   color: var(--fo-paper);
 }
@@ -1927,9 +1915,6 @@
     monospace;
   white-space: nowrap;
 }
-.fo-zoom-popover .fo-zoom-fit:hover {
-  color: var(--fo-accent);
-}
 .fo-zoom-popover > small {
   display: block;
   margin-top: 10px;
@@ -1952,9 +1937,6 @@
   }
   .fo-camera-tools .fo-zoom-label {
     min-height: 36px;
-  }
-  .fo-zoom-popover {
-    right: -1px;
   }
 }
 @media (pointer: coarse) {
@@ -1980,7 +1962,7 @@
   max-width: 106px;
   min-height: 28px;
   border: 1px solid var(--fo-line-4);
-  border-radius: 4px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-panel-alt);
   color: var(--fo-green-2);
   font:
@@ -2006,8 +1988,9 @@
   flex: none;
   min-height: 30px;
   padding: 5px 7px;
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-pressed);
+  box-shadow: var(--fo-elevation-1);
   color: var(--fo-text-2) !important;
   font-size: 9px !important;
   white-space: nowrap;
@@ -2129,17 +2112,8 @@
 .fo-studio .fo-prompt:focus-visible {
   box-shadow: none;
 }
-.fo-studio :is(input, textarea):focus-visible {
-  border-color: var(--fo-line-focus);
-}
-.fo-studio
-  :is(
-    .fo-primary-button,
-    .fo-generate-button,
-    .fo-icon-button.is-active,
-    .fo-selection-actions button
-  ):focus-visible {
-  box-shadow: inset 0 0 0 1px var(--fo-on-lime-ring);
+.fo-studio .fo-selection-actions button:focus-visible {
+  outline-color: var(--fo-on-lime-ring);
 }
 /* Shown in the composer until a generation service is connected. */
 .fo-connect-service {
@@ -2213,7 +2187,7 @@
   margin-top: 18px;
   height: 34px;
   border: 1px solid var(--fo-line-green);
-  border-radius: 5px;
+  border-radius: var(--fo-radius-s);
   overflow: hidden;
   font-size: 11px;
 }
@@ -2222,7 +2196,7 @@
   inset: 0 auto 0 0;
   width: var(--progress);
   background: var(--fo-accent-tint);
-  transition: width 0.2s;
+  transition: width var(--fo-base) var(--fo-ease-out);
 }
 .fo-export-progress span {
   position: relative;
@@ -2270,7 +2244,7 @@
   margin: 8px 0 2px;
   padding: 6px 9px;
   border: 1px dashed var(--fo-line-green) !important;
-  border-radius: 5px;
+  border-radius: var(--fo-radius-s);
   background: transparent;
   color: var(--fo-text-5);
   font-size: 11px;
@@ -2300,7 +2274,7 @@
   width: 22px;
   height: 22px;
   object-fit: cover;
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
   flex-shrink: 0;
 }
 .fo-consistency-dialog {
@@ -2331,7 +2305,7 @@
   min-height: 84px;
   padding: 10px 12px;
   border: 1px solid var(--fo-line-green);
-  border-radius: 5px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-field);
   color: var(--fo-paper);
   font-size: 12px;
@@ -2356,14 +2330,14 @@
   gap: 10px;
   padding: 6px;
   border: 1px solid var(--fo-line);
-  border-radius: 5px;
+  border-radius: var(--fo-radius-s);
   font-size: 12px;
 }
 .fo-reference-list img {
   width: 44px;
   height: 44px;
   object-fit: cover;
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
 }
 .fo-reference-list span {
   flex: 1;
@@ -2376,7 +2350,7 @@
   margin: 0;
   padding: 14px;
   border: 1px dashed var(--fo-line-green);
-  border-radius: 5px;
+  border-radius: var(--fo-radius-s);
   color: var(--fo-text-7);
   font-size: 11px;
   text-align: center;
@@ -2391,7 +2365,7 @@
   top: 8px;
   left: 8px;
   padding: 3px 7px;
-  border-radius: 3px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-lime);
   color: var(--fo-on-lime);
   font-size: 10px;
@@ -2424,7 +2398,7 @@ body[data-studio='true'] {
   gap: 8px;
   padding: 7px 12px 7px 9px;
   border: 1px solid var(--fo-line-2);
-  border-radius: 4px;
+  border-radius: var(--fo-radius-s);
   background: transparent;
   color: var(--fo-paper);
   font-size: 13px;

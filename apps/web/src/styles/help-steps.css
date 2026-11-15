@@ -1,10 +1,9 @@
 /* "三步做出第一条片" in the help dialog, above the canvas shortcuts. */
 .fo-help-steps {
   margin: 0 0 24px;
-  padding: 16px 16px 4px;
+  padding: 17px 17px 5px;
   background: var(--fo-accent-soft);
-  border: 1px solid var(--fo-line);
-  border-radius: 6px;
+  border-radius: var(--fo-radius-m);
 }
 .fo-help-steps h3,
 .fo-help-subheading {

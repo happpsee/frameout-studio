@@ -4,6 +4,15 @@
 .fo-studio {
   position: fixed;
   inset: 0;
+  caret-color: var(--fo-accent);
+  scrollbar-color: var(--fo-line-4) transparent;
+}
+.fo-studio ::selection {
+  background: var(--fo-lime);
+  color: var(--fo-on-lime);
+}
+:where(.fo-studio *) {
+  scrollbar-width: thin;
 }
 button,
 input,
@@ -54,13 +63,6 @@ select {
 .fo-api-key-row input {
   flex: 1;
   min-width: 0;
-}
-.fo-api-key-row button {
-  background: transparent;
-  color: inherit;
-  border: 1px solid var(--fo-line);
-  border-radius: 6px;
-  padding: 6px 10px;
 }
 @media (prefers-reduced-motion: reduce) {
   *,

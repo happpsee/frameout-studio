@@ -69,7 +69,7 @@
   height: 72px;
   padding: 0;
   overflow: hidden;
-  border-radius: 4px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-thumb-bg);
   cursor: pointer;
 }
@@ -88,7 +88,7 @@
   right: 4px;
   bottom: 4px;
   padding: 2px 4px;
-  border-radius: 2px;
+  border-radius: var(--fo-radius-s);
   background: var(--fo-media-label);
   color: var(--fo-media-text);
   font-size: 9px;
@@ -109,7 +109,7 @@
 .fo-shot-actions button {
   padding: 5px 11px;
   border: 1px solid var(--fo-line-3);
-  border-radius: 4px;
+  border-radius: var(--fo-radius-s);
   background: none;
   color: var(--fo-text-2);
   font: inherit;
@@ -126,12 +126,8 @@
 .fo-shot-actions .is-primary {
   border-color: var(--fo-lime);
   background: var(--fo-lime);
-  color: var(--fo-ink);
+  color: var(--fo-on-lime);
   font-weight: 600;
-}
-.fo-shot-actions .is-primary:hover:not(:disabled) {
-  background: var(--fo-lime);
-  filter: brightness(1.08);
 }
 .fo-shot-empty {
   margin: 0;
