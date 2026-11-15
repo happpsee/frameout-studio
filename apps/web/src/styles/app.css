@@ -139,8 +139,9 @@ select:focus-visible {
   color: #d4d6cd;
   font-size: 13px;
 }
-.header-nav a:hover {
-  color: var(--lime);
+.header-nav a {
+  padding-bottom: 6px; /* room for the hover hairline; the margin keeps the row height */
+  margin-bottom: -6px;
 }
 .nav-dot {
   width: 3px;
@@ -163,24 +164,16 @@ select:focus-visible {
   padding: 12px 23px;
   font-size: 13px;
   font-weight: 650;
-  transition:
-    transform 0.18s,
-    background 0.18s;
   border-radius: 3px;
   white-space: nowrap;
 }
-.button:hover {
-  transform: translateY(-2px);
-}
-.button:active {
-  transform: translateY(0);
+.button:active,
+.cta-circle:active {
+  transform: scale(0.97);
 }
 .button-lime {
   background: var(--lime);
   color: var(--ink);
-}
-.button-lime:hover {
-  background: #c6ff59;
 }
 .button-large {
   min-height: 57px;
@@ -281,6 +274,7 @@ select:focus-visible {
 .hero-sticker > svg {
   width: 88px;
   height: 88px;
+  transition: scale var(--fo-base) var(--fo-ease-out);
 }
 .hero-sticker > span {
   position: absolute;
@@ -423,10 +417,7 @@ select:focus-visible {
   width: 100%;
   object-fit: cover;
   object-position: 54% 50%;
-  transition: transform 1s;
-}
-.hero-photo:hover > img {
-  transform: scale(1.045);
+  transition: transform var(--fo-slow) var(--fo-ease-out);
 }
 .hero-photo:after {
   content: '';
@@ -444,6 +435,7 @@ select:focus-visible {
   font-weight: 500;
   letter-spacing: 5px;
   color: #fff;
+  transition: translate var(--fo-slow) var(--fo-ease-out);
 }
 .image-caption > span {
   font-family: var(--font-mono);
@@ -495,6 +487,7 @@ select:focus-visible {
   color: var(--ink);
   transform: rotate(-8deg);
   z-index: 4;
+  transition: transform var(--fo-base) var(--fo-ease-out);
 }
 .floating-note > span:not(.note-pin) {
   font-family: Georgia, serif;
@@ -532,10 +525,7 @@ select:focus-visible {
   transform: rotate(-10deg);
   z-index: 3;
   box-shadow: 0 9px 30px #0004;
-  transition: transform 0.2s;
-}
-.mini-frame:hover {
-  transform: rotate(-5deg) translateY(-5px);
+  transition: transform var(--fo-base) var(--fo-ease-out);
 }
 .mini-frame > img {
   aspect-ratio: 1.4;
@@ -662,16 +652,11 @@ select:focus-visible {
   font-weight: 600;
   color: var(--ink);
   padding: 0 0 9px;
-  background: none;
-  border-bottom: 1px solid #969a87;
+  border-bottom: 1px solid transparent; /* motion.css draws the hairlines in this row */
 }
 .text-button svg {
   height: 18px;
   width: 18px;
-  transition: transform 0.2s;
-}
-.text-button:hover svg {
-  transform: translate(3px, -3px);
 }
 .canvas-preview {
   max-width: 1440px;
@@ -972,10 +957,7 @@ select:focus-visible {
   height: 100%;
   width: 100%;
   object-fit: cover;
-  transition: transform 0.7s;
-}
-.showcase-card:hover .showcase-image > img {
-  transform: scale(1.055);
+  transition: transform var(--fo-slow) var(--fo-ease-out);
 }
 .showcase-card:nth-child(1) img {
   object-position: 58%;
@@ -992,6 +974,7 @@ select:focus-visible {
   background: #15161361;
   padding: 6px 9px;
   backdrop-filter: blur(6px);
+  transition: translate var(--fo-slow) var(--fo-ease-out);
 }
 .showcase-meta {
   display: flex;
@@ -1062,10 +1045,6 @@ select:focus-visible {
   align-items: center;
   justify-content: center;
   margin-right: 7%;
-  transition: transform 0.3s;
-}
-.cta-circle:hover {
-  transform: rotate(7deg) scale(1.05);
 }
 .cta-circle svg {
   width: 53px;
@@ -1124,8 +1103,12 @@ select:focus-visible {
 body[data-studio='true'] {
   overflow: hidden;
 }
-.paper-section button:focus-visible,
-.final-cta button:focus-visible {
+/* Focus rings: lime on dark (the page, the canvas preview), ink on the paper and lime sections. */
+#landing :focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 3px;
+}
+#landing :is(.paper-section, .final-cta) :focus-visible:not(.preview-entry) {
   outline-color: var(--ink);
 }
 @keyframes marquee-roll {

@@ -14,9 +14,3 @@
   width: 12px;
   height: 12px;
 }
-.showcase-card:hover .showcase-meta > span:last-child,
-.showcase-card:focus-visible .showcase-meta > span:last-child {
-  color: var(--paper);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
