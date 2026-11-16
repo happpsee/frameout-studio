@@ -178,14 +178,22 @@ export function useGeneration({ getProject, update, toast, openSettings, engine 
   }, []);
   function position(source?: Card) {
     if (source) return { x: source.x + 300, y: source.y + 30 };
-    const camera = getProject().camera;
+    const { camera, cards } = getProject();
     const viewport = document.querySelector('.fo-viewport')?.getBoundingClientRect();
-    return {
+    const spot = {
       x: ((viewport?.width || 1000) / 2 - camera.x) / camera.zoom - CARD_CENTER.x,
       y:
         (Math.max(160, (viewport?.height || 600) / 2 - 80) - camera.y) / camera.zoom -
         CARD_CENTER.y,
     };
+    // Generating again without moving the view would stack cards exactly; step each one aside.
+    const taken = () =>
+      cards.some(card => Math.abs(card.x - spot.x) < 16 && Math.abs(card.y - spot.y) < 16);
+    for (let step = 0; step < 50 && taken(); step++) {
+      spot.x += 32;
+      spot.y += 32;
+    }
+    return spot;
   }
   async function storeMedia(
     src: string,
