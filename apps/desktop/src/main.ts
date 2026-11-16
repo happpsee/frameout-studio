@@ -91,7 +91,12 @@ function startBackend(): Promise<string> {
   return new Promise((resolve, reject) => {
     const child = utilityProcess.fork(path.join(__dirname, 'server.cjs'), [], {
       cwd: userData,
-      env: { ...process.env, FRAMEOUT_FRONTEND_DIST: frontend },
+      env: {
+        ...process.env,
+        FRAMEOUT_FRONTEND_DIST: frontend,
+        // Turns the task engine on; the web deployment leaves it unset.
+        FRAMEOUT_TASKS_DIR: path.join(userData, 'tasks'),
+      },
       serviceName: '帧外服务',
       stdio: ['ignore', 'inherit', 'pipe'],
     });

@@ -87,19 +87,23 @@ class AIError extends Error {
   code: string;
   status: number;
   requestId?: string;
+  /** The provider's own error code, when it gave one. */
+  upstreamCode?: string;
   constructor(
     message: string,
     {
       code = 'AI_ERROR',
       status = 0,
       requestId = '',
-    }: { code?: string; status?: number; requestId?: string } = {},
+      upstreamCode = '',
+    }: { code?: string; status?: number; requestId?: string; upstreamCode?: string } = {},
   ) {
     super(message);
     this.name = 'AIError';
     this.code = code;
     this.status = status;
     if (requestId) this.requestId = requestId;
+    if (upstreamCode) this.upstreamCode = upstreamCode;
   }
 }
 
@@ -214,11 +218,16 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
       [body?.error?.code ?? body?.code, body?.error?.upstreamCode].filter(Boolean).join(' '),
       detail,
     );
+    // Through the relay, error.code is the relay's own and the provider's is in upstreamCode.
+    const rawCode = body?.error?.upstreamCode ?? body?.error?.code ?? body?.code;
+    const upstreamCode =
+      typeof rawCode === 'string' && /^[\w.-]{1,120}$/.test(rawCode) ? rawCode : '';
     if (moderation)
       return new AIError(moderation, {
         code: 'CONTENT_REJECTED',
         status,
         requestId,
+        upstreamCode,
       });
     const labels: Record<number, string> = {
       400: '请求参数不被模型接受',
@@ -232,6 +241,7 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
       code: 'UPSTREAM_ERROR',
       status,
       requestId,
+      upstreamCode,
     });
   }
 

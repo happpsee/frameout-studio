@@ -2,14 +2,11 @@ import path from 'node:path';
 import express, { type ErrorRequestHandler, type RequestHandler, type Response } from 'express';
 import { RELAY_PATH } from '@frameout/shared';
 import type { Settings } from './config.ts';
-import { failure, relay, type FetchImpl, type Reply } from './relay.ts';
-
-const send = (res: Response, reply: Reply) =>
-  res
-    .status(reply.status)
-    .set({ 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
-    .type('json')
-    .send(reply.body);
+import { Engine } from './engine/engine.ts';
+import { createImageExecutor } from './engine/execute-image.ts';
+import { createFileStore } from './engine/file-store.ts';
+import { taskRoutes } from './engine/routes.ts';
+import { failure, relay, send, type FetchImpl } from './relay.ts';
 
 // The page is small and names the current build's files, so it is always revalidated.
 const HTML_HEADERS = { 'cache-control': 'no-cache' };
@@ -51,6 +48,15 @@ export function createApp(
   app.post(RELAY_PATH, express.json({ limit: settings.requestLimit }), async (req, res) => {
     send(res, await relay(req.body, settings, fetchImpl));
   });
+  if (settings.tasksDirectory) {
+    const directory = settings.tasksDirectory;
+    const engine = new Engine({
+      store: createFileStore(directory),
+      execute: createImageExecutor({ directory, timeoutMs: settings.imageTimeout, fetchImpl }),
+    });
+    const router = taskRoutes(engine, directory, engine.start());
+    app.use('/api/tasks', express.json({ limit: settings.requestLimit }), router);
+  }
   app.use('/api', (_req, res) => {
     send(res, failure(404, 'NOT_FOUND', '接口不存在'));
   });

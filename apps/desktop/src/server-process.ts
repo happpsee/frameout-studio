@@ -1,5 +1,5 @@
-// Runs in Electron's utilityProcess: serves the bundled UI and the relay on a
-// private loopback port, then reports the origin to the main process.
+// Runs in Electron's utilityProcess: serves the bundled UI, the relay and the task engine
+// on a private loopback port, then reports the origin to the main process.
 import http from 'node:http';
 import { createApp, settingsFromEnv } from '@frameout/server';
 

@@ -2,6 +2,7 @@
 //
 // Do not log envelopes or upstream errors: they may contain the caller's key.
 // No redirects, retries, cookies, incoming authorization headers, or response cache.
+import type { Response as ExpressResponse } from 'express';
 import { OFFICIAL_BASE_URLS, type ApiErrorBody, type OfficialProvider } from '@frameout/shared';
 import type { Settings } from './config.ts';
 
@@ -54,6 +55,13 @@ export function failure(
   return { status, body: JSON.stringify(body) };
 }
 
+export const send = (res: ExpressResponse, reply: Reply) =>
+  res
+    .status(reply.status)
+    .set({ 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
+    .type('json')
+    .send(reply.body);
+
 export function redactMessage(value: unknown, apiKey = ''): string {
   let message = typeof value === 'string' ? value : '';
   if (apiKey) {
@@ -72,8 +80,8 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 const isProvider = (value: unknown): value is OfficialProvider =>
   typeof value === 'string' && Object.hasOwn(OFFICIAL_BASE_URLS, value);
 
-export function validateTarget(envelope: unknown): Target {
-  if (!isObject(envelope)) throw new RelayError(400, 'INVALID_REQUEST', '请求格式不正确');
+/** `provider` and `baseUrl` must name an official provider at its official address. Also used by the task engine. */
+export function officialProvider(envelope: Record<string, unknown>): OfficialProvider {
   const { provider } = envelope;
   if (!isProvider(provider))
     throw new RelayError(400, 'UNSUPPORTED_PROVIDER', '此转发仅支持 OpenAI 和火山方舟官方接口');
@@ -85,11 +93,23 @@ export function validateTarget(envelope: unknown): Target {
       '转发地址必须是所选供应商的官方 Base URL；自定义接口请使用浏览器直连',
     );
   }
+  return provider;
+}
+
+export function apiKeyOf(envelope: Record<string, unknown>): string {
   const key = envelope.apiKey;
   if (typeof key !== 'string' || !key)
     throw new RelayError(401, 'MISSING_API_KEY', '请先填写 API Key');
   if (key.length > 4096 || /[^\x21-\x7e]/.test(key))
     throw new RelayError(400, 'INVALID_API_KEY', 'API Key 不能包含空白或控制字符');
+  return key;
+}
+
+export function validateTarget(envelope: unknown): Target {
+  if (!isObject(envelope)) throw new RelayError(400, 'INVALID_REQUEST', '请求格式不正确');
+  const provider = officialProvider(envelope);
+  const base = OFFICIAL_BASE_URLS[provider];
+  const key = apiKeyOf(envelope);
   const { path, method } = envelope;
   if (typeof path !== 'string' || (method !== 'GET' && method !== 'POST')) {
     throw new RelayError(400, 'INVALID_OPERATION', '不支持此接口或请求方式');
