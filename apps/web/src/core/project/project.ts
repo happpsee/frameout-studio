@@ -190,7 +190,8 @@ function restoreWorkspace(input: unknown): WorkspaceSnapshot {
           prompt: card.job.prompt || card.prompt || '',
           config: preferenceOnly(card.job.config || {}),
         };
-        if (['submitting', 'queued', 'running'].includes(card.job.status))
+        // The engine's own cards are settled by the engine when the project opens.
+        if (!card.job.engine && ['submitting', 'queued', 'running'].includes(card.job.status))
           card.job = {
             ...card.job,
             status: 'paused',

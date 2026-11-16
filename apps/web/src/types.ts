@@ -11,6 +11,8 @@ export interface VideoJob {
   prompt: string;
   config: Omit<AIConfig, 'key'>;
   progress?: number;
+  /** Desktop: the local task engine is polling it, not the page. */
+  engine?: boolean;
 }
 export interface Card {
   id: string;

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Card } from '../types';
 import { useWorkspace } from './project/useWorkspace';
 import { useGeneration } from './generation/useGeneration';
-import { useEngineImages } from './generation/useEngineImages';
+import { useEngineTasks } from './generation/useEngineTasks';
 import { useCanvas } from './canvas/useCanvas';
 import { useFileImport } from './canvas/useFileImport';
 import { useCardActions } from './canvas/useCardActions';
@@ -133,13 +133,13 @@ export default function Studio({
     setSettingsNotice(notice);
     setSettingsOpen(true);
   }, []);
-  const engineImages = useEngineImages({ projectId, update });
+  const engineTasks = useEngineTasks({ projectId, update });
   const generation = useGeneration({
     getProject,
     update,
     toast,
     openSettings,
-    engine: engineImages,
+    engine: engineTasks,
   });
   const workflow = useWorkflow({
     project,

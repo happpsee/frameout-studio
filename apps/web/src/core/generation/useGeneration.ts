@@ -23,7 +23,7 @@ import { desktopBridge } from '../../platform';
 import { CARD_CENTER } from '../canvas/canvas-camera';
 import { regeneration } from './regenerate';
 import { failedImageCard, placeImageCard } from './failed-image';
-import type { EngineImageOutcome, EngineImageRequest } from './useEngineImages';
+import type { EngineOutcome, EngineImageRequest, EngineVideoRequest } from './useEngineTasks';
 import { giveKey } from './engine-tasks';
 import {
   askNotificationPermission,
@@ -36,12 +36,13 @@ type Options = {
   update: UpdateProject;
   toast: (message: string) => void;
   openSettings?: (notice: string) => void;
-  /** Desktop: images go to the local task engine (useEngineImages) instead of being fetched here. */
-  engine?: EngineImages | null;
+  /** Desktop: generations go to the local task engine (useEngineTasks) instead of running here. */
+  engine?: EngineTasks | null;
 };
 type ActiveTask = { controller: AbortController; cardId?: string };
-type EngineImages = {
-  run: (request: EngineImageRequest, signal: AbortSignal) => Promise<EngineImageOutcome>;
+type EngineTasks = {
+  run: (request: EngineImageRequest, signal: AbortSignal) => Promise<EngineOutcome>;
+  runVideo: (request: EngineVideoRequest, signal: AbortSignal) => Promise<EngineOutcome>;
 };
 type VideoResult = {
   id: string;
@@ -431,6 +432,25 @@ export function useGeneration({ getProject, update, toast, openSettings, engine 
       }
       const firstFrame = await reference(source, task.controller.signal);
       if (!current(task)) return;
+      if (engine) {
+        const outcome = await engine.runVideo(
+          {
+            text,
+            prompt: prompted,
+            reference: firstFrame,
+            source,
+            config: generationConfig,
+            at: position(request?.near ?? source),
+            onCard: request?.onCard,
+          },
+          task.controller.signal,
+        );
+        if (!current(task)) return;
+        const message = outcome.ok ? '视频已加入画布 · 双击播放' : outcome.message;
+        toast(message);
+        notify(outcome.ok ? 'succeeded' : 'failed', message);
+        return;
+      }
       const id = uid();
       task.cardId = id;
       const card: Card = {

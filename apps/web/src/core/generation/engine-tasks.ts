@@ -15,7 +15,11 @@ export interface ImageTaskContext {
 
 export interface EngineTask {
   id: string;
+  kind: 'image' | 'video';
   status: EngineTaskStatus;
+  /** Video: the provider's job, once submitted. */
+  providerJobId?: string;
+  progress?: number;
   error?: { code: string; message: string };
   context?: ImageTaskContext;
   needsKey: boolean;
@@ -54,6 +58,19 @@ export interface ImageTaskInput {
 }
 
 export const addImageTask = (input: ImageTaskInput) => call('', input).then(() => undefined);
+
+export interface VideoTaskInput extends Omit<ImageTaskInput, 'request'> {
+  request: {
+    prompt: string;
+    reference?: string;
+    ratio: string;
+    duration: number;
+    resolution: string;
+  };
+}
+
+export const addVideoTask = (input: VideoTaskInput) =>
+  call('', { ...input, kind: 'video' }).then(() => undefined);
 
 /** After a restart the engine has no keys; queued tasks wait until the page hands them back. */
 export const giveKey = (provider: ProviderId, baseUrl: string, apiKey: string) =>
