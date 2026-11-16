@@ -146,9 +146,8 @@ test('compatible video: submit directly, then download the finished file', async
   });
   const done = await client.getVideo({ id: 'vendor-fixture' });
   assert.equal(done.status, 'succeeded');
-  assert.match(done.src, /^blob:/);
+  assert.equal(done.data.type, 'video/mp4');
   assert.match(mock.calls[2].url, /\/v1\/videos\/vendor-fixture\/content$/);
-  URL.revokeObjectURL(done.src);
 });
 
 test('a failed video task reports failed, with the key hidden or the moderation message', async () => {

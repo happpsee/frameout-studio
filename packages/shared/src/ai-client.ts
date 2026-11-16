@@ -35,6 +35,8 @@ export type VideoResult = {
   provider: Provider;
   model: string;
   src?: string;
+  /** The finished file, when the provider only offers it as a download rather than a URL. */
+  data?: Blob;
   progress?: number;
   error?: string;
   requestId?: string;
@@ -570,7 +572,7 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
           code: 'INVALID_RESPONSE',
           requestId,
         });
-      result.src = URL.createObjectURL(blob);
+      result.data = blob;
     }
     return result;
   }

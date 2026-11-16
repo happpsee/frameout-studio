@@ -43,7 +43,14 @@ type ActiveTask = { controller: AbortController; cardId?: string };
 type EngineImages = {
   run: (request: EngineImageRequest, signal: AbortSignal) => Promise<EngineImageOutcome>;
 };
-type VideoResult = { id: string; status: string; src?: string; error?: string; progress?: number };
+type VideoResult = {
+  id: string;
+  status: string;
+  src?: string;
+  data?: Blob;
+  error?: string;
+  progress?: number;
+};
 type VideoClient = {
   getVideo: (options: { id: string; signal: AbortSignal }) => Promise<VideoResult>;
 };
@@ -299,11 +306,12 @@ export function useGeneration({ getProject, update, toast, openSettings, engine 
         result = await client.getVideo({ id: card.job.id, signal: task.controller.signal });
       if (!current(task)) return;
       if (result.status === 'succeeded') {
-        if (!result.src) {
+        const src = result.src ?? (result.data && URL.createObjectURL(result.data));
+        if (!src) {
           result = undefined;
           continue;
         }
-        const { media, warning } = await storeMedia(result.src, task.controller.signal);
+        const { media, warning } = await storeMedia(src, task.controller.signal);
         if (!current(task)) return;
         update(draft => {
           const target = draft.cards.find(c => c.id === id);
