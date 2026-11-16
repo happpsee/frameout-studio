@@ -13,7 +13,7 @@ export const TASK_STATUSES = [
   'cancelled',
 ] as const;
 export type TaskStatus = (typeof TASK_STATUSES)[number];
-export type TaskKind = 'image';
+export type TaskKind = 'image' | 'video';
 
 /** A task id is also its file name, so it must never contain a path separator or a dot. */
 export const TASK_ID = /^[A-Za-z0-9_-]{1,64}$/;
@@ -50,6 +50,8 @@ export interface Task {
   error?: TaskError;
   /** Submit-then-poll providers (video): saved before polling starts. */
   providerJobId?: string;
+  /** 0–100, as the provider last reported it. Not saved to disk. */
+  progress?: number;
   /** Where the executor put the result. */
   result?: unknown;
   /** The caller's own data (project, card position); stored and returned untouched. */
@@ -71,9 +73,17 @@ export type Outcome =
 
 export interface Execution {
   key: string;
+  /**
+   * For submit-then-poll providers. A job id is on disk before this resolves, so a restart polls it
+   * instead of submitting again. Progress only reaches subscribers.
+   */
+  update(patch: { providerJobId?: string; progress?: number }): Promise<void>;
 }
 
-/** Calls the provider. A thrown error is treated as an unknown outcome (`interrupted`). */
+/**
+ * Calls the provider. A thrown error is treated as an unknown outcome (`interrupted`).
+ * Called again after a restart for a task that has `providerJobId`: it must only poll that job.
+ */
 export type Execute = (task: Task, execution: Execution) => Promise<Outcome>;
 
 export interface TaskStore {
@@ -103,7 +113,7 @@ export function readTask(value: unknown): Task | undefined {
   const valid =
     typeof value.id === 'string' &&
     TASK_ID.test(value.id) &&
-    value.kind === 'image' &&
+    (value.kind === 'image' || value.kind === 'video') &&
     isProviderId(value.provider) &&
     typeof value.baseUrl === 'string' &&
     typeof value.model === 'string' &&

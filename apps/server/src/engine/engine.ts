@@ -3,7 +3,8 @@
 //
 // Rules that keep a user from being charged twice (docs/architecture/task-engine.md §5):
 // - A task is saved as `running` before the provider is called, so a crash is never mistaken for "not sent".
-// - After a restart, a `running` task becomes `interrupted`. Nothing is ever resubmitted automatically.
+// - After a restart, a `running` task becomes `interrupted`, unless the provider's job id was saved:
+//   then it waits for its key and polls that job. Nothing is ever resubmitted automatically.
 // - Only a queued task can be cancelled.
 import { queue, type ProviderId } from '@frameout/shared';
 import {
@@ -40,6 +41,8 @@ export class Engine {
   /** API keys by provider and base URL. In memory only: never written to a task or to disk. */
   readonly #keys = new Map<string, string>();
   readonly #listeners = new Set<(event: EngineEvent) => void>();
+  /** Running tasks from before a restart, with a provider job id, not yet polled again. */
+  readonly #resumable = new Set<string>();
   readonly #store: TaskStore;
   readonly #execute: Execute;
   readonly #limit: number;
@@ -58,8 +61,9 @@ export class Engine {
     tasks.sort((a, b) => a.createdAt - b.createdAt);
     for (const task of tasks) {
       this.#tasks.set(task.id, task);
+      if (task.status === 'running' && task.providerJobId) this.#resumable.add(task.id);
       // The app stopped mid-request. The provider may have finished and charged; never run it again.
-      if (task.status === 'running')
+      else if (task.status === 'running')
         await this.#finish(task.id, {
           status: 'interrupted',
           error: {
@@ -135,6 +139,14 @@ export class Engine {
 
   /** Starts queued tasks, oldest first, while their group is under the limit and has a key. */
   #pump(): void {
+    // Already running and already counted below; they only waited for a key.
+    for (const id of this.#resumable) {
+      const task = this.#require(id);
+      const key = this.#keys.get(keyId(task.provider, task.baseUrl));
+      if (!key) continue;
+      this.#resumable.delete(id);
+      void this.#execution(id, key);
+    }
     const running = new Map<string, number>();
     for (const task of this.#tasks.values())
       if (task.status === 'running')
@@ -151,10 +163,27 @@ export class Engine {
   async #run(id: string, key: string): Promise<void> {
     // In memory first, so the next pump counts it; on disk before the provider is called.
     const task = this.#apply(id, 'running', { startedAt: this.#now() });
-    let outcome: Outcome;
     try {
       await this.#persist(task);
-      outcome = await this.#execute(task, { key });
+    } catch {
+      return this.#finish(id, {
+        status: 'interrupted',
+        error: { code: 'EXECUTOR_ERROR', message: '执行中断，供应商可能已经处理了这次请求' },
+      });
+    }
+    await this.#execution(id, key);
+  }
+
+  async #execution(id: string, key: string): Promise<void> {
+    const update = async (patch: { providerJobId?: string; progress?: number }) => {
+      const next: Task = { ...this.#require(id), ...patch };
+      this.#tasks.set(id, next);
+      this.#emit(next);
+      if (patch.providerJobId) await this.#persist(next);
+    };
+    let outcome: Outcome;
+    try {
+      outcome = await this.#execute(this.#require(id), { key, update });
     } catch {
       // Not `failed`: the request may have reached the provider, and a retry could charge twice.
       outcome = {
@@ -200,7 +229,8 @@ export class Engine {
 
   #view(task: Task): TaskView {
     const needsKey =
-      task.status === 'queued' && !this.#keys.has(keyId(task.provider, task.baseUrl));
+      (task.status === 'queued' || this.#resumable.has(task.id)) &&
+      !this.#keys.has(keyId(task.provider, task.baseUrl));
     return { ...task, needsKey };
   }
 

@@ -30,7 +30,11 @@ async function run(replies: ImageExecutorOptions['fetchImpl'][], timeoutMs = 100
     timeoutMs,
     fetchImpl: (url, init) => replies[calls++]!(url, init),
   });
-  return { outcome: await execute(task, { key: 'test-only-key' }), calls: () => calls, directory };
+  return {
+    outcome: await execute(task, { key: 'test-only-key', update: async () => {} }),
+    calls: () => calls,
+    directory,
+  };
 }
 
 test('a 429 is retried, then the image is saved', async () => {

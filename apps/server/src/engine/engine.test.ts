@@ -24,12 +24,22 @@ function setup(initial: Task[] = []) {
     put: async item => void saved.set(item.id, structuredClone(item)),
     remove: async id => void saved.delete(id),
   };
-  const calls: { id: string; saved?: string; finish: (outcome: Outcome) => void }[] = [];
+  const calls: {
+    id: string;
+    saved?: string;
+    job?: string;
+    finish: (outcome: Outcome) => void;
+  }[] = [];
   const engine = new Engine({
     store,
     execute: item =>
       new Promise(finish => {
-        calls.push({ id: item.id, saved: saved.get(item.id)?.status, finish });
+        calls.push({
+          id: item.id,
+          saved: saved.get(item.id)?.status,
+          job: item.providerJobId,
+          finish,
+        });
       }),
   });
   const started = () => calls.map(call => call.id);
@@ -64,6 +74,23 @@ test('after a restart, a running task is interrupted and never runs again', asyn
   await tick();
   assert.equal(saved.get('ran')?.status, 'interrupted');
   assert.deepEqual(started(), ['waiting']);
+});
+
+test('after a restart, a task with a saved provider job waits for its key, then polls that job', async () => {
+  const { engine, calls } = setup([
+    { ...task('video'), kind: 'video', status: 'running', providerJobId: 'job-1', createdAt: 1 },
+  ]);
+  await engine.start();
+  await tick();
+  assert.equal(calls.length, 0);
+  assert.equal(engine.list()[0].needsKey, true);
+
+  engine.setKey('ark', ARK, KEY);
+  await tick();
+  assert.deepEqual(
+    calls.map(call => [call.id, call.job, call.saved]),
+    [['video', 'job-1', 'running']],
+  );
 });
 
 test('only a queued task can be cancelled, and it never runs', async () => {
