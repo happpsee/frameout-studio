@@ -625,7 +625,7 @@ export default function Studio({
                   plan={promptPlan}
                   box={selectedBox}
                   zoom={canvas.camera.zoom}
-                  bounds={{ width: layout.width, bottom: layout.bottom }}
+                  bounds={{ width: layout.width, bottom: layout.promptBottom }}
                   barBottom={barBottom}
                   busy={active}
                   onRun={(action, text) => runPrompt(selected, action, text)}

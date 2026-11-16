@@ -50,8 +50,9 @@ export function useStudioShortcuts({
     if (!active) step();
   };
 
-  useHotkeys('mod+z', history(undo), on);
-  useHotkeys(['mod+shift+z', 'mod+y'], history(redo), on);
+  // Both Cmd and Ctrl, on every platform: people coming from Windows press Ctrl+Z on a Mac too.
+  useHotkeys(['meta+z', 'ctrl+z'], history(undo), on);
+  useHotkeys(['meta+shift+z', 'ctrl+shift+z', 'meta+y', 'ctrl+y'], history(redo), on);
   useHotkeys(['mod+equal', 'mod+shift+equal', 'mod+add'], () => zoomBy(1.2), on);
   useHotkeys(['mod+minus', 'mod+subtract'], () => zoomBy(1 / 1.2), on);
   useHotkeys(['0', 'mod+0'], () => fitCanvas(), on);

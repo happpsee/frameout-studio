@@ -18,7 +18,11 @@ function LobbyDialog({ title, onClose, className, children }: LobbyDialogProps) 
 
   useEffect(() => {
     const element = dialog.current;
-    if (element && !element.open) element.showModal();
+    if (!element || element.open) return;
+    element.showModal();
+    // showModal puts focus on the first button (the close ×); a dialog that asks for text
+    // should start in its text field instead.
+    element.querySelector('input')?.focus();
   }, []);
 
   return (
@@ -66,7 +70,6 @@ export function RenameDialog({ project, onRename, onClose }: RenameDialogProps) 
           <input
             value={title}
             maxLength={80}
-            autoFocus
             onFocus={event => event.currentTarget.select()}
             onChange={event => setTitle(event.target.value)}
           />

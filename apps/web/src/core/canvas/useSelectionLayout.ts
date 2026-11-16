@@ -35,6 +35,7 @@ export function useSelectionLayout({
     width: 1200,
     height: 600,
     bottom: 400,
+    promptBottom: 400,
     selectionWidth: 400,
     selectionHeight: 48,
   });
@@ -43,13 +44,14 @@ export function useSelectionLayout({
     const measure = () => {
       const rect = viewportRef.current?.getBoundingClientRect();
       if (!rect?.width || !rect.height) return;
-      const bottom = desktop
-        ? rect.bottom
-        : (composerRef.current?.getBoundingClientRect().top ?? rect.bottom);
+      const composerTop = composerRef.current?.getBoundingClientRect().top ?? rect.bottom;
+      const bottom = desktop ? rect.bottom : composerTop;
       setLayout({
         width: rect.width,
         height: rect.height,
         bottom: bottom - rect.top - 12,
+        // The card's prompt box is taller than the action bar: it always stays above the composer.
+        promptBottom: Math.min(rect.bottom, composerTop) - rect.top - 12,
         selectionWidth: selectionRef.current?.offsetWidth ?? 400,
         selectionHeight: selectionRef.current?.offsetHeight ?? 48,
       });
