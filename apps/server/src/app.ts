@@ -4,6 +4,7 @@ import { RELAY_PATH } from '@frameout/shared';
 import type { Settings } from './config.ts';
 import { Engine } from './engine/engine.ts';
 import { createImageExecutor } from './engine/execute-image.ts';
+import { createVideoExecutor } from './engine/execute-video.ts';
 import { createFileStore } from './engine/file-store.ts';
 import { taskRoutes } from './engine/routes.ts';
 import { failure, relay, send, type FetchImpl } from './relay.ts';
@@ -50,9 +51,11 @@ export function createApp(
   });
   if (settings.tasksDirectory) {
     const directory = settings.tasksDirectory;
+    const image = createImageExecutor({ directory, timeoutMs: settings.imageTimeout, fetchImpl });
+    const video = createVideoExecutor({ directory, timeoutMs: settings.queryTimeout, fetchImpl });
     const engine = new Engine({
       store: createFileStore(directory),
-      execute: createImageExecutor({ directory, timeoutMs: settings.imageTimeout, fetchImpl }),
+      execute: (task, execution) => (task.kind === 'video' ? video : image)(task, execution),
     });
     const router = taskRoutes(engine, directory, engine.start());
     app.use('/api/tasks', express.json({ limit: settings.requestLimit }), router);

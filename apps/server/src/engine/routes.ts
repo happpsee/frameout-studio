@@ -6,6 +6,7 @@ import { OFFICIAL_BASE_URLS } from '@frameout/shared';
 import { apiKeyOf, failure, officialProvider, RelayError, send } from '../relay.ts';
 import type { Engine, EngineEvent } from './engine.ts';
 import { resultPath, type ImageFile, type ImageRequest } from './execute-image.ts';
+import type { VideoRequest } from './execute-video.ts';
 import { EngineError, type TaskView } from './task.ts';
 
 const ENGINE_STATUS: Record<string, number> = {
@@ -33,6 +34,20 @@ function readImageRequest(value: unknown): ImageRequest {
   if (!Array.isArray(references) || !references.every(item => typeof item === 'string'))
     throw invalid('参考图格式不正确');
   return { prompt, size, references };
+}
+
+function readVideoRequest(value: unknown): VideoRequest {
+  if (
+    !isObject(value) ||
+    typeof value.prompt !== 'string' ||
+    typeof value.ratio !== 'string' ||
+    typeof value.resolution !== 'string' ||
+    typeof value.duration !== 'number' ||
+    (value.reference !== undefined && typeof value.reference !== 'string')
+  )
+    throw invalid('生成参数不正确');
+  const { prompt, ratio, resolution, duration, reference } = value;
+  return { prompt, ratio, resolution, duration, ...(reference ? { reference } : {}) };
 }
 
 /** Turns the errors a caller can cause into replies; anything else goes to the app's error handler. */
@@ -71,15 +86,17 @@ export function taskRoutes(
       const provider = officialProvider(body);
       const apiKey = apiKeyOf(body);
       const { id, model, context } = body;
+      const kind = body.kind === 'video' ? 'video' : 'image';
       if (typeof model !== 'string' || !model || model.length > 200) throw invalid('模型名无效');
       const task = await engine.add(
         {
           id: typeof id === 'string' ? id : '',
-          kind: 'image',
+          kind,
           provider,
           baseUrl: OFFICIAL_BASE_URLS[provider],
           model,
-          request: readImageRequest(body.request),
+          request:
+            kind === 'video' ? readVideoRequest(body.request) : readImageRequest(body.request),
           context,
         },
         apiKey,

@@ -27,7 +27,7 @@ export interface ImageExecutorOptions {
   fetchImpl?: (url: string, init: RequestInit) => Promise<Response>;
 }
 
-const UNKNOWN_MESSAGE =
+export const UNKNOWN_MESSAGE =
   '供应商没有给出明确结果，可能已经生成并计费，未自动重试。请先到供应商控制台确认，再决定是否重新生成';
 const NOT_SAVED_MESSAGE =
   '图片可能已经生成并计费，但没能保存到本机。请检查网络和磁盘空间，再决定是否重新生成';
@@ -39,12 +39,12 @@ export function resultPath(directory: string, id: string): string {
 }
 
 /** 429 and 503 say the provider did not do the work, so asking again cannot charge twice. */
-const notCarriedOut = (error: unknown) =>
+export const notCarriedOut = (error: unknown) =>
   error instanceof AIError &&
   error.code === 'UPSTREAM_ERROR' &&
   (error.status === 429 || error.status === 503);
 
-function outcomeOf(error: unknown): Outcome {
+export function outcomeOf(error: unknown): Outcome {
   if (!(error instanceof AIError))
     return { status: 'interrupted', error: { code: 'EXECUTOR_ERROR', message: UNKNOWN_MESSAGE } };
   const { code, status, message, upstreamCode } = error;
@@ -63,13 +63,18 @@ function outcomeOf(error: unknown): Outcome {
 const IMAGE_MIME = /^image\/(?:png|jpeg|webp|gif)$/;
 
 /** The provider's temporary URL, downloaded. Idempotent, so it may be retried. */
-async function download(url: string, fetchImpl: typeof fetch, timeoutMs: number) {
+export async function download(
+  url: string,
+  fetchImpl: typeof fetch,
+  timeoutMs: number,
+  accepted = IMAGE_MIME,
+) {
   const response = await fetchImpl(url, {
     redirect: 'error',
     signal: AbortSignal.timeout(timeoutMs),
   });
   const mime = (response.headers.get('content-type') ?? '').split(';')[0].trim();
-  if (!response.ok || !IMAGE_MIME.test(mime)) throw new Error(`Image download: ${response.status}`);
+  if (!response.ok || !accepted.test(mime)) throw new Error(`Download: ${response.status}`);
   return { bytes: Buffer.from(await response.arrayBuffer()), mime };
 }
 
