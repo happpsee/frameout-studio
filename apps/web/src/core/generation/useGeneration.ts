@@ -23,6 +23,8 @@ import { desktopBridge } from '../../platform';
 import { CARD_CENTER } from '../canvas/canvas-camera';
 import { regeneration } from './regenerate';
 import { failedImageCard, placeImageCard } from './failed-image';
+import type { EngineImageOutcome, EngineImageRequest } from './useEngineImages';
+import { giveKey } from './engine-tasks';
 import {
   askNotificationPermission,
   useCompletionNotice,
@@ -34,8 +36,13 @@ type Options = {
   update: UpdateProject;
   toast: (message: string) => void;
   openSettings?: (notice: string) => void;
+  /** Desktop: images go to the local task engine (useEngineImages) instead of being fetched here. */
+  engine?: EngineImages | null;
 };
 type ActiveTask = { controller: AbortController; cardId?: string };
+type EngineImages = {
+  run: (request: EngineImageRequest, signal: AbortSignal) => Promise<EngineImageOutcome>;
+};
 type VideoResult = { id: string; status: string; src?: string; error?: string; progress?: number };
 type VideoClient = {
   getVideo: (options: { id: string; signal: AbortSignal }) => Promise<VideoResult>;
@@ -76,7 +83,7 @@ function initialMode(): GenerationMode {
   }
 }
 
-export function useGeneration({ getProject, update, toast, openSettings }: Options) {
+export function useGeneration({ getProject, update, toast, openSettings, engine }: Options) {
   const [mode, setModeState] = useState<GenerationMode>(initialMode);
   const [prompt, setPrompt] = useState('');
   const [config, setConfigState] = useState<AIConfig>(initialConfig);
@@ -117,6 +124,12 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
       }, false);
     latest.current.toast('已停止本页等待；已提交请求仍可能在供应商执行或计费');
   }, []);
+  // The engine keeps keys in memory only; after a restart it needs them again to start queued tasks.
+  const engineOn = Boolean(engine);
+  useEffect(() => {
+    if (engineOn && config.key)
+      giveKey(config.provider, config.baseUrl, config.key).catch(() => {});
+  }, [engineOn, config.provider, config.baseUrl, config.key]);
   useEffect(() => {
     mounted.current = true;
     const createdUrls = urls.current;
@@ -350,6 +363,28 @@ export function useGeneration({ getProject, update, toast, openSettings }: Optio
           ? await Promise.all(sources.map(card => referenceData(card, task.controller.signal)))
           : [];
         if (!current(task)) return;
+        if (engine) {
+          const label = sources.length ? `AI 生成图片 · 参考 ${sources.length}` : 'AI 生成图片';
+          const outcome = await engine.run(
+            {
+              text,
+              prompt: withReferenceRoles(prompted, sources),
+              references,
+              config: generationConfig,
+              at: request?.position ?? position(request?.near),
+              label,
+              replace: request?.replace,
+              onCard: request?.onCard,
+            },
+            task.controller.signal,
+          );
+          if (!current(task)) return;
+          // A failure is already on the canvas as a failed card; only say so.
+          const message = outcome.ok ? '图片已加入画布' : outcome.message;
+          toast(message);
+          notify(outcome.ok ? 'succeeded' : 'failed', message);
+          return;
+        }
         const result = await client.generateImage({
           prompt: withReferenceRoles(prompted, sources),
           references,

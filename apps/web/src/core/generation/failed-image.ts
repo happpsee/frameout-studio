@@ -41,6 +41,24 @@ export function failedImageCard(
   };
 }
 
+/** Turns a card into a failed image in place: same position, prompt kept, reason shown. */
+export function markImageFailed(card: Card, error: string, config: AIConfig) {
+  Object.assign(card, {
+    src: FAILED_IMAGE_MEDIA,
+    kind: 'image',
+    label: FAILED_IMAGE_LABEL,
+    job: {
+      id: '',
+      provider: config.provider,
+      status: 'failed',
+      prompt: card.prompt ?? '',
+      config: preferenceOnly(config),
+      error,
+    },
+  });
+  delete card.mediaId;
+}
+
 /**
  * Adds a generated (or failed) image card and selects it. With `replace`, a failed image card
  * gives up its place to the new one, and a shot plan step that pointed at it follows along.

@@ -4,6 +4,7 @@ import { REFERENCE_ROLES, usableReference } from '../generation/consistency';
 import { failedImage } from '../generation/failed-image';
 import type { Regeneration } from '../generation/regenerate';
 import { jobEnded, pending } from './CanvasCard';
+import { engineImage } from '../generation/useEngineImages';
 import Icon from '../../ui/Icon';
 import './SelectionActions.css';
 
@@ -75,7 +76,7 @@ export default function SelectionActions({
       {regeneration && (
         <RegenerateButton regeneration={regeneration} busy={busy} onClick={onRegenerate} />
       )}
-      {waiting && !jobEnded(card) && (
+      {waiting && !jobEnded(card) && !engineImage(card) && (
         <button type="button" className="fo-small-button" disabled={busy} onClick={onResume}>
           <Icon name="clock" />
           <span>继续查询</span>
