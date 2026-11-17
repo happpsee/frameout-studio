@@ -6,7 +6,9 @@ import { NOTE_HEIGHT, NOTE_WIDTH } from './notes';
 export type ArrangeMode = 'grid' | 'row' | 'column';
 type Point = { x: number; y: number };
 const GAP = 30;
-const STEP_X = CARD_WIDTH + GAP;
+/** Wider across, so the lines from a card to what was made from it stay visible. */
+const GAP_X = 90;
+export const STEP_X = CARD_WIDTH + GAP_X;
 const STEP_Y = CARD_HEIGHT + GAP;
 /** Columns of results beside a script, and of cards that belong to no script. */
 const SECTION_COLUMNS = 4;
@@ -61,7 +63,7 @@ export function tidy(project: Pick<ProjectState, 'cards' | 'notes'>) {
   const left = Math.min(...everything.map(item => item.x));
   let top = Math.min(...everything.map(item => item.y));
   const byPosition = (a: Note, b: Note) => a.y - b.y || a.x - b.x;
-  const cardLeft = left + (notes.length ? NOTE_WIDTH + GAP * 2 : 0);
+  const cardLeft = left + (notes.length ? NOTE_WIDTH + GAP_X : 0);
   const section = (note: Note | undefined, members: Card[]) => {
     if (note) placedNotes.set(note.id, { x: left, y: top });
     place(withTakes(members), { x: cardLeft, y: top }, SECTION_COLUMNS).forEach((point, id) =>
@@ -85,4 +87,31 @@ export function tidy(project: Pick<ProjectState, 'cards' | 'notes'>) {
   );
   section(undefined, loose);
   return { cards, notes: placedNotes };
+}
+
+const overlaps = (a: Point, b: Point) =>
+  Math.abs(a.x - b.x) < STEP_X && Math.abs(a.y - b.y) < STEP_Y;
+
+/**
+ * Where a new card can go near `start` without covering another card: `start` itself if it is
+ * free, otherwise the nearest free spot on a card-sized grid around it.
+ */
+export function freeSpot(cards: Point[], start: Point): Point {
+  const free = (spot: Point) => !cards.some(card => overlaps(card, spot));
+  if (free(start)) return start;
+  for (let ring = 1; ring < 20; ring++) {
+    const spots: Point[] = [];
+    for (let dy = -ring; dy <= ring; dy++)
+      for (let dx = -ring; dx <= ring; dx++)
+        if (Math.max(Math.abs(dx), Math.abs(dy)) === ring)
+          spots.push({ x: start.x + dx * STEP_X, y: start.y + dy * STEP_Y });
+    const near = spots
+      .filter(free)
+      .sort(
+        (a, b) =>
+          Math.hypot(a.x - start.x, a.y - start.y) - Math.hypot(b.x - start.x, b.y - start.y),
+      );
+    if (near.length) return near[0];
+  }
+  return start;
 }

@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import type { Card } from '../../types';
-import { CARD_HEIGHT, CARD_WIDTH } from './canvas-camera';
 import { failedImage } from '../generation/failed-image';
 import { REFERENCE_ROLES } from '../generation/consistency';
+import { estimateCost, formatYuan } from '../generation/pricing';
 import { CardMedia } from './CardMedia';
 import Icon from '../../ui/Icon';
 import './CanvasCard.css';
@@ -31,8 +31,6 @@ export function jobNote(card: Card): string {
 
 type Props = {
   card: Card;
-  x: number;
-  y: number;
   selected: boolean;
   dragging: boolean;
   reference: boolean;
@@ -48,8 +46,6 @@ type Props = {
 // Memoized so a drag frame or a selection change re-renders only the cards it touches.
 export const CanvasCard = memo(function CanvasCard({
   card,
-  x,
-  y,
   selected,
   dragging,
   reference,
@@ -60,11 +56,11 @@ export const CanvasCard = memo(function CanvasCard({
   onDuration,
 }: Props) {
   const failed = failedImage(card);
+  const cost = estimateCost(card);
   return (
     <article
       data-id={card.id}
       className={`fo-card${selected ? ' is-selected' : ''}${dragging ? ' is-dragging' : ''}${reference ? ' is-reference' : ''}${failed ? ' is-failed' : ''}${linked ? ' is-linked' : ''}`}
-      style={{ left: x, top: y }}
     >
       <div className="fo-card-top">
         <span>
@@ -85,6 +81,12 @@ export const CanvasCard = memo(function CanvasCard({
                 ? `${Math.round(card.duration * 100) / 100} SEC`
                 : '视频'
               : (card.size ?? card.ratio ?? '16:9')}
+          {cost !== null && (
+            <b className="fo-card-cost" title="按火山方舟价目表估算，以控制台账单为准">
+              {' · ≈'}
+              {formatYuan(cost)}
+            </b>
+          )}
         </span>
       </div>
       <button
@@ -126,26 +128,3 @@ export const CanvasCard = memo(function CanvasCard({
     </article>
   );
 });
-
-/** Cards that intersect the viewport plus a screen-space margin, always keeping the pinned ids. */
-export function visibleCards(
-  cards: Card[],
-  camera: { x: number; y: number; zoom: number },
-  width: number,
-  height: number,
-  pinned: (string | null | undefined)[],
-  margin = 400,
-) {
-  const left = (-margin - camera.x) / camera.zoom;
-  const top = (-margin - camera.y) / camera.zoom;
-  const right = (width + margin - camera.x) / camera.zoom;
-  const bottom = (height + margin - camera.y) / camera.zoom;
-  return cards.filter(
-    card =>
-      pinned.includes(card.id) ||
-      (card.x + CARD_WIDTH >= left &&
-        card.x <= right &&
-        card.y + CARD_HEIGHT >= top &&
-        card.y <= bottom),
-  );
-}

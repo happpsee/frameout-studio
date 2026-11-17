@@ -16,6 +16,7 @@ import {
   restoreProject,
   serializeProject,
 } from './project';
+import { randomId } from './random-id';
 
 export interface ProjectSummary {
   /** Stable, lowercase letters and digits; used inside storage keys. */
@@ -173,7 +174,7 @@ function changeIndex(change: (index: ProjectIndex) => boolean | void) {
 }
 
 function newId(): string {
-  return crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+  return randomId().slice(0, 16);
 }
 
 function coverOf(card: Card): Pick<Summary, 'coverMediaId' | 'coverSrc' | 'coverKind'> | null {

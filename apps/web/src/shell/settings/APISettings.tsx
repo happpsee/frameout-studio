@@ -14,6 +14,8 @@ function connectedText(provider: Provider) {
     ? '连接成功。还需要在火山方舟控制台开通所选模型；开通视频模型要求账户余额不少于 200 元（以方舟规则为准）。'
     : '连接成功。具体模型权限以实际生成为准。';
 }
+/** Remember is on by default; off only when a key in use was kept for this run alone. */
+const remembers = (provider: Provider, key: string) => !key || Boolean(rememberedKey(provider));
 /** notice explains why the dialog opened (for example, a generation without a key). */
 export default function APISettings({
   open,
@@ -39,7 +41,7 @@ export default function APISettings({
   const [status, setStatus] = useState({ text: '', kind: '' });
   const [saving, setSaving] = useState(false);
   const keychain = canRememberKeys();
-  const [remember, setRemember] = useState(() => Boolean(rememberedKey(config.provider)));
+  const [remember, setRemember] = useState(() => remembers(config.provider, config.key));
   function abortTest() {
     request.current?.abort();
     request.current = null;
@@ -49,7 +51,7 @@ export default function APISettings({
     if (open && !previousOpen.current) {
       profiles.current[config.provider] = { ...config };
       setDraft({ ...config });
-      setRemember(Boolean(rememberedKey(config.provider)));
+      setRemember(remembers(config.provider, config.key));
       setReveal(false);
       setStatus({ text: '', kind: '' });
     }
@@ -80,8 +82,9 @@ export default function APISettings({
   function switchProvider(provider: Provider) {
     abortTest();
     profiles.current[draft.provider] = { ...draft };
-    setDraft({ ...(profiles.current[provider] || startingProfile(provider)) });
-    setRemember(Boolean(rememberedKey(provider)));
+    const next = profiles.current[provider] || startingProfile(provider);
+    setDraft({ ...next });
+    setRemember(remembers(provider, next.key));
     setStatus({ text: '', kind: '' });
     setReveal(false);
   }
@@ -153,7 +156,7 @@ export default function APISettings({
             <h2 id="fo-api-heading">连接你的生成服务</h2>
             <p>
               {keychain
-                ? '密钥默认只在本次运行中使用；勾选「记住」后加密保存在本机钥匙串。'
+                ? '密钥默认加密保存在本机钥匙串；取消勾选「记住」则只在本次运行中使用。'
                 : '密钥仅保留在本页内存，刷新后需要重新填写。'}
             </p>
             {notice && (

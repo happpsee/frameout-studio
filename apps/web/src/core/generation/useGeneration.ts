@@ -21,6 +21,7 @@ import {
 import { initialConfig, redact, saveProfile } from '../../shell/settings/preferences';
 import { desktopBridge } from '../../platform';
 import { CARD_CENTER } from '../canvas/canvas-camera';
+import { freeSpot, STEP_X } from '../canvas/canvas-layout';
 import { regeneration } from './regenerate';
 import { failedImageCard, placeImageCard } from './failed-image';
 import type { EngineOutcome, EngineImageRequest, EngineVideoRequest } from './useEngineTasks';
@@ -64,6 +65,10 @@ type GenerationRequest = {
   near?: Card;
   /** Id of a failed image card the result takes the place of. */
   replace?: string;
+  /** Cards linked into the card being generated from; sent instead of the project's references. */
+  references?: Card[];
+  /** Notes whose words are in the prompt; the new card keeps the lines from them. */
+  textIds?: string[];
   onCard?: (id: string) => void;
 };
 function wait(ms: number, signal: AbortSignal): Promise<void> {
@@ -185,23 +190,15 @@ export function useGeneration({ getProject, update, toast, openSettings, engine 
     }
   }, []);
   function position(source?: Card) {
-    if (source) return { x: source.x + 300, y: source.y + 30 };
     const { camera, cards } = getProject();
+    if (source) return freeSpot(cards, { x: source.x + STEP_X, y: source.y });
     const viewport = document.querySelector('.fo-viewport')?.getBoundingClientRect();
-    const spot = {
+    return freeSpot(cards, {
       x: ((viewport?.width || 1000) / 2 - camera.x) / camera.zoom - CARD_CENTER.x,
       y:
         (Math.max(160, (viewport?.height || 600) / 2 - 80) - camera.y) / camera.zoom -
         CARD_CENTER.y,
-    };
-    // Generating again without moving the view would stack cards exactly; step each one aside.
-    const taken = () =>
-      cards.some(card => Math.abs(card.x - spot.x) < 16 && Math.abs(card.y - spot.y) < 16);
-    for (let step = 0; step < 50 && taken(); step++) {
-      spot.x += 32;
-      spot.y += 32;
-    }
-    return spot;
+    });
   }
   async function storeMedia(
     src: string,
@@ -373,9 +370,11 @@ export function useGeneration({ getProject, update, toast, openSettings, engine 
       const project = getProject();
       const prompted = withNotes(text, project.consistency?.notes);
       if (!video) {
-        const sources = supportsReferences(generationConfig.provider)
-          ? referenceCards(project)
-          : [];
+        const sources = !supportsReferences(generationConfig.provider)
+          ? []
+          : request?.references
+            ? request.references.filter(card => card.kind === 'image' && !card.missingMedia)
+            : referenceCards(project);
         const references = sources.length
           ? await Promise.all(sources.map(card => referenceData(card, task.controller.signal)))
           : [];
@@ -390,6 +389,8 @@ export function useGeneration({ getProject, update, toast, openSettings, engine 
               config: generationConfig,
               at: request?.position ?? position(request?.near),
               label,
+              referenceIds: sources.map(card => card.id),
+              textIds: request?.textIds,
               replace: request?.replace,
               onCard: request?.onCard,
             },
@@ -422,6 +423,8 @@ export function useGeneration({ getProject, update, toast, openSettings, engine 
           model: result.model,
           size: generationConfig.imageSize,
           label: sources.length ? `AI 生成图片 · 参考 ${sources.length}` : 'AI 生成图片',
+          ...(sources.length ? { referenceIds: sources.map(source => source.id) } : {}),
+          ...(request?.textIds?.length ? { textIds: request.textIds } : {}),
           generatedAt: new Date().toISOString(),
         };
         update(draft => placeImageCard(draft, card, request?.replace));
@@ -440,7 +443,7 @@ export function useGeneration({ getProject, update, toast, openSettings, engine 
             reference: firstFrame,
             source,
             config: generationConfig,
-            at: position(request?.near ?? source),
+            at: request?.position ?? position(request?.near ?? source),
             onCard: request?.onCard,
           },
           task.controller.signal,
@@ -455,7 +458,7 @@ export function useGeneration({ getProject, update, toast, openSettings, engine 
       task.cardId = id;
       const card: Card = {
         id,
-        ...position(request?.near ?? source),
+        ...(request?.position ?? position(request?.near ?? source)),
         name: text.slice(0, 18) + ' · 视频',
         prompt: text,
         sourceId: source?.id ?? '',

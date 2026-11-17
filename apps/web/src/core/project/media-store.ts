@@ -1,5 +1,6 @@
 import { MAX_MEDIA_BYTES } from '@frameout/shared';
 import { desktopBridge } from '../../platform';
+import { randomId } from './random-id';
 
 export class DesktopMediaTooLargeError extends Error {
   constructor() {
@@ -26,7 +27,7 @@ function open(): Promise<IDBDatabase> {
 }
 export async function putMedia(blob: Blob): Promise<string> {
   if (!/^(image|video)\//.test(blob.type)) throw new Error('素材不是图片或视频');
-  const id = 'media-' + crypto.randomUUID();
+  const id = 'media-' + randomId();
   const desktop = desktopBridge();
   if (desktop) {
     if (blob.size > MAX_MEDIA_BYTES) throw new DesktopMediaTooLargeError();

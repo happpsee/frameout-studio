@@ -1,0 +1,97 @@
+.fo-flow {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: transparent;
+}
+.fo-flow .react-flow__node {
+  cursor: default;
+}
+.fo-viewport.is-hand .fo-flow .react-flow__pane {
+  cursor: grab;
+}
+.fo-viewport.is-panning .fo-flow .react-flow__pane {
+  cursor: grabbing;
+}
+/* Connection points: shown on hover, and on every card while a line is being drawn. */
+.fo-flow .fo-handle {
+  width: 14px;
+  height: 14px;
+  background: var(--fo-canvas);
+  border: 1.5px solid var(--fo-text-2);
+  border-radius: 50%;
+  opacity: 0;
+  transition:
+    opacity var(--fo-fast),
+    transform var(--fo-fast);
+}
+.fo-flow .react-flow__node:hover .fo-handle,
+.fo-flow.is-connecting .fo-handle {
+  opacity: 1;
+}
+.fo-flow .fo-handle:hover {
+  transform: translate(var(--fo-handle-x, 0), -50%) scale(1.3);
+  background: var(--fo-text-2);
+}
+.fo-flow .react-flow__handle-left {
+  --fo-handle-x: -50%;
+}
+.fo-flow .react-flow__handle-right {
+  --fo-handle-x: 50%;
+}
+.fo-flow .react-flow__connection-path {
+  stroke: var(--fo-text-2);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+.fo-flow .fo-link.selected path.react-flow__edge-path {
+  stroke: var(--fo-text-1);
+  stroke-width: 2.5;
+}
+.fo-flow .fo-link.is-reference {
+  cursor: pointer;
+}
+.fo-flow .fo-link path.react-flow__edge-path {
+  stroke: var(--fo-text-4);
+  stroke-width: 1.5;
+}
+.fo-flow .fo-link.is-first-frame path.react-flow__edge-path {
+  stroke: var(--fo-accent);
+}
+/* Labels above the lines, so double-clicking a label always reaches that label. */
+.fo-flow .react-flow__edgelabel-renderer {
+  z-index: 1001;
+}
+.fo-link-label {
+  position: absolute;
+  padding: 2px 6px;
+  border-radius: var(--fo-radius-s);
+  background: var(--fo-canvas);
+  color: var(--fo-text-3);
+  font-size: var(--fo-t-xs);
+  white-space: nowrap;
+  pointer-events: all;
+  cursor: text;
+}
+.fo-link-label.is-selected {
+  color: var(--fo-text-1);
+}
+.fo-link-label input {
+  width: 9em;
+  padding: 1px 4px;
+  border: 1px solid var(--fo-line-4);
+  border-radius: var(--fo-radius-s);
+  background: var(--fo-field);
+  color: var(--fo-text-1);
+  font: inherit;
+  outline: none;
+}
+.fo-flow .react-flow__selection,
+.fo-flow .react-flow__nodesselection-rect {
+  border: 1px dashed var(--fo-text-3);
+  background: color-mix(in srgb, var(--fo-text-3) 8%, transparent);
+}
+/* Text lines are dashed: words, not pictures, go along them. */
+.fo-flow .fo-link.is-text path.react-flow__edge-path {
+  stroke-dasharray: 5 4;
+}

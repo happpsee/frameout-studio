@@ -1,70 +1,68 @@
-import { useLayoutEffect, useRef, useState } from 'react';
-import type { Card } from '../../types';
-import { promptPosition, type CardPromptPlan, type PromptAction } from './card-prompt';
+import { useState } from 'react';
+import type { Card, Note } from '../../types';
+import Icon from '../../ui/Icon';
+import type { CardPromptPlan, PromptAction } from './card-prompt';
+import ReferenceStrip from './ReferenceStrip';
 import './CardPrompt.css';
 
 type Props = {
   card: Card;
   plan: CardPromptPlan;
-  /** The card's box on screen, relative to the canvas viewport. */
-  box: { left: number; top: number; right: number; bottom: number };
-  zoom: number;
-  bounds: { width: number; bottom: number };
-  barBottom?: number;
   /** A generation or a shot plan is running. */
   busy: boolean;
   onRun: (action: PromptAction, text: string) => void;
+  onClose: () => void;
+  /** The reference images "生成图片" sends, in order; the first `global` are the project's. */
+  references: { cards: Card[]; global: number; editable: boolean };
+  /** Notes linked into the card: their words go before what is typed here. */
+  texts: Note[];
+  onReorder: (ids: string[]) => void;
+  onUnlink: (id: string) => void;
   toast: (message: string) => void;
 };
 
 /**
- * The selected card's prompt, editable where the card is: change the words and generate again
- * without going to the main prompt box. Mount with key={card.id} so each card starts from its own.
+ * A card's own prompt box, hanging under the card on the canvas. Several can be open at once,
+ * each keeping its own words. Mount with key={card.id} so each card starts from its own.
  */
 export default function CardPrompt(props: Props) {
   const { card, plan, busy } = props;
   const [text, setText] = useState(plan.text);
-  const panel = useRef<HTMLFormElement>(null);
-  const [size, setSize] = useState({ width: 360, height: 120 });
-  useLayoutEffect(() => {
-    const element = panel.current;
-    if (!element) return;
-    const measure = () =>
-      setSize(current =>
-        current.width === element.offsetWidth && current.height === element.offsetHeight
-          ? current
-          : { width: element.offsetWidth, height: element.offsetHeight },
-      );
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-  const position = promptPosition({
-    card: props.box,
-    zoom: props.zoom,
-    size,
-    bounds: props.bounds,
-    barBottom: props.barBottom,
-  });
   const run = (action: PromptAction) => {
     if (action.kind === 'redo' && action.unavailable) props.toast(action.unavailable);
-    else if (!text.trim()) props.toast('先写下描述，再生成');
+    else if (!text.trim() && !props.texts.length) props.toast('先写下描述，或从文本拉线连到这里');
     else props.onRun(action, text.trim());
   };
   const primary = plan.actions[0];
   return (
     <form
-      ref={panel}
-      className={`fo-card-prompt${position.docked ? ' is-docked' : ''}`}
-      style={{ left: position.left, top: position.top }}
+      // Typing and selecting text here must not drag the card or pan the canvas.
+      className="fo-card-prompt nodrag nopan nowheel"
       aria-label={`${card.name} 的提示词`}
       onSubmit={event => {
         event.preventDefault();
         if (!busy) run(primary);
       }}
     >
-      {position.docked && <span className="fo-card-prompt-name">{card.name}</span>}
+      {plan.actions.some(action => action.kind === 'image') && (
+        <ReferenceStrip
+          cards={props.references.cards}
+          global={props.references.global}
+          editable={props.references.editable}
+          onReorder={props.onReorder}
+          onUnlink={props.onUnlink}
+        />
+      )}
+      {props.texts.length > 0 && (
+        <ul className="fo-card-prompt-texts" aria-label="连进来的文本">
+          {props.texts.map(note => (
+            <li key={note.id} title={note.text}>
+              <b>{note.title || '文本'}</b>
+              {note.text.trim().slice(0, 40) || '（空）'}
+            </li>
+          ))}
+        </ul>
+      )}
       <textarea
         value={text}
         rows={2}
@@ -94,6 +92,14 @@ export default function CardPrompt(props: Props) {
             {action.label}
           </button>
         ))}
+        <button
+          type="button"
+          className="fo-card-prompt-close"
+          aria-label="收起输入框"
+          onClick={props.onClose}
+        >
+          <Icon name="x" />
+        </button>
       </div>
     </form>
   );

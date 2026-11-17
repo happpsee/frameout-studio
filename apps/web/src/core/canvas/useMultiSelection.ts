@@ -54,6 +54,7 @@ export function useMultiSelection({ projectRef, update, beforeRemove }: Options)
   /** Selects one card (or none) on its own, dropping any group. */
   const select = useCallback((id: string | null) => apply(id ? [id] : []), [apply]);
   const add = useCallback((ids: string[]) => apply([...current(), ...ids]), [apply, current]);
+  /** `set` replaces the whole selection, as a selection box does. */
   const clear = useCallback(() => store([]), [store]);
   const remove = useCallback(() => {
     const ids = storedRef.current;
@@ -74,6 +75,6 @@ export function useMultiSelection({ projectRef, update, beforeRemove }: Options)
     const live = stored.filter(id => cards.some(card => card.id === id));
     return live.length >= 2 ? live : [];
   }, [stored, cards]);
-  return { ids, select, toggle, add, clear, remove };
+  return { ids, select, toggle, add, set: apply, clear, remove };
 }
 export type MultiSelection = ReturnType<typeof useMultiSelection>;

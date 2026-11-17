@@ -125,6 +125,6 @@ describe('再来一张', () => {
     expect(client.generateImage).toHaveBeenCalledTimes(1);
     expect(client.generateImage.mock.calls[0][0].prompt).toBe('海边的灯塔');
     expect(h.result.current.prompt).toBe('另一个想法');
-    expect(h.getProject().cards[1]).toMatchObject({ prompt: '海边的灯塔', x: 300, y: 30 });
+    expect(h.getProject().cards[1]).toMatchObject({ prompt: '海边的灯塔', x: 360, y: 0 });
   });
 });

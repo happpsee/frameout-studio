@@ -9,6 +9,7 @@ import { restoreWorkflow } from '../generation/workflow';
 import { normalizeConsistency, validRole } from '../generation/consistency';
 import { restoreNotes } from '../canvas/notes';
 import { clamp } from '../canvas/canvas-camera';
+import { randomId } from './random-id';
 
 const legacySampleSources = new Set([
   '/assets/forest-astronaut.png',
@@ -22,7 +23,7 @@ export const placeholder = (text: string) =>
   );
 export const MISSING_MEDIA = placeholder('素材暂不可用');
 export const PENDING_MEDIA = placeholder('视频生成任务');
-export const uid = () => 'f-' + crypto.randomUUID();
+export const uid = () => 'f-' + randomId();
 export const DEFAULT_PROJECT_TITLE = '未命名项目';
 export const PROJECT_TITLE_MAX = 40;
 /** Label on cards added from a landing example; they are kept, unlike old auto-inserted samples. */
@@ -100,6 +101,9 @@ export function serializeWorkspace(project: WorkspaceSnapshot): WorkspaceSnapsho
         'remoteTemporary',
         'prompt',
         'sourceId',
+        'referenceIds',
+        'textIds',
+        'linkNames',
         'role',
         'noteId',
         'model',
@@ -118,6 +122,7 @@ export function serializeWorkspace(project: WorkspaceSnapshot): WorkspaceSnapsho
           config: preferenceOnly(card.job.config),
           error: card.job.error,
           progress: card.job.progress,
+          ...(card.job.engine ? { engine: true } : {}),
         };
       if (value.job && value.job.status !== 'succeeded') value.src = PENDING_MEDIA;
       return value;
@@ -182,6 +187,19 @@ function restoreWorkspace(input: unknown): WorkspaceSnapshot {
       } as Card;
       if (typeof card.prompt !== 'string') delete card.prompt;
       if (typeof card.sourceId !== 'string') delete card.sourceId;
+      if (
+        !Array.isArray(card.referenceIds) ||
+        !card.referenceIds.every(id => typeof id === 'string')
+      )
+        delete card.referenceIds;
+      if (!Array.isArray(card.textIds) || !card.textIds.every(id => typeof id === 'string'))
+        delete card.textIds;
+      if (
+        typeof card.linkNames !== 'object' ||
+        card.linkNames === null ||
+        !Object.values(card.linkNames).every(name => typeof name === 'string')
+      )
+        delete card.linkNames;
       if (typeof card.noteId !== 'string') delete card.noteId;
       if (!validRole(card.role)) delete card.role;
       if (card.job) {

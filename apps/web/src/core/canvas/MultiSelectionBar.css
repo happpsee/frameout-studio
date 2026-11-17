@@ -7,11 +7,3 @@
 .fo-multi-selection .fo-selected-name {
   max-width: none;
 }
-.fo-marquee {
-  position: absolute;
-  z-index: 6;
-  pointer-events: none;
-  border: 1px solid var(--fo-accent);
-  background: var(--fo-accent-a08);
-  border-radius: var(--fo-radius-s);
-}

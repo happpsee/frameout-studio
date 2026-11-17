@@ -16,6 +16,21 @@ function projectWithCards() {
 }
 
 describe('project persistence compatibility', () => {
+  it('keeps the lines between cards and the engine mark of a video task', () => {
+    const project = projectWithCards();
+    Object.assign(project.cards[0], {
+      referenceIds: ['a', 'b'],
+      linkNames: { a: '猫脸' },
+      textIds: ['n1'],
+      job: { id: 't', provider: 'ark', status: 'running', prompt: '', config: {}, engine: true },
+    });
+    const restored = restoreProject(serializeProject(project));
+    expect(restored.cards[0].referenceIds).toEqual(['a', 'b']);
+    expect(restored.cards[0].linkNames).toEqual({ a: '猫脸' });
+    expect(restored.cards[0].textIds).toEqual(['n1']);
+    expect(restored.cards[0].job).toMatchObject({ status: 'running', engine: true });
+  });
+
   it('preserves IndexedDB media references without writing object URLs to localStorage', () => {
     const project = projectWithCards();
     Object.assign(project.cards[0], { src: 'blob:current-session', mediaId: 'media-1' });

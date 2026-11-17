@@ -1,0 +1,90 @@
+.fo-reference-strip {
+  margin-bottom: 8px;
+}
+.fo-reference-title {
+  display: block;
+  margin: 0 2px 6px;
+  color: var(--fo-text-5);
+  font-size: var(--fo-t-xs);
+}
+.fo-reference-strip ol {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+}
+.fo-reference-thumb {
+  position: relative;
+  flex: none;
+  width: 64px;
+  height: 48px;
+  border-radius: var(--fo-radius-s);
+  overflow: hidden;
+  background: var(--fo-thumb-bg);
+  outline: 1px solid var(--fo-line);
+  cursor: grab;
+  touch-action: none;
+}
+.fo-reference-thumb.is-dragging {
+  z-index: 1;
+  cursor: grabbing;
+  outline: 1.5px dashed var(--fo-text-2);
+}
+.fo-reference-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.fo-reference-index {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--fo-paper);
+  color: var(--fo-ink);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+.fo-reference-unlink {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: var(--fo-scrim);
+  color: var(--fo-paper);
+  font-size: 10px;
+  cursor: pointer;
+  opacity: 0;
+}
+.fo-reference-thumb:hover .fo-reference-unlink,
+.fo-reference-unlink:focus-visible {
+  opacity: 1;
+}
+.fo-reference-thumb.is-shared {
+  cursor: default;
+  outline-style: dashed;
+}
+.fo-reference-shared {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: var(--fo-scrim);
+  color: var(--fo-paper);
+  font-size: 10px;
+  line-height: 15px;
+}

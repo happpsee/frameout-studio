@@ -1,7 +1,6 @@
 import { useHotkeys } from 'react-hotkeys-hook';
 import type { Card } from '../../types';
 import type { MultiSelection } from './useMultiSelection';
-import type { Rect } from './canvas-selection';
 import { visualOrder } from './canvas-selection';
 import type { ArrangeMode } from './canvas-layout';
 import { pending } from './CanvasCard';
@@ -89,7 +88,3 @@ export default function MultiSelectionBar({
 }
 
 /** The box drawn while shift-dragging over empty canvas. */
-export function SelectionMarquee({ rect }: { rect: Rect | null }) {
-  if (!rect) return null;
-  return <div className="fo-marquee" style={rect} aria-hidden="true" />;
-}

@@ -16,15 +16,28 @@ import { nextRole } from './generation/consistency';
 import { thumbnails, wantsOriginal } from './canvas/thumbnails';
 import { CanvasNote } from './canvas/CanvasNote';
 import CardPrompt from './generation/CardPrompt';
+import { formatYuan, projectCost } from './generation/pricing';
+import { useOpenPrompts } from './generation/useOpenPrompts';
 import { cardPrompt, type PromptAction } from './generation/card-prompt';
 import { CARD_CENTER } from './canvas/canvas-camera';
+import FlowStage from './canvas/FlowStage';
+import { addText, linkedTexts, removeText, textDraft, withTexts } from './canvas/text-links';
+import {
+  addReference,
+  draftCard,
+  DRAFT_LABEL,
+  removeReference,
+  renameLink,
+  reorderReferences,
+  sentReferences,
+} from './canvas/card-links';
 import { readStoredValue } from './project/desktop-storage';
 import { desktopBridge, isDesktop } from '../platform';
 import { serializeProject } from './project/project';
 import { projectDataKeys } from './project/projects';
 import APISettings from '../shell/settings/APISettings';
 import Icon from '../ui/Icon';
-import { CanvasCard, jobNote, pending, visibleCards } from './canvas/CanvasCard';
+import { CanvasCard, jobNote, pending } from './canvas/CanvasCard';
 import { regeneration } from './generation/regenerate';
 import Sequence from './film/Sequence';
 import { useFilm } from './film/useFilm';
@@ -38,7 +51,7 @@ import StudioHeader, { type StudioView } from './StudioHeader';
 import ShotList from './canvas/ShotList';
 import CanvasTools, { type PanelTab } from './canvas/CanvasTools';
 import SelectionActions from './canvas/SelectionActions';
-import MultiSelectionBar, { SelectionMarquee } from './canvas/MultiSelectionBar';
+import MultiSelectionBar from './canvas/MultiSelectionBar';
 import ZoomControl from './canvas/ZoomControl';
 import Composer from './generation/Composer';
 import HelpDialog from '../shell/misc/HelpDialog';
@@ -207,10 +220,10 @@ export default function Studio({
     project.cards.forEach(thumbnails.request);
   }, [project.cards]);
   const selected = project.cards.find(card => card.id === project.selected);
+  const prompts = useOpenPrompts(project.cards);
   const hasSelection = Boolean(selected);
   const selectedJobStatus = selected?.job?.status;
-  const selectedPosition =
-    selected && canvas.dragPosition?.id === selected.id ? canvas.dragPosition : selected;
+  const selectedPosition = selected;
   const { removeSelected, toggleReference, arrangeCards, tidyCanvas } = useCardActions({
     projectRef,
     update,
@@ -225,12 +238,16 @@ export default function Studio({
     openPreview: (card?: Card) => void;
     updateDuration: (card: Card, duration: number) => void;
   }>(null!);
+  const { show: showPrompt } = prompts;
+  /** The user picked a card: select it and open its prompt box. */
   const selectCard = useCallback(
-    (id: string) =>
+    (id: string) => {
+      showPrompt(id);
       update(draft => {
         draft.selected = id;
-      }, false),
-    [update],
+      }, false);
+    },
+    [update, showPrompt],
   );
   const openCard = useCallback(
     (id: string) => {
@@ -320,7 +337,7 @@ export default function Studio({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     toast('已导出项目文件：只含布局和设置，图片和视频请另外保存');
   }
-  const { layout, selectionStyle, outside, selectedBox, barBottom } = useSelectionLayout({
+  const { selectionStyle, outside } = useSelectionLayout({
     isActive,
     desktop,
     viewportRef,
@@ -332,10 +349,20 @@ export default function Studio({
     mode: generation.mode,
     selectedJobStatus,
   });
-  const promptPlan =
-    selected && !canvas.selection.ids.length ? cardPrompt(selected, project.cards) : null;
-  const runPrompt = (card: Card, action: PromptAction, prompt: string) => {
-    if (action.kind === 'video') void generation.generate(card, { prompt, mode: 'video' });
+  /** Starts what a card's prompt box asked for. Draft cards are filled from their linked cards. */
+  const runPrompt = (card: Card, action: PromptAction, typed: string) => {
+    const sent = sentReferences(card, project).cards;
+    const prompt = withTexts(typed, linkedTexts(card, project.notes));
+    const textIds = card.textIds;
+    const draft = card.label === DRAFT_LABEL;
+    if (action.kind === 'video' && draft) {
+      const first = sent.find(item => item.kind === 'image' && !item.missingMedia);
+      if (!first) return toast('先从一张图片拉线连到这里，它会作为视频的首帧');
+      update(draft => {
+        draft.cards = draft.cards.filter(item => item.id !== card.id);
+      });
+      void generation.generate(first, { prompt, mode: 'video', position: card });
+    } else if (action.kind === 'video') void generation.generate(card, { prompt, mode: 'video' });
     else if (action.kind === 'redo')
       void generation.generate(action.source, { prompt, mode: 'video', near: card });
     else
@@ -344,10 +371,10 @@ export default function Studio({
         mode: 'image',
         near: card,
         replace: action.replace ? card.id : undefined,
+        // Exactly what the box shows, in its order; a failed retry keeps the project's references.
+        references: action.replace && !draft ? undefined : sent,
+        textIds,
       });
-  };
-  const sceneStyle = {
-    transform: `translate3d(${canvas.camera.x}px,${canvas.camera.y}px,0) scale(${canvas.camera.zoom})`,
   };
   const taskNote =
     selected?.job && pending(selected)
@@ -493,6 +520,9 @@ export default function Studio({
               <div className="fo-canvas-intro">
                 <span className="fo-eyebrow">画布</span>
                 <span className="fo-canvas-count">{project.cards.length} 个素材</span>
+                <span className="fo-canvas-count" title="按火山方舟价目表估算，以控制台账单为准">
+                  生成花费约 {formatYuan(projectCost(project.cards))}
+                </span>
                 <BrowserStorageNotice />
               </div>
               {view === 'list' && (
@@ -507,57 +537,104 @@ export default function Studio({
                   }}
                 />
               )}
-              <div className="fo-stage" style={sceneStyle}>
-                {visibleCards(project.cards, canvas.camera, layout.width, layout.height, [
-                  project.selected,
-                  canvas.dragPosition?.id,
-                  ...canvas.selection.ids,
-                ]).map(card => {
-                  const position = canvas.positionOf(card);
-                  const dragging = position !== card;
-                  return (
-                    <CanvasCard
-                      key={card.id}
-                      card={card}
-                      x={position.x}
-                      y={position.y}
-                      selected={selected?.id === card.id || canvas.selection.ids.includes(card.id)}
-                      dragging={dragging}
-                      reference={referenceIds.has(card.id)}
-                      linked={linked.cards.has(card.id)}
-                      original={original}
-                      onSelect={selectCard}
-                      onOpen={openCard}
-                      onDuration={cardDuration}
+              <FlowStage
+                canvas={canvas}
+                cards={project.cards}
+                notes={project.notes ?? []}
+                selected={project.selected}
+                consistency={project.consistency}
+                raised={prompts.open}
+                onLink={(from, to) => {
+                  const note = from.startsWith('note:') ? from.slice(5) : null;
+                  let linked = false;
+                  update(draft => {
+                    linked = note ? addText(draft, note, to) : addReference(draft, from, to);
+                  });
+                  if (!linked) toast('这条线已经有了，或者会连成一个圈');
+                }}
+                onUnlink={id =>
+                  update(draft => {
+                    removeReference(draft, id);
+                    removeText(draft, id);
+                  })
+                }
+                onDraft={(from, at) => {
+                  const card = from.startsWith('note:')
+                    ? textDraft(from.slice(5), at)
+                    : draftCard(from, at);
+                  update(draft => {
+                    draft.cards.push(card);
+                    draft.selected = card.id;
+                  });
+                  prompts.show(card.id);
+                }}
+                onRename={(link, name) => update(draft => renameLink(draft, link, name))}
+                render={{
+                  card: card => {
+                    const plan = prompts.open.has(card.id) && cardPrompt(card, project.cards);
+                    return (
+                      <>
+                        <CanvasCard
+                          card={card}
+                          selected={
+                            selected?.id === card.id || canvas.selection.ids.includes(card.id)
+                          }
+                          dragging={false}
+                          reference={referenceIds.has(card.id)}
+                          linked={linked.cards.has(card.id)}
+                          original={original}
+                          onSelect={selectCard}
+                          onOpen={openCard}
+                          onDuration={cardDuration}
+                        />
+                        {plan && (
+                          <CardPrompt
+                            key={card.id}
+                            card={card}
+                            plan={plan}
+                            busy={active}
+                            onRun={(action, text) => runPrompt(card, action, text)}
+                            onClose={() => prompts.close(card.id)}
+                            toast={toast}
+                            references={sentReferences(card, project)}
+                            texts={linkedTexts(card, project.notes)}
+                            onReorder={ids =>
+                              update(draft => reorderReferences(draft, card.id, ids))
+                            }
+                            onUnlink={id =>
+                              update(draft => removeReference(draft, `${id}>${card.id}:reference`))
+                            }
+                          />
+                        )}
+                      </>
+                    );
+                  },
+                  note: note => (
+                    <CanvasNote
+                      note={note}
+                      zoom={canvas.camera.zoom}
+                      selected={notes.selected === note.id}
+                      linked={linked.notes.has(note.id)}
+                      workflow={project.workflow}
+                      busy={active}
+                      results={project.cards.filter(card => card.noteId === note.id).length}
+                      onSelect={notes.select}
+                      onChange={notes.change}
+                      onMove={notes.move}
+                      onRemove={notes.remove}
+                      onUsePrompt={text => {
+                        generation.setPrompt(text);
+                        promptRef.current?.focus();
+                        toast('已填入生成框');
+                      }}
+                      onPlan={notes.plan}
+                      onStart={() => void workflow.start()}
+                      onPause={workflow.pause}
+                      onSelectCard={selectCard}
                     />
-                  );
-                })}
-                {project.notes?.map(note => (
-                  <CanvasNote
-                    key={note.id}
-                    note={note}
-                    zoom={canvas.camera.zoom}
-                    selected={notes.selected === note.id}
-                    linked={linked.notes.has(note.id)}
-                    workflow={project.workflow}
-                    busy={active}
-                    results={project.cards.filter(card => card.noteId === note.id).length}
-                    onSelect={notes.select}
-                    onChange={notes.change}
-                    onMove={notes.move}
-                    onRemove={notes.remove}
-                    onUsePrompt={text => {
-                      generation.setPrompt(text);
-                      promptRef.current?.focus();
-                      toast('已填入生成框');
-                    }}
-                    onPlan={notes.plan}
-                    onStart={() => void workflow.start()}
-                    onPause={workflow.pause}
-                    onSelectCard={selectCard}
-                  />
-                ))}
-              </div>
+                  ),
+                }}
+              />
               {!project.cards.length && !project.notes?.length && (
                 <div className="fo-canvas-empty">
                   {desktop ? (
@@ -626,21 +703,6 @@ export default function Studio({
                   onRemove={removeSelected}
                 />
               )}
-              {selected && promptPlan && (
-                <CardPrompt
-                  key={selected.id}
-                  card={selected}
-                  plan={promptPlan}
-                  box={selectedBox}
-                  zoom={canvas.camera.zoom}
-                  bounds={{ width: layout.width, bottom: layout.promptBottom }}
-                  barBottom={barBottom}
-                  busy={active}
-                  onRun={(action, text) => runPrompt(selected, action, text)}
-                  toast={toast}
-                />
-              )}
-              <SelectionMarquee rect={canvas.marquee} />
               <MultiSelectionBar
                 selection={canvas.selection}
                 cards={project.cards}

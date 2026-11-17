@@ -91,7 +91,7 @@ export function CanvasNote(props: Props) {
     <article
       data-note={note.id}
       className={`fo-note is-${note.kind}${selected ? ' is-selected' : ''}${props.linked ? ' is-linked' : ''}${offset ? ' is-dragging' : ''}`}
-      style={{ left: note.x + (offset?.dx ?? 0), top: note.y + (offset?.dy ?? 0) }}
+      style={{ left: offset?.dx ?? 0, top: offset?.dy ?? 0 }}
       onPointerDownCapture={() => props.onSelect(note.id)}
     >
       <header

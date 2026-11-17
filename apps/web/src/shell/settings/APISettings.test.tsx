@@ -171,9 +171,8 @@ describe('API settings provider profiles and cancellation', () => {
       render(<Harness initial={{ ...defaults('openai'), key: '' }} onConfig={onConfig} />);
       const remember = () =>
         screen.getByRole<HTMLInputElement>('checkbox', { name: '在本机钥匙串中记住此 Key' });
-      expect(remember().checked).toBe(false);
+      expect(remember().checked).toBe(true);
       await user.type(keyInput(), 'sk-openai-new');
-      await user.click(remember());
       await user.click(screen.getByRole('button', { name: /保存配置/ }));
       expect(write).toHaveBeenCalledWith('openai', 'sk-openai-new');
       expect(onConfig).toHaveBeenLastCalledWith(

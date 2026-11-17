@@ -39,6 +39,12 @@ export interface Card {
   prompt?: string;
   /** Generated video: id of the image card used as the first frame; '' for text-to-video. */
   sourceId?: string;
+  /** Generated image: ids of the cards sent as reference images. */
+  referenceIds?: string[];
+  /** Text and script notes whose words go into this card's prompt, in order. */
+  textIds?: string[];
+  /** Names given to the lines into this card, by the id of the card each line comes from. */
+  linkNames?: Record<string, string>;
   /** What a reference image is a reference for; told to the model with the image. */
   role?: ReferenceRole;
   /** Id of the script note whose shot plan made this card. */

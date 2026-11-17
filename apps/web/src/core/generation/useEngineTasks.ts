@@ -30,6 +30,9 @@ export interface EngineImageRequest {
   config: AIConfig;
   at: { x: number; y: number };
   label: string;
+  /** Cards sent as references, so the canvas can show where the image came from. */
+  referenceIds?: string[];
+  textIds?: string[];
   replace?: string;
   onCard?: (id: string) => void;
 }
@@ -118,6 +121,8 @@ function imagePlaceholder(request: EngineImageRequest, cardId: string, taskId: s
     provider: config.provider,
     size: config.imageSize,
     label: ENGINE_IMAGE_LABEL,
+    ...(request.referenceIds?.length ? { referenceIds: request.referenceIds } : {}),
+    ...(request.textIds?.length ? { textIds: request.textIds } : {}),
     job: {
       id: taskId,
       provider: config.provider,

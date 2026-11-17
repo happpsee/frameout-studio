@@ -1,5 +1,6 @@
 import type { AIConfig, Card, ProjectState, VideoJob } from '../../types';
 import { placeholder, preferenceOnly, uid } from '../project/project';
+import { DRAFT_LABEL } from '../canvas/card-links';
 
 // A failed image generation stays on the canvas with its prompt and reason, so it can be read,
 // retried with "再来一张" and deleted. It is stored as a card with an ended job: everything that
@@ -60,12 +61,13 @@ export function markImageFailed(card: Card, error: string, config: AIConfig) {
 }
 
 /**
- * Adds a generated (or failed) image card and selects it. With `replace`, a failed image card
+ * Adds a generated (or failed) image card and selects it. With `replace`, a failed or draft card
  * gives up its place to the new one, and a shot plan step that pointed at it follows along.
  */
 export function placeImageCard(draft: ProjectState, card: Card, replace?: string) {
   const old = replace ? draft.cards.find(item => item.id === replace) : undefined;
-  if (failedImage(old)) {
+  // A failed image, or an empty card waiting to be filled, gives its place to the result.
+  if (old && (failedImage(old) || old.label === DRAFT_LABEL)) {
     card.x = old.x;
     card.y = old.y;
     draft.cards = draft.cards.filter(item => item.id !== old.id);

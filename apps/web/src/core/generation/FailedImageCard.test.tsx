@@ -22,8 +22,6 @@ describe('failed image card', () => {
     render(
       <CanvasCard
         card={failed}
-        x={0}
-        y={0}
         selected={false}
         dragging={false}
         reference={false}

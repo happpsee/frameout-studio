@@ -1,29 +1,19 @@
-/* The selected card's prompt, shown under the card or resting at the bottom of the canvas. */
+/* A card's own prompt box, hanging under the card inside its canvas node. */
 .fo-card-prompt {
   position: absolute;
-  z-index: 7;
-  width: 360px;
-  max-width: calc(100% - 24px);
+  top: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  width: 340px;
+  pointer-events: auto;
+  cursor: default;
   padding: 9px;
   border-radius: var(--fo-radius-m);
   background: var(--fo-raised);
   box-shadow: var(--fo-elevation-2);
   color: var(--fo-text-2);
   font-size: var(--fo-t-xs);
-}
-.fo-card-prompt.is-docked {
-  box-shadow:
-    0 0 0 1px var(--fo-accent-muted),
-    var(--fo-elevation-2);
-}
-.fo-card-prompt-name {
-  display: block;
-  margin: 0 2px 6px;
-  overflow: hidden;
-  color: var(--fo-text-5);
-  font-size: var(--fo-t-xs);
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .fo-card-prompt textarea {
   display: block;
@@ -80,4 +70,32 @@
   background: var(--fo-lime);
   color: var(--fo-on-lime);
   font-weight: 600;
+}
+
+.fo-card-prompt-actions .fo-card-prompt-close {
+  padding: 5px 6px;
+  background: transparent;
+  color: var(--fo-text-5);
+}
+.fo-card-prompt-texts {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+.fo-card-prompt-texts li {
+  overflow: hidden;
+  padding: 4px 8px;
+  border-left: 2px solid var(--fo-line-4);
+  border-radius: 0;
+  background: var(--fo-field);
+  color: var(--fo-text-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fo-card-prompt-texts b {
+  margin-right: 6px;
+  color: var(--fo-text-2);
+  font-weight: 500;
 }

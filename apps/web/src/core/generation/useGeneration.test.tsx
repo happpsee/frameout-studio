@@ -267,7 +267,7 @@ describe('generation cancellation and retained video tasks', () => {
     await act(() => hook.result.current.generate());
     expect(client.generateImage).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: '雨夜回头\n\n统一设定（所有镜头保持一致）：红色雨衣',
+        prompt: '统一设定（所有镜头保持一致）：红色雨衣\n\n雨夜回头',
         references: ['data:image/jpeg;base64,hero'],
       }),
     );

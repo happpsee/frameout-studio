@@ -31,3 +31,7 @@
   font-size: var(--fo-t-xs);
   line-height: 1.5;
 }
+.fo-card-cost {
+  color: var(--fo-text-3);
+  font-weight: 400;
+}

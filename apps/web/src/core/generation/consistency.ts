@@ -62,8 +62,9 @@ export function withReferenceRoles(prompt: string, references: Card[]): string {
   return `${prompt}\n\n${lines.filter(Boolean).join('；')}`;
 }
 
+/** The shared notes go first: image models weigh the start of a prompt most. */
 export function withNotes(prompt: string, notes = ''): string {
-  return notes.trim() ? `${prompt}\n\n统一设定（所有镜头保持一致）：${notes.trim()}` : prompt;
+  return notes.trim() ? `统一设定（所有镜头保持一致）：${notes.trim()}\n\n${prompt}` : prompt;
 }
 
 /** Official OpenAI and Volcano Ark accept reference images; other services only get the notes. */
