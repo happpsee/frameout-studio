@@ -1,5 +1,5 @@
 import { PROVIDERS } from '@frameout/shared';
-import type { Card } from '../../types';
+import type { AIConfig, Card } from '../../types';
 import { failedImage } from './failed-image';
 
 // Prices in yuan, from Volcano Ark's billing page (docs.volcengine.com/docs/82379/1544106),
@@ -31,26 +31,74 @@ const family = (model: string) => model.replace(/-\d{6}$/, '');
 const referencesIn = (card: Card) =>
   card.referenceIds?.length ?? Number(/参考 (\d+)/.exec(card.label ?? '')?.[1] ?? 0);
 
+/** About what one image would cost, or null when its model has no listed price. */
+export function imagePrice(o: {
+  provider: string;
+  model?: string;
+  size?: string;
+  references: number;
+}) {
+  if (o.provider !== 'ark') return null;
+  const price = IMAGE[family(o.model || PROVIDERS.ark.defaultImageModel)];
+  if (!price) return null;
+  const pixels = SIZE_PIXELS[o.size ?? '2K'] ?? SIZE_PIXELS['2K'];
+  const output = pixels > LARGE_PIXELS ? price.large : price.small;
+  return round(output + Math.max(0, o.references - 1) * price.input);
+}
+
+/** About what one video would cost, or null when its model or resolution has no listed price. */
+export function videoPrice(o: {
+  provider: string;
+  model?: string;
+  resolution?: string;
+  seconds: number;
+}) {
+  if (o.provider !== 'ark' || !o.seconds) return null;
+  const rates = VIDEO[family(o.model || PROVIDERS.ark.defaultVideoModel)];
+  const perSecond = rates?.[String(o.resolution ?? '720p').toLowerCase()];
+  return perSecond ? round(perSecond * Math.round(o.seconds)) : null;
+}
+
+/** What the next generation with these settings would cost, before it is started. */
+export function quote(config: AIConfig, kind: 'image' | 'video', references = 0) {
+  const preset = PROVIDERS[config.provider];
+  return kind === 'image'
+    ? imagePrice({
+        provider: config.provider,
+        model: config.imageModel,
+        size: config.imageSize,
+        references,
+      })
+    : videoPrice({
+        provider: config.provider,
+        model: config.videoModel,
+        resolution: config.resolution,
+        seconds: Number(config.duration || preset?.videoDurations[0] || 5),
+      });
+}
+
 /**
  * About what a generated card cost, in yuan, or null when it was not generated here, failed,
  * is still running, or was made with a model whose price is not listed.
  */
 export function estimateCost(card: Card): number | null {
   if (card.provider !== 'ark' || failedImage(card) || card.missingMedia) return null;
-  const preset = PROVIDERS.ark;
   if (card.kind === 'video') {
     if (card.job?.status !== 'succeeded' || !card.duration) return null;
-    const model = card.job.config.videoModel || card.model || preset.defaultVideoModel;
-    const perSecond =
-      VIDEO[family(model)]?.[String(card.job.config.resolution ?? '720p').toLowerCase()];
-    return perSecond ? round(perSecond * Math.round(card.duration)) : null;
+    return videoPrice({
+      provider: 'ark',
+      model: card.job.config.videoModel || card.model,
+      resolution: card.job.config.resolution,
+      seconds: card.duration,
+    });
   }
   if (card.job || !card.generatedAt) return null;
-  const price = IMAGE[family(card.model || preset.defaultImageModel)];
-  if (!price) return null;
-  const pixels = SIZE_PIXELS[card.size ?? '2K'] ?? SIZE_PIXELS['2K'];
-  const output = pixels > LARGE_PIXELS ? price.large : price.small;
-  return round(output + Math.max(0, referencesIn(card) - 1) * price.input);
+  return imagePrice({
+    provider: 'ark',
+    model: card.model,
+    size: card.size,
+    references: referencesIn(card),
+  });
 }
 
 const round = (yuan: number) => Math.round(yuan * 100) / 100;

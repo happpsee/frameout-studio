@@ -115,7 +115,7 @@ describe('persisted creative workflow', () => {
       config.key,
     );
   });
-  it('preserves a late provider task ID and resumes it without resubmitting', async () => {
+  it('pausing lets a submitted shot finish and keeps its result', async () => {
     let submitted!: (result: { id: string; status: string }) => void;
     client.submitVideo.mockReturnValueOnce(
       new Promise(done => {
@@ -131,13 +131,13 @@ describe('persisted creative workflow', () => {
     await act(async () => {
       submitted({ id: 'late-paid-task', status: 'queued' });
     });
-    await waitFor(() =>
-      expect(hook.result.current.workspace.project.cards[1].job?.id).toBe('late-paid-task'),
+    // The first poll comes 3 seconds after submitting.
+    await waitFor(
+      () => expect(hook.result.current.workspace.project.cards[1].job?.status).toBe('succeeded'),
+      { timeout: 4500 },
     );
-    await act(async () => hook.result.current.workflow.start());
-    await waitFor(() =>
-      expect(hook.result.current.workspace.project.workflow?.status).toBe('completed'),
-    );
+    expect(hook.result.current.workspace.project.cards[1].job?.id).toBe('late-paid-task');
+    expect(hook.result.current.workspace.project.workflow?.status).toBe('paused');
     expect(client.submitVideo).toHaveBeenCalledTimes(1);
     expect(client.getVideo).toHaveBeenCalledWith(expect.objectContaining({ id: 'late-paid-task' }));
   });

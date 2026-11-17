@@ -174,12 +174,12 @@ export function useGeneration({ getProject, update, toast, openSettings, engine 
     }
   }
   const setConfig = useCallback(
+    // A running task keeps the settings it was submitted with: it is paid for and must finish.
     (value: AIConfig) => {
-      if (taskRef.current) stop();
       setConfigState(value);
       saveProfile(value);
     },
-    [stop],
+    [],
   );
   const setMode = useCallback((value: GenerationMode) => {
     setModeState(value);

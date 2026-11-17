@@ -1984,20 +1984,6 @@
   min-width: 0;
   max-width: 260px;
 }
-.fo-cancel-generation {
-  flex: none;
-  min-height: 30px;
-  padding: 5px 7px;
-  border-radius: var(--fo-radius-s);
-  background: var(--fo-pressed);
-  box-shadow: var(--fo-elevation-1);
-  color: var(--fo-text-2) !important;
-  font-size: var(--fo-t-xs) !important;
-  white-space: nowrap;
-}
-.fo-cancel-generation:hover {
-  background: var(--fo-pressed-strong);
-}
 .fo-task-note {
   margin: 5px 0 8px;
   max-height: 44px;
@@ -2080,10 +2066,6 @@
   .fo-generation-state {
     font-size: var(--fo-t-xs);
     max-width: 155px;
-  }
-  .fo-cancel-generation {
-    font-size: var(--fo-t-xs) !important;
-    padding: 5px;
   }
   .fo-task-note {
     font-size: var(--fo-t-xs);

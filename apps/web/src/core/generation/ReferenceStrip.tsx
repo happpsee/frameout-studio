@@ -25,6 +25,8 @@ type Props = {
   editable: boolean;
   onReorder: (ids: string[]) => void;
   onUnlink: (id: string) => void;
+  /** A thumbnail was clicked: mention that image in the prompt. */
+  onPick?: (index: number) => void;
 };
 
 function Thumb({
@@ -33,7 +35,11 @@ function Thumb({
   editable,
   shared,
   onUnlink,
-}: { card: Card; index: number; shared: boolean } & Pick<Props, 'editable' | 'onUnlink'>) {
+  onPick,
+}: { card: Card; index: number; shared: boolean } & Pick<
+  Props,
+  'editable' | 'onUnlink' | 'onPick'
+>) {
   const sortable = useSortable({ id: card.id, disabled: !editable || shared });
   return (
     <li
@@ -43,7 +49,8 @@ function Thumb({
         transform: CSS.Transform.toString(sortable.transform),
         transition: sortable.transition,
       }}
-      title={shared ? `${card.name} · 一致性参考图，每次生成都会带上` : card.name}
+      title={`${shared ? `${card.name} · 一致性参考图，每次生成都会带上` : card.name}\n点一下在提示词里引用`}
+      onClick={() => onPick?.(index)}
       {...sortable.attributes}
       {...sortable.listeners}
     >
@@ -57,7 +64,10 @@ function Thumb({
           aria-label={`断开参考图 ${index + 1}`}
           // Keep the press from starting a drag.
           onPointerDown={event => event.stopPropagation()}
-          onClick={() => onUnlink(card.id)}
+          onClick={event => {
+            event.stopPropagation();
+            onUnlink(card.id);
+          }}
         >
           <Icon name="x" />
         </button>
@@ -70,7 +80,14 @@ function Thumb({
  * The reference images a card's prompt box sends, numbered in the order they are sent. Drag to
  * reorder; the numbers are what "图1", "图2" in the prompt refer to.
  */
-export default function ReferenceStrip({ cards, global, editable, onReorder, onUnlink }: Props) {
+export default function ReferenceStrip({
+  cards,
+  global,
+  editable,
+  onReorder,
+  onUnlink,
+  onPick,
+}: Props) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
   const ids = cards.map(card => card.id);
   const own = ids.slice(global);
@@ -102,6 +119,7 @@ export default function ReferenceStrip({ cards, global, editable, onReorder, onU
                   editable={editable}
                   shared={index < global}
                   onUnlink={onUnlink}
+                  onPick={onPick}
                 />
               ))}
             </ol>

@@ -5,6 +5,7 @@ import { isDesktop } from '../../platform';
 import ComposerParameters from './ComposerParameters';
 import { ConsistencyBar } from './ConsistencyDialog';
 import DesktopGenerationSettings from './DesktopGenerationSettings';
+import { formatYuan, quote } from './pricing';
 import Icon from '../../ui/Icon';
 import Select from '../../ui/Select';
 
@@ -17,7 +18,6 @@ interface ComposerProps {
   generation: ReturnType<typeof useGeneration>;
   /** A generation or a shot plan is running. */
   busy: boolean;
-  onStop: () => void;
   notes: string;
   references: Card[];
   /** Status of the selected card's video job or temporary link; empty when none. */
@@ -31,7 +31,6 @@ interface ComposerProps {
 export default function Composer({
   generation,
   busy,
-  onStop,
   notes,
   references,
   taskNote,
@@ -43,6 +42,7 @@ export default function Composer({
   const desktop = isDesktop();
   const { config, mode } = generation;
   const model = mode === 'video' ? config.videoModel : config.imageModel;
+  const price = quote(config, mode === 'video' ? 'video' : 'image', references.length);
   return (
     <form
       ref={formRef}
@@ -111,17 +111,22 @@ export default function Composer({
           </button>
         ) : (
           <span className="fo-generation-state">
-            {busy ? '正在等待供应商结果…' : `${config.provider.toUpperCase()} · ${model}`}
+            {busy ? '已提交，完成后自动放进画布' : `${config.provider.toUpperCase()} · ${model}`}
           </span>
         )}
-        {busy && (
-          <button type="button" className="fo-cancel-generation" onClick={onStop}>
-            停止等待
-          </button>
-        )}
-        <button type="submit" className="fo-generate-button" disabled={busy}>
+        <button
+          type="submit"
+          className="fo-generate-button"
+          disabled={busy}
+          title={price !== null ? `预计约 ${formatYuan(price)}，以控制台账单为准` : undefined}
+        >
           <Icon name="sparkles" />
           <span>{mode === 'video' ? '生成视频' : '生成图片'}</span>
+          {price !== null && (
+            <small className="fo-price-tag" aria-hidden="true">
+              ≈{formatYuan(price)}
+            </small>
+          )}
           <Icon name="arrow-up-right" />
         </button>
       </div>

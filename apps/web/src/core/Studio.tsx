@@ -16,7 +16,8 @@ import { nextRole } from './generation/consistency';
 import { thumbnails, wantsOriginal } from './canvas/thumbnails';
 import { CanvasNote } from './canvas/CanvasNote';
 import CardPrompt from './generation/CardPrompt';
-import { formatYuan, projectCost } from './generation/pricing';
+import { formatYuan, projectCost, quote } from './generation/pricing';
+import { mentionNames, resolveMentions } from './generation/mentions';
 import { useOpenPrompts } from './generation/useOpenPrompts';
 import { cardPrompt, type PromptAction } from './generation/card-prompt';
 import { CARD_CENTER } from './canvas/canvas-camera';
@@ -352,7 +353,11 @@ export default function Studio({
   /** Starts what a card's prompt box asked for. Draft cards are filled from their linked cards. */
   const runPrompt = (card: Card, action: PromptAction, typed: string) => {
     const sent = sentReferences(card, project).cards;
-    const prompt = withTexts(typed, linkedTexts(card, project.notes));
+    // "@name" becomes "图N" in the order the images are sent, in typed and linked words alike.
+    const prompt = resolveMentions(
+      withTexts(typed, linkedTexts(card, project.notes)),
+      mentionNames(sent, card),
+    );
     const textIds = card.textIds;
     const draft = card.label === DRAFT_LABEL;
     if (action.kind === 'video' && draft) {
@@ -406,7 +411,6 @@ export default function Studio({
     <Composer
       generation={generation}
       busy={active}
-      onStop={workflow.running ? workflow.pause : generation.stop}
       notes={project.consistency?.notes ?? ''}
       references={references}
       taskNote={taskNote}
@@ -598,6 +602,14 @@ export default function Studio({
                             toast={toast}
                             references={sentReferences(card, project)}
                             texts={linkedTexts(card, project.notes)}
+                            prices={{
+                              image: quote(
+                                generation.config,
+                                'image',
+                                sentReferences(card, project).cards.length,
+                              ),
+                              video: quote(generation.config, 'video'),
+                            }}
                             onReorder={ids =>
                               update(draft => reorderReferences(draft, card.id, ids))
                             }

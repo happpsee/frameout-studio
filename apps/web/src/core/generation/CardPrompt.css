@@ -99,3 +99,51 @@
   color: var(--fo-text-2);
   font-weight: 500;
 }
+.fo-price-tag {
+  margin-left: 5px;
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.75;
+}
+.fo-card-prompt-field {
+  position: relative;
+}
+.fo-mention-menu {
+  position: absolute;
+  z-index: 3;
+  top: calc(100% + 4px);
+  left: 0;
+  display: grid;
+  min-width: 200px;
+  max-height: 220px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  border-radius: var(--fo-radius-s);
+  background: var(--fo-menu);
+  box-shadow: var(--fo-elevation-2);
+  list-style: none;
+}
+.fo-mention-menu li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: var(--fo-radius-s);
+  color: var(--fo-text-2);
+  cursor: pointer;
+}
+.fo-mention-menu li[aria-selected='true'],
+.fo-mention-menu li:hover {
+  background: var(--fo-hover);
+}
+.fo-mention-menu img {
+  width: 32px;
+  height: 24px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+.fo-mention-menu b {
+  color: var(--fo-text-1);
+  font-weight: 500;
+}

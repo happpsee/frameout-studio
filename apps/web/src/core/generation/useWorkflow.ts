@@ -22,7 +22,6 @@ export function useWorkflow(options: Options) {
   latest.current = options;
   const executing = useRef(false);
   const starting = useRef(false);
-  const owned = useRef(false);
   const mounted = useRef(true);
 
   const mutate = useCallback((id: string, recipe: (workflow: Workflow) => void) => {
@@ -30,18 +29,17 @@ export function useWorkflow(options: Options) {
       if (draft.workflow?.id === id) recipe(draft.workflow);
     }, false);
   }, []);
+  /**
+   * Stops the plan from starting another shot. A shot already submitted is paid for, so it keeps
+   * running and its result still lands on the canvas.
+   */
   const pause = useCallback(() => {
-    const { projectRef, generation } = latest.current;
-    const workflow = projectRef.current.workflow;
+    const workflow = latest.current.projectRef.current.workflow;
     if (!workflow || workflow.status !== 'running') return;
     mutate(workflow.id, value => {
       value.status = 'paused';
-      value.steps.forEach(step => {
-        if (step.status === 'running') step.status = 'paused';
-      });
-      recordEvent(value, '已暂停，完成的镜头与任务号已保留');
+      recordEvent(value, '已暂停：正在生成的镜头会完成并保留，之后不再开始新镜头');
     });
-    if (owned.current) generation.stop();
   }, [mutate]);
 
   useEffect(() => {
@@ -179,7 +177,6 @@ export function useWorkflow(options: Options) {
       return;
     }
     executing.current = true;
-    owned.current = true;
     const workflowId = workflow.id;
     const existing = options.project.cards.find(card => card.id === step.outputCardId);
     const parent = workflow.steps.find(item => item.id === step.dependsOn);
@@ -241,7 +238,6 @@ export function useWorkflow(options: Options) {
         error = caught instanceof Error ? caught.message : '步骤执行失败';
       } finally {
         executing.current = false;
-        owned.current = false;
         if (mounted.current) {
           mutate(workflowId, value => {
             const current = value.steps.find(item => item.id === step.id);
