@@ -43,6 +43,8 @@ import { regeneration } from './generation/regenerate';
 import Sequence from './film/Sequence';
 import { useFilm } from './film/useFilm';
 import PreviewDialog from './film/PreviewDialog';
+import FilmCard from './film/FilmCard';
+import { FILM_ID, removeShot } from './canvas/film-node';
 import ExportDialog from './film/ExportDialog';
 import ConsistencyDialog from './generation/ConsistencyDialog';
 import { referenceCards } from './generation/consistency';
@@ -545,10 +547,17 @@ export default function Studio({
                 canvas={canvas}
                 cards={project.cards}
                 notes={project.notes ?? []}
+                sequence={project.sequence}
+                film={project.film}
                 selected={project.selected}
                 consistency={project.consistency}
                 raised={prompts.open}
                 onLink={(from, to) => {
+                  if (to === FILM_ID) {
+                    if (from.startsWith('note:')) toast('文本不能加入成片，请连视频或图片');
+                    else addToSequence(from);
+                    return;
+                  }
                   const note = from.startsWith('note:') ? from.slice(5) : null;
                   let linked = false;
                   update(draft => {
@@ -558,6 +567,7 @@ export default function Studio({
                 }}
                 onUnlink={id =>
                   update(draft => {
+                    if (removeShot(draft, id)) return;
                     removeReference(draft, id);
                     removeText(draft, id);
                   })
@@ -574,6 +584,13 @@ export default function Studio({
                 }}
                 onRename={(link, name) => update(draft => renameLink(draft, link, name))}
                 render={{
+                  film: () => (
+                    <FilmCard
+                      sequence={project.sequence}
+                      cards={project.cards}
+                      onPreview={() => openPreview()}
+                    />
+                  ),
                   card: card => {
                     const plan = prompts.open.has(card.id) && cardPrompt(card, project.cards);
                     return (

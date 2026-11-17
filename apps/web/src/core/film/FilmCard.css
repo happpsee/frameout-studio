@@ -1,0 +1,54 @@
+.fo-film-card {
+  width: 220px;
+  height: 170px;
+  background: var(--fo-card);
+  outline: 1.5px solid var(--fo-accent);
+  box-shadow: var(--fo-elevation-1);
+  border-radius: var(--fo-radius-s);
+  overflow: hidden;
+  user-select: none;
+}
+.fo-film-card .fo-card-top > span:first-child {
+  color: var(--fo-text-2);
+}
+.fo-film-cover {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 141px;
+  padding: 0;
+  background: var(--fo-media-bg);
+  overflow: hidden;
+}
+.fo-film-cover img,
+.fo-film-cover video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+.fo-film-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--fo-canvas);
+  opacity: 0.85;
+}
+.fo-film-play svg {
+  width: 14px;
+  height: 14px;
+  fill: var(--fo-text-1);
+}
+.fo-film-empty {
+  margin: 0;
+  padding: 36px 18px;
+  color: var(--fo-text-4);
+  font-size: var(--fo-t-xs);
+  line-height: 1.6;
+  text-align: center;
+}

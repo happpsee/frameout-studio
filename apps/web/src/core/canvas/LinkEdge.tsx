@@ -8,8 +8,11 @@ import {
 } from '@xyflow/react';
 import type { CardLink } from './card-links';
 
-/** `link` is set for lines between cards; a line from a note has only its label. */
-export type LinkEdgeType = Edge<{ link?: CardLink; label: string }, 'link'>;
+/**
+ * `link` is set for lines between cards, which can be renamed; lines from a note or into the film
+ * have only a label, and `hint` says where their name comes from.
+ */
+export type LinkEdgeType = Edge<{ link?: CardLink; label: string; hint?: string }, 'link'>;
 type Renaming = {
   /** The line whose name is being edited. Set by double-clicking the line or its label. */
   editing: string | null;
@@ -28,7 +31,7 @@ export default function LinkEdge(props: EdgeProps<LinkEdgeType>) {
   const renaming = useContext(RenameContext);
   const link = props.data!.link;
   const current = link ? (link.to.linkNames?.[link.from.id] ?? '') : '';
-  const editing = renaming.editing === props.id;
+  const editing = Boolean(link) && renaming.editing === props.id;
   /** Escape closes the box, which also blurs it; that blur must not save. */
   const done = useRef(false);
   const finish = (text: string | null) => {
@@ -44,7 +47,7 @@ export default function LinkEdge(props: EdgeProps<LinkEdgeType>) {
         <div
           className={`fo-link-label nodrag nopan${props.selected ? ' is-selected' : ''}`}
           style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
-          title={link ? '双击改名' : '文本的名字就是它的标题'}
+          title={link ? '双击改名' : (props.data!.hint ?? '文本的名字就是它的标题')}
           onDoubleClick={() => link && renaming.setEditing(props.id)}
         >
           {!editing ? (

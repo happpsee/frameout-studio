@@ -139,6 +139,7 @@ export function serializeWorkspace(project: WorkspaceSnapshot): WorkspaceSnapsho
     sequence: project.sequence
       .filter(shot => ids.has(shot.cardId))
       .map(({ id, cardId, duration }) => ({ id, cardId, duration })),
+    ...(project.film ? { film: { x: project.film.x, y: project.film.y } } : {}),
   };
 }
 export function serializeCheckpoints(checkpoints: ProjectCheckpoint[] = []): ProjectCheckpoint[] {
@@ -240,6 +241,9 @@ function restoreWorkspace(input: unknown): WorkspaceSnapshot {
         cardId: shot.cardId,
         duration: clamp(Number(shot.duration) || 4, 1, 15),
       })),
+    ...(Number.isFinite(saved.film?.x) && Number.isFinite(saved.film?.y)
+      ? { film: { x: saved.film!.x, y: saved.film!.y } }
+      : {}),
     camera: {
       x: Number.isFinite(saved.camera?.x) ? saved.camera!.x : fallback.camera.x,
       y: Number.isFinite(saved.camera?.y) ? saved.camera!.y : fallback.camera.y,

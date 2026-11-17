@@ -81,6 +81,8 @@ export interface WorkspaceSnapshot {
   cards: Card[];
   sequence: Shot[];
   notes?: Note[];
+  /** Where the film card sits on the canvas, once it has been moved. */
+  film?: { x: number; y: number };
 }
 export interface ProjectCheckpoint {
   id: string;

@@ -7,6 +7,7 @@ import { CARD_HEIGHT, CARD_WIDTH, clamp } from './canvas-camera';
 import { visualOrder } from './canvas-selection';
 import { useMultiSelection } from './useMultiSelection';
 import { useClipboardImport } from './useClipboardImport';
+import { FILM_HEIGHT, FILM_ID, FILM_WIDTH, filmPosition } from './film-node';
 
 type Point = { x: number; y: number };
 type Options = {
@@ -90,10 +91,15 @@ export function useCanvas(options: Options) {
       if (!live()) return;
       const viewport = latest.current.viewportRef.current;
       if (!viewport?.clientWidth) return;
-      const { cards, notes = [] } = latest.current.projectRef.current;
+      const project = latest.current.projectRef.current;
+      const { cards, notes = [] } = project;
+      const film = filmPosition(project);
       const boxes = [
         ...cards.map(c => ({ x: c.x, y: c.y, right: c.x + CARD_WIDTH, bottom: c.y + CARD_HEIGHT })),
         ...notes.map(n => ({ x: n.x, y: n.y, right: n.x + NOTE_WIDTH, bottom: n.y + NOTE_HEIGHT })),
+        ...(cards.length
+          ? [{ ...film, right: film.x + FILM_WIDTH, bottom: film.y + FILM_HEIGHT }]
+          : []),
       ];
       if (!boxes.length) return go({ x: 60, y: 20, zoom: 0.8 }, animate);
       const left = Math.min(...boxes.map(box => box.x));
@@ -130,6 +136,8 @@ export function useCanvas(options: Options) {
         const next = positions.get(card.id);
         if (next) Object.assign(card, { x: next.x, y: next.y });
       });
+      const film = positions.get(FILM_ID);
+      if (film) draft.film = { x: film.x, y: film.y };
     });
     const timeline = latest.current.viewportRef.current?.parentElement
       ?.querySelector('.fo-timeline')

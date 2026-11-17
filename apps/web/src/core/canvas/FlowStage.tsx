@@ -10,9 +10,10 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 import '@xyflow/react/dist/base.css';
-import type { Card, Consistency, Note } from '../../types';
+import type { Card, Consistency, Note, Shot } from '../../types';
 import { CARD_HEIGHT, CARD_WIDTH } from './canvas-camera';
 import { cardLinks, linkLabel, type CardLink } from './card-links';
+import { FILM_HEIGHT, FILM_ID, FILM_WIDTH, filmLinks, filmPosition } from './film-node';
 import LinkEdge, { RenameContext, type LinkEdgeType } from './LinkEdge';
 import { NOTE_HEIGHT, NOTE_WIDTH } from './notes';
 import { noteNodeId, textLinks } from './text-links';
@@ -21,8 +22,17 @@ import './FlowStage.css';
 
 type CardNode = Node<{ card: Card }, 'card'>;
 type NoteNode = Node<{ note: Note }, 'note'>;
-type Render = { card: (card: Card) => ReactNode; note: (note: Note) => ReactNode };
-const RenderContext = createContext<Render>({ card: () => null, note: () => null });
+type FilmNode = Node<Record<string, never>, 'film'>;
+type Render = {
+  card: (card: Card) => ReactNode;
+  note: (note: Note) => ReactNode;
+  film: () => ReactNode;
+};
+const RenderContext = createContext<Render>({
+  card: () => null,
+  note: () => null,
+  film: () => null,
+});
 
 function CardNodeView({ data }: NodeProps<CardNode>) {
   return (
@@ -42,7 +52,16 @@ function NoteNodeView({ data }: NodeProps<NoteNode>) {
     </>
   );
 }
-const nodeTypes = { card: CardNodeView, note: NoteNodeView };
+function FilmNodeView() {
+  return (
+    <>
+      {/* Shots only come in: a line from a video to here adds it to the film. */}
+      <Handle type="target" position={Position.Left} className="fo-handle" />
+      {useContext(RenderContext).film()}
+    </>
+  );
+}
+const nodeTypes = { card: CardNodeView, note: NoteNodeView, film: FilmNodeView };
 const edgeTypes = { link: LinkEdge };
 
 type Position2 = { x: number; y: number };
@@ -74,11 +93,32 @@ const CARD_HANDLES: NonNullable<CardNode['handles']> = [
 function toNodes(
   cards: Card[],
   notes: Note[],
+  film: Position2,
   dragging: Map<string, Position2>,
   chosen: string[],
   raised: ReadonlySet<string>,
-): (CardNode | NoteNode)[] {
+): (CardNode | NoteNode | FilmNode)[] {
   return [
+    {
+      id: FILM_ID,
+      type: 'film',
+      position: dragging.get(FILM_ID) ?? film,
+      data: {},
+      width: FILM_WIDTH,
+      height: FILM_HEIGHT,
+      measured: { width: FILM_WIDTH, height: FILM_HEIGHT },
+      handles: [
+        {
+          type: 'target',
+          position: Position.Left,
+          x: -DOT / 2,
+          y: (FILM_HEIGHT - DOT) / 2,
+          width: DOT,
+          height: DOT,
+        },
+      ],
+      selectable: false,
+    },
     ...cards.map((card): CardNode => ({
       id: card.id,
       type: 'card',
@@ -125,10 +165,21 @@ function toNodes(
 function toEdges(
   cards: Card[],
   notes: Note[],
+  sequence: Shot[],
   consistency: Consistency | undefined,
   picked: string | null,
 ): LinkEdgeType[] {
   return [
+    // Numbered by place in the film; deleting one takes that shot out.
+    ...filmLinks(sequence, cards).map(link => ({
+      id: link.id,
+      type: 'link' as const,
+      source: link.from,
+      target: FILM_ID,
+      data: { label: link.label, hint: '成片里的第几镜，在下方成片列表里调整顺序' },
+      className: 'fo-link is-film',
+      selected: link.id === picked,
+    })),
     ...cardLinks(cards).map(link => ({
       id: link.id,
       type: 'link' as const,
@@ -164,6 +215,8 @@ export default function FlowStage({
   canvas,
   cards,
   notes,
+  sequence,
+  film,
   selected,
   consistency,
   render,
@@ -176,6 +229,10 @@ export default function FlowStage({
   canvas: Canvas;
   cards: Card[];
   notes: Note[];
+  /** The film's shots, drawn as numbered lines into the film card. */
+  sequence: Shot[];
+  /** Where the film card was put, if it has been moved. */
+  film: Position2 | undefined;
   selected: string | null | undefined;
   /** The project's references: they come first, so the numbers on lines count them. */
   consistency: Consistency | undefined;
@@ -197,15 +254,16 @@ export default function FlowStage({
   const [renamingEdge, setRenamingEdge] = useState<string | null>(null);
   const [dragging, setDragging] = useState<Map<string, Position2>>(new Map());
   const chosen = selectedIds(canvas, selected);
+  const filmAt = useMemo(() => filmPosition({ film, cards }), [film, cards]);
   const nodes = useMemo(
-    () => toNodes(cards, notes, dragging, chosen, raised),
-    [cards, notes, dragging, chosen, raised],
+    () => toNodes(cards, notes, filmAt, dragging, chosen, raised),
+    [cards, notes, filmAt, dragging, chosen, raised],
   );
   const edges = useMemo(
-    () => toEdges(cards, notes, consistency, pickedEdge),
-    [cards, notes, consistency, pickedEdge],
+    () => toEdges(cards, notes, sequence, consistency, pickedEdge),
+    [cards, notes, sequence, consistency, pickedEdge],
   );
-  const onNodesChange = (changes: NodeChange<CardNode | NoteNode>[]) => {
+  const onNodesChange = (changes: NodeChange<CardNode | NoteNode | FilmNode>[]) => {
     const moves = changes.filter(change => change.type === 'position' && change.position);
     if (moves.length)
       setDragging(current => {
@@ -246,12 +304,14 @@ export default function FlowStage({
     if (other) {
       // Notes only give: a line can come out of one but not go into one.
       if (other === from || (other.startsWith('note:') && !backwards)) return;
+      if (from === FILM_ID && !backwards) return;
       if (backwards) onLink(other, from);
       else onLink(from, other);
       return;
     }
     const at = instance.current?.screenToFlowPosition({ x: point.clientX, y: point.clientY });
-    if (!target && at && !backwards) onDraft(from, { x: at.x, y: at.y - CARD_HEIGHT / 2 });
+    if (!target && at && !backwards && from !== FILM_ID)
+      onDraft(from, { x: at.x, y: at.y - CARD_HEIGHT / 2 });
   };
   const hand = canvas.tool === 'hand';
   const { instance, finishDrag, cameraMoved, cameraRested } = canvas.flow;

@@ -58,6 +58,12 @@
 .fo-flow .fo-link.is-first-frame path.react-flow__edge-path {
   stroke: var(--fo-accent);
 }
+.fo-flow .fo-link.is-film {
+  cursor: pointer;
+}
+.fo-flow .fo-link.is-film path.react-flow__edge-path {
+  stroke: var(--fo-text-2);
+}
 /* Labels above the lines, so double-clicking a label always reaches that label. */
 .fo-flow .react-flow__edgelabel-renderer {
   z-index: 1001;
