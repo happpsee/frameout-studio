@@ -58,7 +58,8 @@ export function useFileImport({
           origin.y += 35;
         }
       for (const [index, file] of valid.entries()) {
-        const src = URL.createObjectURL(file);
+        // A copy in memory: a URL made from the picked file breaks once that file is moved or deleted.
+        const src = URL.createObjectURL(new Blob([await file.arrayBuffer()], { type: file.type }));
         uploadedURLs.current.add(src);
         const card: Card = {
           id: uid(),
