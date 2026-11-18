@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import {
@@ -29,6 +29,10 @@ fs.mkdirSync(userData, { recursive: true, mode: 0o700 });
 app.setPath('userData', userData);
 
 const storage = createStorage(path.join(userData, 'storage'));
+// The frameout MCP server reads where the app listens and the token it must send from here
+// (docs/architecture/agent-plugin.md). A new token each launch; the file is removed on quit.
+const AGENT_FILE = path.join(userData, 'agent.json');
+const agentToken = randomBytes(32).toString('hex');
 // Kept apart from storage/ so the generic storage IPC cannot read or overwrite it.
 const secrets = createSecrets(path.join(userData, 'secrets'), safeStorage);
 const PROVIDER_CONSOLES = new Set(
@@ -96,6 +100,7 @@ function startBackend(): Promise<string> {
         FRAMEOUT_FRONTEND_DIST: frontend,
         // Turns the task engine on; the web deployment leaves it unset.
         FRAMEOUT_TASKS_DIR: path.join(userData, 'tasks'),
+        FRAMEOUT_AGENT_TOKEN: agentToken,
       },
       serviceName: '帧外服务',
       stdio: ['ignore', 'inherit', 'pipe'],
@@ -132,6 +137,9 @@ function startBackend(): Promise<string> {
       if (ready || failed || message?.type !== 'ready') return;
       try {
         const url = localOrigin(message.url);
+        fs.writeFileSync(AGENT_FILE, JSON.stringify({ url, token: agentToken, pid: process.pid }), {
+          mode: 0o600,
+        });
         ready = true;
         clearTimeout(timeout);
         resolve(url);
@@ -349,6 +357,7 @@ if (!app.requestSingleInstanceLock()) {
   });
   app.on('will-quit', () => {
     quitApproved = true;
+    fs.rmSync(AGENT_FILE, { force: true });
     backend?.kill();
   });
   app

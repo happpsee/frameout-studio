@@ -1,0 +1,5 @@
+{
+  "name": "frameout",
+  "version": "0.1.0",
+  "description": "让 Claude 直接操作帧外桌面版：读项目、看画面、导入素材、取帧（后续：生成、编排、导出）。"
+}

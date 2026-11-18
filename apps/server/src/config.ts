@@ -13,6 +13,8 @@ export interface Settings {
   queryTimeout: number;
   /** Desktop only: where the task engine keeps its tasks. Unset, the engine and /api/tasks are off. */
   tasksDirectory: string | null;
+  /** Desktop only: the secret an agent (the frameout MCP server) must send. Unset, /api/agent is off. */
+  agentToken: string | null;
 }
 
 // apps/server/{src,dist} → apps/web/dist
@@ -26,6 +28,7 @@ export function createSettings(overrides: Partial<Settings> = {}): Settings {
     imageTimeout: 300_000,
     queryTimeout: 90_000,
     tasksDirectory: null,
+    agentToken: null,
     ...overrides,
   };
 }
@@ -34,5 +37,6 @@ export function settingsFromEnv(env: NodeJS.ProcessEnv = process.env): Settings 
   return createSettings({
     ...(env.FRAMEOUT_FRONTEND_DIST && { frontendDist: path.resolve(env.FRAMEOUT_FRONTEND_DIST) }),
     ...(env.FRAMEOUT_TASKS_DIR && { tasksDirectory: path.resolve(env.FRAMEOUT_TASKS_DIR) }),
+    ...(env.FRAMEOUT_AGENT_TOKEN && { agentToken: env.FRAMEOUT_AGENT_TOKEN }),
   });
 }

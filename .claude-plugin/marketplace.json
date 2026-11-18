@@ -1,0 +1,11 @@
+{
+  "name": "frameout-local",
+  "owner": { "name": "帧外" },
+  "plugins": [
+    {
+      "name": "frameout",
+      "source": "./plugins/frameout",
+      "description": "让 Claude 直接操作帧外桌面版"
+    }
+  ]
+}

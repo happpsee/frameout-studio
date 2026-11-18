@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "frameout": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/server/frameout-mcp.mjs"]
+    }
+  }
+}

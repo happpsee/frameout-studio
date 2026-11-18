@@ -23,7 +23,7 @@ export function useFileImport({
   // Object URLs for imported files, revoked on unmount.
   const uploadedURLs = useRef(new Set<string>());
   const mounted = useRef(true);
-  const pendingImports = useRef(new Set<Promise<void>>());
+  const pendingImports = useRef(new Set<Promise<unknown>>());
   useEffect(() => {
     mounted.current = true;
     const urls = uploadedURLs.current;
@@ -34,11 +34,12 @@ export function useFileImport({
     };
   }, []);
   const readFiles = useCallback(
-    async (files: FileList, point?: { x: number; y: number }) => {
+    /** Resolves to the new cards' ids; none when nothing was imported. */
+    async (files: FileList | File[], point?: { x: number; y: number }): Promise<string[]> => {
       const valid = [...files].filter(file => /^(image|video)\//.test(file.type));
       if (!valid.length) {
         toast('请选择图片或视频文件');
-        return;
+        return [];
       }
       const cards: Card[] = [];
       const camera = projectRef.current.camera;
@@ -92,17 +93,18 @@ export function useFileImport({
           URL.revokeObjectURL(card.src);
           uploadedURLs.current.delete(card.src);
         });
-        return;
+        return [];
       }
       update(draft => {
         draft.cards.push(...cards);
         draft.selected = cards.at(-1)!.id;
       });
+      return cards.map(card => card.id);
     },
     [projectRef, viewportRef, update, toast],
   );
   const importFiles = useCallback(
-    (files: FileList, point?: { x: number; y: number }) => {
+    (files: FileList | File[], point?: { x: number; y: number }) => {
       const operation = readFiles(files, point);
       pendingImports.current.add(operation);
       const clear = () => {

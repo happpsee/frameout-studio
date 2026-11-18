@@ -5,6 +5,7 @@ import { useGeneration } from './generation/useGeneration';
 import { useEngineTasks } from './generation/useEngineTasks';
 import { useCanvas } from './canvas/useCanvas';
 import { useFileImport } from './canvas/useFileImport';
+import { useAgentCommands } from './agent/useAgentCommands';
 import { useCardActions } from './canvas/useCardActions';
 import { useStudioShortcuts } from './canvas/useStudioShortcuts';
 import { useSelectionLayout } from './canvas/useSelectionLayout';
@@ -175,6 +176,7 @@ export default function Studio({
   const generationActive = useRef(active);
   generationActive.current = active;
   const { importFiles, pendingImports } = useFileImport({ projectRef, viewportRef, update, toast });
+  useAgentCommands({ active: isActive, projectRef, importFiles, toast });
   useEffect(
     () =>
       desktopBridge()?.onBeforeClose(async () => {
@@ -812,7 +814,12 @@ export default function Studio({
 
       {!desktop && workflowPanel}
       {isActive && preview && (
-        <PreviewDialog items={preview.items} title={preview.title} onClose={closePreview} />
+        <PreviewDialog
+          items={preview.items}
+          title={preview.title}
+          sounds={preview.sounds}
+          onClose={closePreview}
+        />
       )}
       {isActive && consistencyOpen && (
         <ConsistencyDialog

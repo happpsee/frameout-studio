@@ -30,3 +30,6 @@ output/
 
 # Third-party projects cloned for reference (not part of this repo)
 /reference/
+
+# The frameout plugin's MCP bundle (pnpm --filter @frameout/mcp build)
+plugins/frameout/server/

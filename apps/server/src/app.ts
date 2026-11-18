@@ -7,6 +7,7 @@ import { createImageExecutor } from './engine/execute-image.ts';
 import { createVideoExecutor } from './engine/execute-video.ts';
 import { createFileStore } from './engine/file-store.ts';
 import { taskRoutes } from './engine/routes.ts';
+import { agentRoutes } from './agent/routes.ts';
 import { failure, relay, send, type FetchImpl } from './relay.ts';
 
 // The page is small and names the current build's files, so it is always revalidated.
@@ -60,6 +61,7 @@ export function createApp(
     const router = taskRoutes(engine, directory, engine.start());
     app.use('/api/tasks', express.json({ limit: settings.requestLimit }), router);
   }
+  if (settings.agentToken) app.use('/api/agent', agentRoutes(settings.agentToken));
   app.use('/api', (_req, res) => {
     send(res, failure(404, 'NOT_FOUND', '接口不存在'));
   });

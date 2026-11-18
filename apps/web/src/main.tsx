@@ -4,6 +4,7 @@ import App from './App';
 import { loadDesktopStorage } from './core/project/desktop-storage';
 import { loadRememberedKeys } from './shell/settings/secrets';
 import { desktopBridge } from './platform';
+import { connectAgentBridge } from './core/agent/agent-bridge';
 // The serif for Chinese headlines, used when the system has no Songti. It is split by character
 // range, so the browser fetches only the pieces a page shows, once, then keeps them cached.
 import '@fontsource/noto-serif-sc/400.css';
@@ -30,6 +31,8 @@ const render = () =>
   );
 
 if (desktop) {
+  // An agent (the frameout plugin for Claude Code) drives the open project through this.
+  connectAgentBridge();
   void Promise.all([loadDesktopStorage(), loadRememberedKeys()]).then(render, () => {
     root.render(
       <main style={{ padding: 32 }}>
