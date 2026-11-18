@@ -68,3 +68,22 @@ export function soundsBetween(sounds: SoundClip[], start: number, end: number) {
     ];
   });
 }
+
+/** What a drag on the sound track does: move the clip, or pull its start or end edge. */
+export type SoundDrag = 'move' | 'start' | 'end';
+
+/**
+ * The clip after dragging by `delta` seconds from where it was (`start`). Pulling the start
+ * edge keeps the sound under the same moment of the film: it trims the beginning of the clip.
+ */
+export function dragSound(start: SoundClip, kind: SoundDrag, delta: number): SoundClip {
+  if (kind === 'move') return { ...start, at: Math.max(0, start.at + delta) };
+  if (kind === 'end') return { ...start, length: Math.max(0.1, start.length + delta) };
+  const shift = Math.min(Math.max(delta, -start.from, -start.at), start.length - 0.1);
+  return {
+    ...start,
+    at: start.at + shift,
+    from: start.from + shift,
+    length: start.length - shift,
+  };
+}

@@ -27,7 +27,11 @@ export function useFilm({
   toast: (message: string) => void;
 }) {
   const [timelineOpen, setTimelineOpen] = useState(() => project.sequence.length > 0);
-  const [preview, setPreview] = useState<{ items: PreviewItem[]; title: string } | null>(null);
+  const [preview, setPreview] = useState<{
+    items: PreviewItem[];
+    title: string;
+    sounds: { clip: SoundClip; card: Card }[];
+  } | null>(null);
   const [exporting, setExporting] = useState<{
     items: PreviewItem[];
     skipped: number;
@@ -69,17 +73,20 @@ export function useFilm({
         : [];
     });
   }
+  // The film's sound clips whose video can be played.
+  function filmSounds() {
+    return (project.sounds ?? []).flatMap(clip => {
+      const card = project.cards.find(item => item.id === clip.cardId);
+      return card && !card.missingMedia && !pending(card) ? [{ clip, card }] : [];
+    });
+  }
   function openExport() {
     const items = sequenceItems();
     if (!items.length) {
       toast('成片里还没有可导出的镜头');
       return;
     }
-    const sounds = (project.sounds ?? []).flatMap(clip => {
-      const card = project.cards.find(item => item.id === clip.cardId);
-      return card && !card.missingMedia && !pending(card) ? [{ clip, card }] : [];
-    });
-    setExporting({ items, skipped: project.sequence.length - items.length, sounds });
+    setExporting({ items, skipped: project.sequence.length - items.length, sounds: filmSounds() });
   }
   function openPreview(card?: Card) {
     if (card && (card.missingMedia || pending(card))) {
@@ -91,7 +98,7 @@ export function useFilm({
       toast('先选择素材并加入成片，再开始预览');
       return;
     }
-    setPreview({ items, title: card?.name ?? project.title });
+    setPreview({ items, title: card?.name ?? project.title, sounds: card ? [] : filmSounds() });
   }
   function updateDuration(card: Card, duration: number) {
     const current = projectRef.current.cards.find(item => item.id === card.id);

@@ -88,3 +88,22 @@
 .fo-timeline:has(.fo-sound-lane) .fo-sequence-list {
   height: auto;
 }
+.fo-sound-clip {
+  cursor: grab;
+  touch-action: none;
+}
+.fo-sound-clip::before,
+.fo-sound-clip::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+}
+.fo-sound-clip::before {
+  left: 0;
+}
+.fo-sound-clip::after {
+  right: 0;
+}

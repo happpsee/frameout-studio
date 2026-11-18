@@ -1,20 +1,24 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import type { Card } from '../../types';
+import type { Card, SoundClip } from '../../types';
 import Icon from '../../ui/Icon';
 import { timeLabel } from './Sequence';
 import { closeOnBackdropClick } from '../../ui/dialog';
 import PromptCopy from './PromptCopy';
 import PreviewSoundButton from './PreviewSoundButton';
 import { loadPreviewMuted, playPreviewClip, savePreviewMuted } from './preview-sound';
+import { usePreviewSounds } from './usePreviewSounds';
 
 export type PreviewItem = { card: Card; duration: number };
 export default function PreviewDialog({
   items,
   title,
+  sounds = [],
   onClose,
 }: {
   items: PreviewItem[];
   title: string;
+  /** The film's sound track; empty when previewing one card. */
+  sounds?: { clip: SoundClip; card: Card }[];
   onClose: () => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -78,9 +82,11 @@ export default function PreviewDialog({
     else element.addEventListener('loadedmetadata', seek, { once: true });
     return () => element.removeEventListener('loadedmetadata', seek);
   }, [card.id, playing, offset]);
+  // A sound clip that replaces the shots' own sound silences the shot while it plays.
+  const replaced = usePreviewSounds(sounds, time, playing, muted);
   useEffect(() => {
-    if (video.current) video.current.muted = muted;
-  }, [muted, card.id]);
+    if (video.current) video.current.muted = muted || replaced;
+  }, [muted, replaced, card.id]);
   function seek(value: number) {
     timeRef.current = value;
     setTime(value);
@@ -123,7 +129,7 @@ export default function PreviewDialog({
             ref={video}
             src={card.src}
             poster={card.poster}
-            muted={muted}
+            muted={muted || replaced}
             playsInline
             preload="auto"
             style={{ objectPosition: card.crop, objectFit: card.provider ? 'contain' : 'cover' }}
