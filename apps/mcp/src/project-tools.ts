@@ -1,7 +1,10 @@
 // Tools that open projects and change them: lines, notes, consistency, the film and its sound.
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { call } from './app-client.ts';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { AppError, call, download } from './app-client.ts';
 
 type Reply = { content: { type: 'text'; text: string }[] };
 type Safely = <A>(run: (args: A) => Promise<Reply>) => (args: A) => Promise<Reply>;
@@ -54,5 +57,51 @@ ${OPERATIONS}`,
     safely(async (args: { version: string; operations: unknown[] }) =>
       text(await call('edit_project', args)),
     ),
+  );
+
+  server.registerTool(
+    'export_film',
+    {
+      title: '导出成片',
+      description:
+        '按成片顺序把镜头和音频轨导出成 MP4，写到本机（默认桌面）。在帧外里渲染，可能要一两分钟；完成后返回文件路径、大小和声音情况。',
+      inputSchema: {
+        ratio: z.enum(['9:16', '16:9', '1:1']).optional().describe('默认 9:16'),
+        quality: z.enum(['720p', '1080p']).optional().describe('默认 1080p'),
+        path: z
+          .string()
+          .optional()
+          .describe('保存到哪里（绝对路径，.mp4）；不填存到桌面，用项目名命名'),
+      },
+    },
+    safely(async (args: { ratio?: string; quality?: string; path?: string }) => {
+      const started = (await call('export_film', { ratio: args.ratio, quality: args.quality })) as {
+        exportId: string;
+      };
+      const deadline = Date.now() + 20 * 60_000;
+      for (;;) {
+        const run = (await call('export_status', { exportId: started.exportId })) as {
+          status: string;
+          error?: string;
+          fileId?: string;
+          fileName?: string;
+          bytes?: number;
+          sound?: string;
+        };
+        if (run.status === 'failed') throw new AppError('EXPORT_FAILED', run.error ?? '导出失败');
+        if (run.status === 'done') {
+          const target = args.path ?? path.join(os.homedir(), 'Desktop', run.fileName!);
+          await fs.mkdir(path.dirname(target), { recursive: true });
+          await fs.writeFile(target, await download(run.fileId!), { flag: 'wx' }).catch(error => {
+            if (error.code === 'EEXIST')
+              throw new AppError('FILE_EXISTS', `已有同名文件：${target}，换个 path`);
+            throw error;
+          });
+          return text({ path: target, bytes: run.bytes, sound: run.sound });
+        }
+        if (Date.now() > deadline) throw new AppError('EXPORT_TIMEOUT', '导出超过 20 分钟还没完成');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }),
   );
 }

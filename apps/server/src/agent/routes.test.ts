@@ -51,3 +51,19 @@ test("a call reaches the window and the window's answer comes back to the agent"
     await reader.cancel();
   });
 });
+
+test('a film the window hands over reaches the agent with the token, once', async () => {
+  await withServer(async base => {
+    const posted = await fetch(`${base}/api/agent/bridge/files`, {
+      method: 'POST',
+      headers: { origin: base, 'content-type': 'video/mp4' },
+      body: new Uint8Array([1, 2, 3]),
+    });
+    const { fileId } = (await posted.json()) as { fileId: string };
+    const auth = { authorization: `Bearer ${TOKEN}` };
+    expect((await fetch(`${base}/api/agent/files/${fileId}`)).status).toBe(401);
+    const first = await fetch(`${base}/api/agent/files/${fileId}`, { headers: auth });
+    expect([...new Uint8Array(await first.arrayBuffer())]).toEqual([1, 2, 3]);
+    expect((await fetch(`${base}/api/agent/files/${fileId}`, { headers: auth })).status).toBe(404);
+  });
+});

@@ -20,6 +20,7 @@
     "@radix-ui/react-dropdown-menu": "^2.2.1",
     "@radix-ui/react-select": "^2.4.1",
     "@xyflow/react": "12.12.1",
+    "fft.js": "4.0.4",
     "immer": "^10.2.0",
     "mediabunny": "^1.65.2",
     "react": "^19.2.0",

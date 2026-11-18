@@ -81,3 +81,15 @@ export async function upload(data: Buffer, type: string) {
   if (!body.fileId) throw new AppError('FAILED', '文件上传失败');
   return body.fileId;
 }
+
+/** Fetches a file the app handed over (an exported film), once. */
+export async function download(fileId: string) {
+  const { url, token } = await connection();
+  const response = await fetch(new URL(`/api/agent/files/${encodeURIComponent(fileId)}`, url), {
+    headers: { authorization: `Bearer ${token}` },
+  }).catch(() => {
+    throw new AppError('APP_NOT_RUNNING', '连不上帧外，请确认帧外桌面版正在运行');
+  });
+  if (!response.ok) throw new AppError('NOT_FOUND', '成片文件已过期，请重新导出');
+  return Buffer.from(await response.arrayBuffer());
+}

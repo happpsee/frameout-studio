@@ -54,16 +54,45 @@ server.registerTool(
   {
     title: '查看卡片画面',
     description:
-      '看一张卡片的画面：图片返回缩小后的原图；视频返回 8 帧拼图（4×2，按时间从左到右、从上到下），并说明每帧取自第几秒。用来检查生成结果、对比参考。',
-    inputSchema: { cardId: z.string().describe('卡片 id，来自 get_project') },
+      '看一张卡片的画面：图片返回缩小后的原图；视频返回按时间排列的帧拼图（从左到右、从上到下），并写明每帧取自第几秒。默认整段取 8 帧，只够看个大概；检查生成结果时用 frames: 18–24 密集看，或用 from/to 盯住某一段放大看（比如动作发生的那 2 秒、两段的接缝）。',
+    inputSchema: {
+      cardId: z.string().describe('卡片 id，来自 get_project'),
+      from: z.number().optional().describe('视频：从第几秒开始看'),
+      to: z.number().optional().describe('视频：看到第几秒'),
+      frames: z.number().optional().describe('视频：取多少帧，1–24，默认 8'),
+    },
     annotations: { readOnlyHint: true },
   },
-  safely(async ({ cardId }: { cardId: string }) => {
-    const result = (await call('view_card', { cardId })) as { data: string; note: string };
+  safely(async (args: { cardId: string; from?: number; to?: number; frames?: number }) => {
+    const result = (await call('view_card', args)) as { data: string; note: string };
     return {
       content: [
         { type: 'image' as const, data: result.data, mimeType: 'image/jpeg' },
         { type: 'text' as const, text: result.note },
+      ],
+    };
+  }),
+);
+
+server.registerTool(
+  'check_video',
+  {
+    title: '检查视频的画面和声音',
+    description:
+      '量出一段视频里看帧图看不出、也听不到的问题，生成的视频在汇报前都要过一遍：still 是画面变化很小超过 1 秒的时间段（定格、动作没演）；镜头本身在推拉摇移时整幅画面都在变，测不出角色僵住，那几秒要用 view_card 密集看帧；changePerQuarterSecond 是每 0.25 秒的画面变化量；sound 里有峰值、削波样本数、每 0.5 秒的响度，以及每 0.5 秒高频（5kHz 以上）占比，占比突然掉十几 dB 说明那段声音发闷。同时返回一张频谱图（横轴时间、纵轴 0–12kHz）：一片均匀的噪声是哈气、风雨这类声音，一条条横纹是人声或叫声，用来核对声音和画面里的动作是不是发生在同一时刻。台词内容看不出来，要请用户听。',
+    inputSchema: { cardId: z.string().describe('视频卡片 id') },
+    annotations: { readOnlyHint: true },
+  },
+  safely(async ({ cardId }: { cardId: string }) => {
+    const { spectrogram, ...report } = (await call('check_video', { cardId })) as {
+      spectrogram?: string;
+    };
+    return {
+      content: [
+        ...(spectrogram
+          ? [{ type: 'image' as const, data: spectrogram, mimeType: 'image/jpeg' }]
+          : []),
+        { type: 'text' as const, text: JSON.stringify(report) },
       ],
     };
   }),

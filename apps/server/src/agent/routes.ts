@@ -49,24 +49,32 @@ export function agentRoutes(token: string, bridge = new AgentBridge()): express.
     }
   });
 
-  router.post(
-    '/files',
-    agentOnly,
-    express.raw({ type: () => true, limit: FILE_LIMIT }),
-    (req, res) => {
-      if (!Buffer.isBuffer(req.body) || !req.body.length)
-        return void send(res, failure(400, 'INVALID_REQUEST', '文件是空的'));
-      const id = randomUUID();
-      const timer = setTimeout(() => files.delete(id), FILE_TTL);
-      timer.unref();
-      files.set(id, {
-        data: req.body,
-        type: req.headers['content-type'] || 'application/octet-stream',
-        timer,
-      });
-      ok(res, { fileId: id });
-    },
-  );
+  // Files pass both ways: the agent hands media to the window (import), and the window hands an
+  // exported film to the agent. Each is kept until fetched once, or for a few minutes.
+  const keep: RequestHandler = (req, res) => {
+    if (!Buffer.isBuffer(req.body) || !req.body.length)
+      return void send(res, failure(400, 'INVALID_REQUEST', '文件是空的'));
+    const id = randomUUID();
+    const timer = setTimeout(() => files.delete(id), FILE_TTL);
+    timer.unref();
+    files.set(id, {
+      data: req.body,
+      type: req.headers['content-type'] || 'application/octet-stream',
+      timer,
+    });
+    ok(res, { fileId: id });
+  };
+  const giveOnce: RequestHandler = (req, res) => {
+    const file = files.get(String(req.params.id));
+    if (!file) return void send(res, failure(404, 'NOT_FOUND', '文件已过期，请重新导入'));
+    clearTimeout(file.timer);
+    files.delete(String(req.params.id));
+    res.set({ 'content-type': file.type, 'cache-control': 'no-store' }).send(file.data);
+  };
+  const raw = express.raw({ type: () => true, limit: FILE_LIMIT });
+  router.post('/files', agentOnly, raw, keep);
+  router.get('/files/:id', agentOnly, giveOnce);
+  router.post('/bridge/files', windowOnly, raw, keep);
 
   router.get('/bridge/events', windowOnly, (_req, res) => {
     res.writeHead(200, {
@@ -85,13 +93,7 @@ export function agentRoutes(token: string, bridge = new AgentBridge()): express.
     else send(res, failure(404, 'NOT_FOUND', '这个操作已经超时或不存在'));
   });
 
-  router.get('/bridge/files/:id', windowOnly, (req, res) => {
-    const file = files.get(String(req.params.id));
-    if (!file) return void send(res, failure(404, 'NOT_FOUND', '文件已过期，请重新导入'));
-    clearTimeout(file.timer);
-    files.delete(String(req.params.id));
-    res.set({ 'content-type': file.type, 'cache-control': 'no-store' }).send(file.data);
-  });
+  router.get('/bridge/files/:id', windowOnly, giveOnce);
 
   return router;
 }

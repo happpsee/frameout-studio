@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import type { ExportAudio, ExportShot, ExportSize } from './export-video';
+import type { ExportAudio, ExportShot } from './export-video';
 import type { Card, SoundClip } from '../../types';
 import { exportAudioSupported, exportSupported } from './export-support';
 import {
@@ -8,6 +8,7 @@ import {
   exportFileName,
   loadExportPreferences,
   saveExportPreferences,
+  SIZES,
   type ExportQuality,
   type ExportRatio,
 } from './export-preferences';
@@ -16,11 +17,6 @@ import Select from '../../ui/Select';
 import { timeLabel } from './Sequence';
 import './ExportDialog.css';
 
-const SIZES: Record<ExportRatio, Record<ExportQuality, ExportSize>> = {
-  '16:9': { '720p': { width: 1280, height: 720 }, '1080p': { width: 1920, height: 1080 } },
-  '9:16': { '720p': { width: 720, height: 1280 }, '1080p': { width: 1080, height: 1920 } },
-  '1:1': { '720p': { width: 720, height: 720 }, '1080p': { width: 1080, height: 1080 } },
-};
 type Phase =
   | { kind: 'idle'; message?: string }
   | { kind: 'running'; progress: number }

@@ -8,6 +8,15 @@ export const EXPORT_RATIOS = ['16:9', '9:16', '1:1'] as const;
 export const EXPORT_QUALITIES = ['720p', '1080p'] as const;
 export type ExportRatio = (typeof EXPORT_RATIOS)[number];
 export type ExportQuality = (typeof EXPORT_QUALITIES)[number];
+/** Pixel size of each ratio and quality. */
+export const SIZES: Record<
+  ExportRatio,
+  Record<ExportQuality, { width: number; height: number }>
+> = {
+  '16:9': { '720p': { width: 1280, height: 720 }, '1080p': { width: 1920, height: 1080 } },
+  '9:16': { '720p': { width: 720, height: 1280 }, '1080p': { width: 1080, height: 1920 } },
+  '1:1': { '720p': { width: 720, height: 720 }, '1080p': { width: 1080, height: 1080 } },
+};
 interface ExportPreferences {
   ratio: ExportRatio;
   quality: ExportQuality;

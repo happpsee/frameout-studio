@@ -3,8 +3,10 @@ import type { AIConfig, ProjectState, UpdateProject } from '../../types';
 import { STEP_X } from '../canvas/canvas-layout';
 import { AgentCommandError, setAgentHandler } from './agent-bridge';
 import { frameFile, viewCard } from './media-view';
+import { checkVideo } from './video-check';
 import { projectSummary } from './project-summary';
 import { applyOperations, projectVersion } from './edit-project';
+import { exportStatus, startExport } from './export-command';
 import { cardStatus, generateImage, generateVideo, type GenerateDeps } from './generate-commands';
 
 type Options = {
@@ -50,6 +52,10 @@ export function useAgentCommands(options: Options) {
           return generateImage(deps(), args);
         case 'generate_video':
           return generateVideo(deps(), args);
+        case 'export_film':
+          return startExport(projectRef.current, args);
+        case 'export_status':
+          return exportStatus(args.exportId);
         case 'card_status':
           return cardStatus(projectRef.current, args.cardId);
         case 'get_project':
@@ -77,7 +83,13 @@ export function useAgentCommands(options: Options) {
           return { version: projectVersion(draft), results };
         }
         case 'view_card':
-          return viewCard(card(args.cardId));
+          return viewCard(card(args.cardId), {
+            from: number(args.from),
+            to: number(args.to),
+            frames: number(args.frames),
+          });
+        case 'check_video':
+          return checkVideo(card(args.cardId));
         case 'import_media': {
           const response = await fetch(`/api/agent/bridge/files/${String(args.fileId)}`);
           if (!response.ok) throw new AgentCommandError('NO_FILE', '文件已过期，请重新导入');
