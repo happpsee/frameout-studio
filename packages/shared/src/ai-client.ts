@@ -502,12 +502,35 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
   async function submitVideo({
     prompt: text,
     reference,
+    references,
     signal,
-  }: { prompt?: string; reference?: string; signal?: AbortSignal } = {}): Promise<VideoResult> {
+  }: {
+    prompt?: string;
+    reference?: string;
+    /**
+     * Ark "全模态参考": images and audio clips the prompt names as @图像N / @音频N, in this
+     * order. It replaces a first frame; the two cannot be sent together.
+     */
+    references?: { images?: string[]; audios?: string[] };
+    signal?: AbortSignal;
+  } = {}): Promise<VideoResult> {
     requireVideo();
     const prompt = required(text, '视频提示词', 32000);
     if (reference && !safeMediaUrl(reference, true))
       throw new AIError('首帧需为公开 HTTPS 图片或 Base64 图片', { code: 'CONFIG_REFERENCE' });
+    const images = references?.images ?? [];
+    const audios = references?.audios ?? [];
+    const referenced = images.length + audios.length > 0;
+    if (referenced && (reference || provider !== 'ark'))
+      throw new AIError('参考图和参考音频只支持火山方舟，且不能和首帧同时使用', {
+        code: 'CONFIG_REFERENCE',
+      });
+    if (images.length > 30 || audios.length > 10)
+      throw new AIError('参考图最多 30 张，参考音频最多 10 段', { code: 'CONFIG_REFERENCE' });
+    if (images.some(image => !safeMediaUrl(image, true)))
+      throw new AIError('参考图需为公开 HTTPS 图片或 Base64 图片', { code: 'CONFIG_REFERENCE' });
+    if (audios.some(audio => !/^data:audio\/(?:wav|mp3|mpeg);base64,[A-Za-z0-9+/=]+$/.test(audio)))
+      throw new AIError('参考音频需为 Base64 的 wav 或 mp3', { code: 'CONFIG_REFERENCE' });
     let body: ProviderJson;
     if (provider === 'ark') {
       body = {
@@ -524,6 +547,10 @@ function createClient(config: Partial<AIConfig> = {}, options: ClientOptions = {
           image_url: { url: reference },
           role: 'first_frame',
         });
+      for (const url of images)
+        body.content.push({ type: 'image_url', image_url: { url }, role: 'reference_image' });
+      for (const url of audios)
+        body.content.push({ type: 'audio_url', audio_url: { url }, role: 'reference_audio' });
     } else {
       const portrait = videoRatio === '9:16';
       const size =

@@ -43,6 +43,11 @@ export interface EngineVideoRequest {
   prompt: string;
   /** The first frame, as a data URL. */
   reference?: string;
+  /** Instead of a first frame (Ark only): reference images and audio, as data URLs. */
+  images?: string[];
+  audios?: string[];
+  /** Cards the references came from, so the canvas draws lines from them. */
+  referenceIds?: string[];
   source?: Card;
   config: AIConfig;
   at: { x: number; y: number };
@@ -141,6 +146,7 @@ function videoPlaceholder(request: EngineVideoRequest, cardId: string, taskId: s
     name: request.text.slice(0, 18) + ' · 视频',
     prompt: request.text,
     sourceId: request.source?.id ?? '',
+    ...(request.referenceIds?.length ? { referenceIds: request.referenceIds } : {}),
     src: request.source?.src || PENDING_MEDIA,
     kind: 'image',
     provider: config.provider,
@@ -297,6 +303,8 @@ export function useEngineTasks({ projectId, update }: Options) {
           request: {
             prompt: request.prompt,
             ...(request.reference ? { reference: request.reference } : {}),
+            ...(request.images?.length ? { images: request.images } : {}),
+            ...(request.audios?.length ? { audios: request.audios } : {}),
             ratio: config.videoRatio,
             duration: Number(config.duration || preset.videoDurations[0] || 5),
             resolution: config.resolution,

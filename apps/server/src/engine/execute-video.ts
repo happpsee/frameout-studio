@@ -19,6 +19,9 @@ export interface VideoRequest {
   prompt: string;
   /** First frame, as a data URL or a public HTTPS URL. */
   reference?: string;
+  /** Instead of a first frame: reference images and audio, named @图像N / @音频N in the prompt. */
+  images?: string[];
+  audios?: string[];
   ratio: string;
   duration: number;
   resolution: string;
@@ -77,7 +80,12 @@ export function createVideoExecutor({
         return { status: 'failed', error: { code: 'INVALID_TASK', message: '任务缺少生成内容' } };
       try {
         const submitted = await withRetry(
-          () => client.submitVideo({ prompt: request.prompt, reference: request.reference }),
+          () =>
+            client.submitVideo({
+              prompt: request.prompt,
+              reference: request.reference,
+              references: { images: request.images, audios: request.audios },
+            }),
           { retries: 2, retryable: notCarriedOut },
         );
         jobId = submitted.id;

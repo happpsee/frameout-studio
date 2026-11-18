@@ -176,7 +176,14 @@ export default function Studio({
   const generationActive = useRef(active);
   generationActive.current = active;
   const { importFiles, pendingImports } = useFileImport({ projectRef, viewportRef, update, toast });
-  useAgentCommands({ active: isActive, projectRef, importFiles, toast });
+  useAgentCommands({
+    active: isActive,
+    projectRef,
+    importFiles,
+    toast,
+    engine: engineTasks,
+    config: () => generation.config,
+  });
   useEffect(
     () =>
       desktopBridge()?.onBeforeClose(async () => {

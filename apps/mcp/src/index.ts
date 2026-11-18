@@ -110,4 +110,81 @@ server.registerTool(
   ),
 );
 
+const SPEND =
+  '会花钱：提交后就计费、不能取消。先用 dryRun: true 报价，告诉用户价钱并得到同意再正式生成。';
+
+server.registerTool(
+  'generate_image',
+  {
+    title: '生成图片',
+    description: `用 Seedream 生成一张图片，放到画布上，立刻返回新卡片 id（之后用 wait_card 等它完成）。references 里的图片按顺序是提示词里的「图1、图2…」，画布上会从它们连线过来。${SPEND}`,
+    inputSchema: {
+      prompt: z.string(),
+      references: z
+        .array(z.string())
+        .optional()
+        .describe('参考图片的卡片 id，按顺序对应 图1、图2…'),
+      size: z
+        .string()
+        .optional()
+        .describe('如 2K、1584x2816（9:16）、2816x1584（16:9）；不填用界面当前设置'),
+      x: z.number().optional(),
+      y: z.number().optional(),
+      dryRun: z.boolean().optional().describe('只报价，不生成'),
+    },
+  },
+  safely(async (args: Record<string, unknown>) => text(await call('generate_image', args))),
+);
+
+server.registerTool(
+  'generate_video',
+  {
+    title: '生成视频',
+    description: `用 Seedance 生成视频，立刻返回新卡片 id（之后用 wait_card 等它完成，通常几分钟）。两种用法二选一：
+1. firstFrame：一张图片作为首帧；
+2. 全模态参考（方舟 Seedance 2.5）：images 最多 30 张参考图，按顺序是提示词里的「@图像1、@图像2…」；sounds 最多 10 段从视频里截的声音（每段 2–30 秒，总共不超过 30 秒），按顺序是「@音频1…」。提示词里写清楚谁参考哪张、以哪张为首帧（如「以 @图像3 作为首帧，耄耋参考 @图像1」）。本地视频不能直接作为参考视频，需要的话取几帧当参考图、截声音当参考音频。
+${SPEND}`,
+    inputSchema: {
+      prompt: z.string(),
+      firstFrame: z.string().optional().describe('首帧图片的卡片 id'),
+      images: z.array(z.string()).optional().describe('参考图片的卡片 id'),
+      sounds: z
+        .array(z.object({ cardId: z.string(), from: z.number(), length: z.number() }))
+        .optional()
+        .describe('从视频卡片截取的参考声音：从第 from 秒起，长 length 秒'),
+      duration: z.number().optional().describe('秒数，4–15；不填用界面当前设置'),
+      ratio: z.string().optional().describe('9:16、16:9、1:1 等'),
+      resolution: z.string().optional().describe('480p、720p、1080p'),
+      x: z.number().optional(),
+      y: z.number().optional(),
+      dryRun: z.boolean().optional().describe('只报价，不生成'),
+    },
+  },
+  safely(async (args: Record<string, unknown>) => text(await call('generate_video', args))),
+);
+
+const RUNNING = new Set(['submitting', 'queued', 'running']);
+
+server.registerTool(
+  'wait_card',
+  {
+    title: '等生成完成',
+    description:
+      '等一张正在生成的卡片结束，返回 ready（完成）、failed（失败，附原因）或仍在进行（超时）。完成后用 view_card 检查画面。',
+    inputSchema: {
+      cardId: z.string(),
+      timeoutSeconds: z.number().optional().describe('最多等多久，默认 600 秒'),
+    },
+    annotations: { readOnlyHint: true },
+  },
+  safely(async ({ cardId, timeoutSeconds = 600 }: { cardId: string; timeoutSeconds?: number }) => {
+    const deadline = Date.now() + timeoutSeconds * 1000;
+    for (;;) {
+      const status = (await call('card_status', { cardId })) as { status: string };
+      if (!RUNNING.has(status.status) || Date.now() > deadline) return text(status);
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+  }),
+);
+
 await server.connect(new StdioServerTransport());

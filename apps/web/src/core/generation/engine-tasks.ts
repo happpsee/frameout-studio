@@ -63,6 +63,8 @@ export interface VideoTaskInput extends Omit<ImageTaskInput, 'request'> {
   request: {
     prompt: string;
     reference?: string;
+    images?: string[];
+    audios?: string[];
     ratio: string;
     duration: number;
     resolution: string;

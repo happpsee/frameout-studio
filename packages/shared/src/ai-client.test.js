@@ -129,6 +129,28 @@ test('Ark video: submit with a first frame, then poll until the video is ready',
   assert.equal(done.src, 'https://media.provider.example/video.mp4?expires=123');
 });
 
+test('Ark video with reference images and audio: each sent with its role, at the chosen ratio', async () => {
+  const mock = captureFetch(reply({ id: 'cgt-fixture' }));
+  const client = createClient(configuration('ark', { videoRatio: '9:16' }), mock);
+  const audio = 'data:audio/wav;base64,UklGRg==';
+  await client.submitVideo({
+    prompt: '@图像1 哈气，声音参考 @音频1',
+    references: { images: [reference], audios: [audio] },
+  });
+  const body = mock.calls[0].body.body;
+  assert.equal(body.ratio, '9:16');
+  assert.deepEqual(body.content.slice(1), [
+    { type: 'image_url', image_url: { url: reference }, role: 'reference_image' },
+    { type: 'audio_url', audio_url: { url: audio }, role: 'reference_audio' },
+  ]);
+  // A first frame and references are different Ark modes; nothing is sent for both.
+  await assert.rejects(
+    client.submitVideo({ prompt: 'x', reference, references: { images: [reference] } }),
+    codeIs('CONFIG_REFERENCE'),
+  );
+  assert.equal(mock.calls.length, 1);
+});
+
 test('compatible video: submit directly, then download the finished file', async () => {
   const mock = captureFetch(
     reply({ id: 'vendor-fixture', status: 'queued' }),

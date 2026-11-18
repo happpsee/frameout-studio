@@ -59,7 +59,9 @@ export function createApp(
       execute: (task, execution) => (task.kind === 'video' ? video : image)(task, execution),
     });
     const router = taskRoutes(engine, directory, engine.start());
-    app.use('/api/tasks', express.json({ limit: settings.requestLimit }), router);
+    // A video with reference images and audio may send up to Ark's 64 MB.
+    const limit = Math.max(settings.requestLimit, 64 * 1024 * 1024);
+    app.use('/api/tasks', express.json({ limit }), router);
   }
   if (settings.agentToken) app.use('/api/agent', agentRoutes(settings.agentToken));
   app.use('/api', (_req, res) => {

@@ -47,7 +47,24 @@ function readVideoRequest(value: unknown): VideoRequest {
   )
     throw invalid('生成参数不正确');
   const { prompt, ratio, resolution, duration, reference } = value;
-  return { prompt, ratio, resolution, duration, ...(reference ? { reference } : {}) };
+  const strings = (list: unknown) =>
+    list === undefined
+      ? []
+      : Array.isArray(list) && list.every(item => typeof item === 'string')
+        ? list
+        : null;
+  const images = strings(value.images);
+  const audios = strings(value.audios);
+  if (!images || !audios) throw invalid('参考素材格式不正确');
+  return {
+    prompt,
+    ratio,
+    resolution,
+    duration,
+    ...(reference ? { reference } : {}),
+    ...(images.length ? { images } : {}),
+    ...(audios.length ? { audios } : {}),
+  };
 }
 
 /** Turns the errors a caller can cause into replies; anything else goes to the app's error handler. */
