@@ -3,6 +3,7 @@ import { HashRouter, MemoryRouter, Navigate, Route, Routes } from 'react-router'
 import Landing from './shell/landing/Landing';
 import Lobby from './shell/lobby/Lobby';
 import Studio from './core/Studio';
+import { useAppCommands } from './core/agent/useAppCommands';
 import { flushDesktopStorage } from './core/project/desktop-storage';
 import { desktopBridge, isDesktop } from './platform';
 import {
@@ -36,6 +37,8 @@ function Pages() {
     showIntro,
     leaveIntro,
   } = useProjectRoute();
+  // An agent can list projects and open one (docs/architecture/agent-plugin.md).
+  useAppCommands(openProject);
   useEffect(() => {
     // Record the first display, including when the user quits before entering the canvas.
     if (isDesktop() && view === 'intro') markIntroSeen();

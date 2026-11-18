@@ -14,23 +14,46 @@ export class AgentCommandError extends Error {
   }
 }
 
-let current: AgentHandler | null = null;
+let current: { handler: AgentHandler; projectId: string } | null = null;
+let app: AgentHandler | null = null;
+/** Commands about the app itself, answered whether or not a project is open. */
+const APP_COMMANDS = new Set(['list_projects', 'open_project']);
 
 /** The open project takes the agent's commands until the returned function is called. */
-export function setAgentHandler(handler: AgentHandler) {
-  current = handler;
+export function setAgentHandler(handler: AgentHandler, projectId: string) {
+  const entry = { handler, projectId };
+  current = entry;
   return () => {
-    if (current === handler) current = null;
+    if (current === entry) current = null;
   };
+}
+
+/** The app shell answers list_projects and open_project. */
+export function setAppHandler(handler: AgentHandler) {
+  app = handler;
+  return () => {
+    if (app === handler) app = null;
+  };
+}
+
+/** Resolves once the project with this id is open and taking commands. */
+export async function projectReady(projectId: string, timeoutMs = 20_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (current?.projectId !== projectId) {
+    if (Date.now() > deadline) throw new AgentCommandError('OPEN_TIMEOUT', '项目没能及时打开');
+    await new Promise(resolve => setTimeout(resolve, 150));
+  }
 }
 
 async function answer(id: string, name: string, args: unknown) {
   let body: unknown;
   try {
-    if (!current) throw new AgentCommandError('NO_PROJECT', '请先在帧外打开一个项目');
     const input =
       typeof args === 'object' && args !== null ? (args as Record<string, unknown>) : {};
-    body = { result: await current(name, input) };
+    const handler = APP_COMMANDS.has(name) ? app : current?.handler;
+    if (!handler)
+      throw new AgentCommandError('NO_PROJECT', '没有打开的项目，请先用 open_project 打开一个');
+    body = { result: await handler(name, input) };
   } catch (error) {
     body = {
       error: {

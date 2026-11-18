@@ -6,6 +6,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
 import { AppError, call, upload } from './app-client.ts';
+import { registerProjectTools } from './project-tools.ts';
 
 const MEDIA_TYPES: Record<string, string> = {
   '.png': 'image/png',
@@ -162,6 +163,8 @@ ${SPEND}`,
   },
   safely(async (args: Record<string, unknown>) => text(await call('generate_video', args))),
 );
+
+registerProjectTools(server, safely);
 
 const RUNNING = new Set(['submitting', 'queued', 'running']);
 

@@ -1,15 +1,18 @@
 import { useEffect, useRef, type RefObject } from 'react';
-import type { AIConfig, ProjectState } from '../../types';
+import type { AIConfig, ProjectState, UpdateProject } from '../../types';
 import { STEP_X } from '../canvas/canvas-layout';
 import { AgentCommandError, setAgentHandler } from './agent-bridge';
 import { frameFile, viewCard } from './media-view';
 import { projectSummary } from './project-summary';
+import { applyOperations, projectVersion } from './edit-project';
 import { cardStatus, generateImage, generateVideo, type GenerateDeps } from './generate-commands';
 
 type Options = {
   /** Only the project in front takes commands. */
   active: boolean;
+  projectId: string;
   projectRef: RefObject<ProjectState>;
+  update: UpdateProject;
   importFiles: (files: File[], point?: { x: number; y: number }) => Promise<string[]>;
   toast: (message: string) => void;
   /** The desktop task engine; null on the web. */
@@ -40,7 +43,7 @@ export function useAgentCommands(options: Options) {
       return found;
     };
     return setAgentHandler(async (name, args) => {
-      const { projectRef, importFiles, toast, engine, config } = latest.current;
+      const { projectRef, update, importFiles, toast, engine, config } = latest.current;
       const deps = () => ({ project: projectRef.current, engine, config: config(), toast });
       switch (name) {
         case 'generate_image':
@@ -50,7 +53,29 @@ export function useAgentCommands(options: Options) {
         case 'card_status':
           return cardStatus(projectRef.current, args.cardId);
         case 'get_project':
-          return projectSummary(projectRef.current);
+          return {
+            version: projectVersion(projectRef.current),
+            ...projectSummary(projectRef.current),
+          };
+        case 'edit_project': {
+          const version = projectVersion(projectRef.current);
+          if (args.version !== version)
+            throw new AgentCommandError(
+              'VERSION_CONFLICT',
+              `项目在你读取之后改过了（现在的版本是 ${version}），请先 get_project 重新读取再改`,
+            );
+          const { draft, results } = applyOperations(projectRef.current, args.operations);
+          // One undo step for the whole batch.
+          update(target => {
+            target.cards = draft.cards;
+            target.notes = draft.notes;
+            target.sequence = draft.sequence;
+            target.sounds = draft.sounds;
+            target.consistency = draft.consistency;
+          });
+          toast(`Claude 修改了项目（${results.length} 处）`);
+          return { version: projectVersion(draft), results };
+        }
         case 'view_card':
           return viewCard(card(args.cardId));
         case 'import_media': {
@@ -79,6 +104,6 @@ export function useAgentCommands(options: Options) {
         default:
           throw new AgentCommandError('UNKNOWN_COMMAND', `帧外还不支持「${name}」，请更新帧外`);
       }
-    });
-  }, [options.active]);
+    }, options.projectId);
+  }, [options.active, options.projectId]);
 }

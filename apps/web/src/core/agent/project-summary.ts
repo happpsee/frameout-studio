@@ -48,7 +48,7 @@ export function projectSummary(project: ProjectState) {
       })),
     ],
     notes: (project.notes ?? []).map(note => ({
-      id: note.id,
+      id: `note:${note.id}`,
       kind: note.kind,
       title: note.title,
       text: short(note.text, 2000),

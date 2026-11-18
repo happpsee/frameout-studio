@@ -178,7 +178,9 @@ export default function Studio({
   const { importFiles, pendingImports } = useFileImport({ projectRef, viewportRef, update, toast });
   useAgentCommands({
     active: isActive,
+    projectId,
     projectRef,
+    update,
     importFiles,
     toast,
     engine: engineTasks,
