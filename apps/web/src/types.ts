@@ -73,6 +73,20 @@ export interface Shot {
   cardId: string;
   duration: number;
 }
+/**
+ * A piece of a video's sound placed on the film: `from` seconds into the clip, `length` long,
+ * starting `at` seconds into the film. It replaces the shots' own sound there, or mixes over it.
+ */
+export interface SoundClip {
+  id: string;
+  cardId: string;
+  from: number;
+  length: number;
+  at: number;
+  mode: 'replace' | 'mix';
+  /** 0 to 1. */
+  volume: number;
+}
 export interface WorkspaceSnapshot {
   version: 1;
   title: string;
@@ -81,6 +95,8 @@ export interface WorkspaceSnapshot {
   cards: Card[];
   sequence: Shot[];
   notes?: Note[];
+  /** Sound placed on the film on top of, or instead of, the shots' own sound. */
+  sounds?: SoundClip[];
   /** Where the film card sits on the canvas, once it has been moved. */
   film?: { x: number; y: number };
 }

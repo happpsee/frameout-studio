@@ -10,6 +10,7 @@ const paths: Record<string, ReactNode> = {
   'chevron-right': <path d="m9 5 7 7-7 7" />,
   'chevron-down': <path d="m5 9 7 7 7-7" />,
   plus: <path d="M12 5v14M5 12h14" />,
+  volume: <path d="M4 9v6h4l5 4V5L8 9H4Zm12 0a4 4 0 0 1 0 6" />,
   minus: <path d="M5 12h14" />,
   x: <path d="m6 6 12 12M18 6 6 18" />,
   play: <path d="m8 4 12 8-12 8V4Z" />,

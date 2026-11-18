@@ -12,9 +12,16 @@ import {
   type InputAudioTrack,
   type InputVideoTrack,
 } from 'mediabunny';
-import type { Card } from '../../types';
+import type { Card, SoundClip } from '../../types';
 import { exportSupported } from './export-support';
-import { probeClipSound, SequenceAudio, type ClipSound, type ExportAudio } from './export-audio';
+import {
+  probeClipSound,
+  SequenceAudio,
+  type ClipSound,
+  type ExportAudio,
+  type Overlay,
+} from './export-audio';
+import { soundsBetween } from './sound-clips';
 
 // Renders the sequence the way the preview shows it (same fit, crop and tone, videos
 // from their first frame, holding the last frame) and encodes it as an MP4 with WebCodecs.
@@ -26,6 +33,8 @@ type ExportResult = { blob: Blob; audio: ExportAudio };
 export type { ExportAudio };
 type ExportOptions = ExportSize & {
   fps?: number;
+  /** Sound placed on the film, each with the video it is taken from. */
+  sounds?: { clip: SoundClip; card: Card }[];
   signal?: AbortSignal;
   onProgress?: (fraction: number) => void;
 };
@@ -148,6 +157,51 @@ async function prepare(shot: ExportShot, signal?: AbortSignal): Promise<Prepared
   }
 }
 
+type SoundSource = { input: Input | null; track: InputAudioTrack | null; sound: ClipSound };
+/** Opens each video that film sound clips take sound from; one that can't be read stays silent. */
+async function openSounds(cards: Card[], signal?: AbortSignal) {
+  const sources = new Map<string, SoundSource>();
+  for (const card of cards) {
+    if (sources.has(card.id)) continue;
+    try {
+      const input = new Input({
+        source: new BlobSource(await loadBlob(card, signal)),
+        formats: ALL_FORMATS,
+      });
+      sources.set(card.id, { input, ...(await probeClipSound(input)) });
+    } catch {
+      sources.set(card.id, { input: null, track: null, sound: 'undecodable' });
+    }
+  }
+  return sources;
+}
+
+/** Where each film sound clip falls in the shot spanning `start` to `end` seconds of the film. */
+function soundOverlays(
+  sounds: { clip: SoundClip; card: Card }[],
+  sources: Map<string, SoundSource>,
+  start: number,
+  end: number,
+): Overlay[] {
+  return soundsBetween(
+    sounds.map(item => item.clip),
+    start,
+    end,
+  ).map(part => {
+    const card = sounds.find(item => item.clip.id === part.clip.id)!.card;
+    const source = sources.get(card.id);
+    return {
+      name: `${card.name} 的声音`,
+      track: source?.sound === 'ok' ? source.track : null,
+      offset: part.offset,
+      from: part.from,
+      length: part.length,
+      mode: part.clip.mode,
+      volume: part.clip.volume,
+    };
+  });
+}
+
 function once(target: EventTarget, type: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const done = () => {
@@ -191,7 +245,7 @@ async function* elementFrames(blob: Blob, times: number[]): AsyncGenerator<HTMLV
 
 export async function exportSequence(
   shots: ExportShot[],
-  { width, height, fps = 30, signal, onProgress }: ExportOptions,
+  { width, height, fps = 30, signal, onProgress, sounds = [] }: ExportOptions,
 ): Promise<ExportResult> {
   if (!shots.length) throw new ExportError('成片里还没有可导出的镜头');
   if (!exportSupported())
@@ -211,11 +265,17 @@ export async function exportSequence(
         shots[index].card.name,
       );
   });
-  const release = () =>
+  const soundSources = await openSounds(
+    sounds.map(item => item.card),
+    signal,
+  );
+  const release = () => {
     prepared.forEach(item => {
       if (item.kind === 'image') item.bitmap.close();
       else item.input.dispose();
     });
+    soundSources.forEach(source => source.input?.dispose());
+  };
   if (signal?.aborted) {
     release();
     throw new DOMException('已取消导出', 'AbortError');
@@ -298,10 +358,10 @@ export async function exportSequence(
   };
 
   try {
-    const { audio, kind: audioKind } = await SequenceAudio.attach(
-      output,
-      prepared.map(item => (item.kind === 'video' ? item.sound : 'none')),
-    );
+    const { audio, kind: audioKind } = await SequenceAudio.attach(output, [
+      ...prepared.map(item => (item.kind === 'video' ? item.sound : 'none')),
+      ...[...soundSources.values()].map(source => source.sound),
+    ]);
     await output.start();
     for (const item of prepared) {
       const start = written / fps;
@@ -314,6 +374,7 @@ export async function exportSequence(
         start,
         written / fps,
         signal,
+        soundOverlays(sounds, soundSources, start, written / fps),
       );
     }
     await output.finalize();

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import type { ExportAudio, ExportShot, ExportSize } from './export-video';
+import type { Card, SoundClip } from '../../types';
 import { exportAudioSupported, exportSupported } from './export-support';
 import {
   EXPORT_QUALITIES,
@@ -41,11 +42,14 @@ export function soundNote(audio: ExportAudio, hasVideo: boolean): string {
 export default function ExportDialog({
   shots,
   skipped,
+  sounds = [],
   title,
   onClose,
 }: {
   shots: ExportShot[];
   skipped: number;
+  /** Sound placed on the film, mixed into the export. */
+  sounds?: { clip: SoundClip; card: Card }[];
   title: string;
   onClose: () => void;
 }) {
@@ -92,6 +96,7 @@ export default function ExportDialog({
       // Loaded on demand: the encoder library is large and only needed here.
       const { exportSequence } = await import('./export-video');
       const { blob, audio } = await exportSequence(shots, {
+        sounds,
         ...SIZES[ratio][quality],
         signal: current.signal,
         onProgress: progress => setPhase({ kind: 'running', progress }),
@@ -179,7 +184,7 @@ export default function ExportDialog({
       </div>
       <p className="fo-export-note">
         按镜头顺序和时长渲染，画面与预览一致，MP4（H.264）每秒 30
-        帧。会保留视频片段自带的声音；图片镜头没有声音；暂不支持配乐和字幕。在本机完成，不上传素材。
+        帧。会保留视频片段自带的声音，并混入音频轨上的声音；图片镜头没有声音；暂不支持字幕。在本机完成，不上传素材。
       </p>
       {running && (
         <div

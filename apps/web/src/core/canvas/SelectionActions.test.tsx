@@ -33,6 +33,7 @@ function renderBar(card: Card, regeneration: Regeneration | null, busy = false) 
       onGenerateVideo={vi.fn()}
       onToggleReference={vi.fn()}
       onAddShot={vi.fn()}
+      onAddSound={vi.fn()}
       onDownload={vi.fn()}
       onRemove={vi.fn()}
       {...handlers}

@@ -26,6 +26,8 @@ interface SelectionActionsProps {
   /** Steps a reference through 角色 / 场景 / 道具 / 风格 / unset. */
   onCycleRole?: () => void;
   onAddShot: () => void;
+  /** Puts a video's sound on the film's sound track. */
+  onAddSound: () => void;
   onDownload: () => void;
   onRemove: () => void;
 }
@@ -45,6 +47,7 @@ export default function SelectionActions({
   onToggleReference,
   onCycleRole,
   onAddShot,
+  onAddSound,
   onDownload,
   onRemove,
 }: SelectionActionsProps) {
@@ -113,6 +116,18 @@ export default function SelectionActions({
         >
           <Icon name="plus" />
           <span>加入成片</span>
+        </button>
+      )}
+      {card.kind === 'video' && !failed && (
+        <button
+          type="button"
+          className="fo-small-button"
+          disabled={unavailable}
+          title="把这段视频的声音放到成片的音频轨上"
+          onClick={onAddSound}
+        >
+          <Icon name="volume" />
+          <span>取声音</span>
         </button>
       )}
       {card.provider && !failed && (

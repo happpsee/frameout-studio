@@ -3,6 +3,7 @@ import type { Card, ProjectState, UpdateProject } from '../../types';
 import { CardMedia } from '../canvas/CardMedia';
 import Icon from '../../ui/Icon';
 import Select from '../../ui/Select';
+import SoundLane from './SoundLane';
 
 export const timeLabel = (seconds: number) =>
   `${Math.floor(seconds / 60)
@@ -193,6 +194,7 @@ export default memo(function Sequence({
             );
           })}
         </div>
+        {project.sequence.length > 0 && <SoundLane project={project} update={update} />}
       </div>
     </section>
   );

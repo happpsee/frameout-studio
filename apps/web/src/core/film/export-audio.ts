@@ -16,8 +16,6 @@ import { exportAudioSupported } from './export-support';
 
 export const AUDIO_RATE = 48000;
 const AUDIO_CHANNELS = 2;
-// Silence is written in pieces of at most this many seconds.
-const SILENCE_PIECE = 5;
 
 /** What a clip offers: no sound track, sound this browser can decode, or sound it cannot. */
 export type ClipSound = 'none' | 'ok' | 'undecodable';
@@ -73,12 +71,15 @@ function aborted(signal?: AbortSignal) {
   if (signal?.aborted) throw new DOMException('已取消导出', 'AbortError');
 }
 
-/** Decodes the clip's sound from its start and mixes it into one shot-long buffer in the export format. */
-async function renderClip(track: InputAudioTrack, frames: number, signal?: AbortSignal) {
+/**
+ * Decodes `frames` worth of the clip's sound from second `start` into one buffer in the export
+ * format.
+ */
+async function renderClip(track: InputAudioTrack, frames: number, signal?: AbortSignal, start = 0) {
   const length = frames / AUDIO_RATE;
   // Pieces are first joined at the clip's own rate, so resampling has no seams between them.
   let joined: AudioBuffer | null = null;
-  for await (const piece of new AudioBufferSink(track).buffers(0, length)) {
+  for await (const piece of new AudioBufferSink(track).buffers(start, start + length)) {
     aborted(signal);
     const { sampleRate, numberOfChannels } = piece.buffer;
     joined ??= new AudioBuffer({
@@ -86,7 +87,12 @@ async function renderClip(track: InputAudioTrack, frames: number, signal?: Abort
       numberOfChannels,
       sampleRate,
     });
-    const place = placeFrames(piece.timestamp, piece.buffer.length, sampleRate, joined.length);
+    const place = placeFrames(
+      piece.timestamp - start,
+      piece.buffer.length,
+      sampleRate,
+      joined.length,
+    );
     if (!place) continue;
     for (let channel = 0; channel < Math.min(numberOfChannels, joined.numberOfChannels); channel++)
       joined.copyToChannel(
@@ -105,6 +111,17 @@ async function renderClip(track: InputAudioTrack, frames: number, signal?: Abort
   }
   return context.startRendering();
 }
+
+/** A film sound clip's part within one shot: where it lands, from which second of its video. */
+export type Overlay = {
+  name: string;
+  track: InputAudioTrack | null;
+  offset: number;
+  from: number;
+  length: number;
+  mode: 'replace' | 'mix';
+  volume: number;
+};
 
 /** Writes the sound track shot by shot, in step with the video frames. */
 export class SequenceAudio {
@@ -133,34 +150,56 @@ export class SequenceAudio {
     return { audio: new SequenceAudio(source), kind };
   }
 
-  /** Writes the shot that spans `start` to `end` on the timeline: its clip's sound, or silence. */
+  /**
+   * Writes the shot that spans `start` to `end` on the timeline: its clip's sound (or silence),
+   * with the film's sound clips that fall there replacing or mixing over it.
+   */
   async write(
     shot: { name: string; track: InputAudioTrack | null; sound: ClipSound },
     start: number,
     end: number,
     signal?: AbortSignal,
+    overlays: Overlay[] = [],
   ) {
     const frames = framesBetween(start, end);
     if (!frames) return;
-    if (shot.track && shot.sound === 'ok') {
-      let rendered: AudioBuffer | null = null;
-      try {
-        rendered = await renderClip(shot.track, frames, signal);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') throw error;
+    let buffer: AudioBuffer | null = null;
+    if (shot.track && shot.sound === 'ok') buffer = await this.render(shot.track, frames, signal);
+    if (!buffer && shot.sound !== 'none') this.silent.push(shot.name);
+    buffer ??= new AudioBuffer({
+      length: frames,
+      numberOfChannels: AUDIO_CHANNELS,
+      sampleRate: AUDIO_RATE,
+    });
+    for (const overlay of overlays) {
+      const at = framesBetween(0, overlay.offset);
+      const count = Math.min(framesBetween(0, overlay.length), frames - at);
+      if (count <= 0) continue;
+      if (overlay.mode === 'replace')
+        for (let channel = 0; channel < AUDIO_CHANNELS; channel++)
+          buffer.getChannelData(channel).fill(0, at, at + count);
+      const sound =
+        overlay.track && (await this.render(overlay.track, count, signal, overlay.from));
+      if (!sound) {
+        if (!this.silent.includes(overlay.name)) this.silent.push(overlay.name);
+        continue;
       }
-      if (rendered) {
-        await this.source.add(rendered);
-        return;
+      for (let channel = 0; channel < AUDIO_CHANNELS; channel++) {
+        const target = buffer.getChannelData(channel);
+        const source = sound.getChannelData(channel);
+        for (let i = 0; i < count; i++) target[at + i] += source[i] * overlay.volume;
       }
     }
-    if (shot.sound !== 'none') this.silent.push(shot.name);
-    for (let left = frames; left > 0; left -= SILENCE_PIECE * AUDIO_RATE) {
-      aborted(signal);
-      const length = Math.min(left, SILENCE_PIECE * AUDIO_RATE);
-      await this.source.add(
-        new AudioBuffer({ length, numberOfChannels: AUDIO_CHANNELS, sampleRate: AUDIO_RATE }),
-      );
+    await this.source.add(buffer);
+  }
+
+  /** The decoded sound, or null when it cannot be read; cancelling still stops the export. */
+  private async render(track: InputAudioTrack, frames: number, signal?: AbortSignal, from = 0) {
+    try {
+      return await renderClip(track, frames, signal, from);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') throw error;
+      return null;
     }
   }
 }

@@ -44,6 +44,7 @@ import Sequence from './film/Sequence';
 import { useFilm } from './film/useFilm';
 import PreviewDialog from './film/PreviewDialog';
 import FilmCard from './film/FilmCard';
+import { addSound } from './film/sound-clips';
 import { FILM_ID, removeShot } from './canvas/film-node';
 import ExportDialog from './film/ExportDialog';
 import ConsistencyDialog from './generation/ConsistencyDialog';
@@ -728,6 +729,10 @@ export default function Studio({
                     })
                   }
                   onAddShot={() => addToSequence(selected.id)}
+                  onAddSound={() => {
+                    update(draft => void addSound(draft, selected));
+                    toast('已放到成片的音频轨 · 在下方点它调整时间和替换方式');
+                  }}
                   onDownload={() => void generation.download(selected)}
                   onRemove={removeSelected}
                 />
@@ -835,6 +840,7 @@ export default function Studio({
         <ExportDialog
           shots={exporting.items}
           skipped={exporting.skipped}
+          sounds={exporting.sounds}
           title={project.title}
           onClose={closeExport}
         />

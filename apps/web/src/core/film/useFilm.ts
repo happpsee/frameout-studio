@@ -1,5 +1,5 @@
 import { useCallback, useState, type RefObject } from 'react';
-import type { Card, ProjectState, UpdateProject } from '../../types';
+import type { Card, ProjectState, SoundClip, UpdateProject } from '../../types';
 import { pending } from '../canvas/CanvasCard';
 import { clamp } from '../canvas/canvas-camera';
 import { uid } from '../project/project';
@@ -28,9 +28,11 @@ export function useFilm({
 }) {
   const [timelineOpen, setTimelineOpen] = useState(() => project.sequence.length > 0);
   const [preview, setPreview] = useState<{ items: PreviewItem[]; title: string } | null>(null);
-  const [exporting, setExporting] = useState<{ items: PreviewItem[]; skipped: number } | null>(
-    null,
-  );
+  const [exporting, setExporting] = useState<{
+    items: PreviewItem[];
+    skipped: number;
+    sounds: { clip: SoundClip; card: Card }[];
+  } | null>(null);
 
   const toggleTimeline = useCallback(() => setTimelineOpen(value => !value), []);
   const addToSequence = useCallback(
@@ -73,7 +75,11 @@ export function useFilm({
       toast('成片里还没有可导出的镜头');
       return;
     }
-    setExporting({ items, skipped: project.sequence.length - items.length });
+    const sounds = (project.sounds ?? []).flatMap(clip => {
+      const card = project.cards.find(item => item.id === clip.cardId);
+      return card && !card.missingMedia && !pending(card) ? [{ clip, card }] : [];
+    });
+    setExporting({ items, skipped: project.sequence.length - items.length, sounds });
   }
   function openPreview(card?: Card) {
     if (card && (card.missingMedia || pending(card))) {

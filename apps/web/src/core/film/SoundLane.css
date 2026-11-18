@@ -1,0 +1,90 @@
+.fo-sound-lane {
+  margin-top: 8px;
+  font-size: var(--fo-t-xs);
+  color: var(--fo-text-3);
+}
+.fo-sound-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.fo-sound-head small {
+  color: var(--fo-text-4);
+}
+.fo-sound-track {
+  position: relative;
+  height: 26px;
+  border-radius: var(--fo-radius-s);
+  background: var(--fo-pressed);
+}
+/* Where one shot ends and the next starts. */
+.fo-sound-cut {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 1px;
+  background: var(--fo-line-3);
+}
+.fo-sound-clip {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  min-width: 6px;
+  padding: 0 6px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--fo-accent) 30%, transparent);
+  outline: 1px solid var(--fo-accent);
+  color: var(--fo-text-1);
+  font-size: var(--fo-t-xs);
+  text-align: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.fo-sound-clip.is-mix {
+  background: color-mix(in srgb, var(--fo-accent) 14%, transparent);
+}
+.fo-sound-clip.is-picked {
+  outline-width: 2px;
+}
+.fo-sound-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 6px;
+}
+.fo-sound-editor label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.fo-sound-editor input[type='number'] {
+  width: 56px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: var(--fo-pressed);
+  color: var(--fo-text-1);
+}
+.fo-sound-mode {
+  display: flex;
+  border-radius: 4px;
+  overflow: hidden;
+  outline: 1px solid var(--fo-line-3);
+}
+.fo-sound-mode button {
+  padding: 3px 8px;
+  color: var(--fo-text-3);
+}
+.fo-sound-mode button[aria-pressed='true'] {
+  background: var(--fo-pressed-strong);
+  color: var(--fo-text-1);
+}
+/* The film strip grows to fit the sound track under the shots. */
+.fo-timeline:has(.fo-sound-lane):not(.is-collapsed) {
+  height: auto;
+}
+.fo-timeline:has(.fo-sound-lane) .fo-sequence-list {
+  height: auto;
+}

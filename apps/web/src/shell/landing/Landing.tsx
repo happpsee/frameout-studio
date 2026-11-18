@@ -237,7 +237,7 @@ export default function Landing({ onOpenStudio }: LandingProps) {
               </div>
               <p className="hero-fit">
                 适合想自己挑画面、排镜头的创作者。开始前需要一个火山方舟或 OpenAI 的 API
-                Key，按次付费；导出的成片保留视频自带的声音，暂不支持配乐和字幕。
+                Key，按次付费；导出的成片保留视频自带的声音，也可以从别的视频取声音替换或叠加，暂不支持字幕。
               </p>
             </div>
             <div className="hero-art" id="hero-art">

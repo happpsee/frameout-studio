@@ -10,6 +10,7 @@ import { normalizeConsistency, validRole } from '../generation/consistency';
 import { restoreNotes } from '../canvas/notes';
 import { clamp } from '../canvas/canvas-camera';
 import { randomId } from './random-id';
+import { restoreSounds } from '../film/sound-clips';
 
 const legacySampleSources = new Set([
   '/assets/forest-astronaut.png',
@@ -129,6 +130,7 @@ export function serializeWorkspace(project: WorkspaceSnapshot): WorkspaceSnapsho
     });
   const ids = new Set(cards.map(card => card.id));
   const notes = restoreNotes(project.notes);
+  const sounds = restoreSounds(project.sounds, cards);
   return {
     version: 1,
     title: project.title,
@@ -140,6 +142,7 @@ export function serializeWorkspace(project: WorkspaceSnapshot): WorkspaceSnapsho
       .filter(shot => ids.has(shot.cardId))
       .map(({ id, cardId, duration }) => ({ id, cardId, duration })),
     ...(project.film ? { film: { x: project.film.x, y: project.film.y } } : {}),
+    ...(sounds.length ? { sounds } : {}),
   };
 }
 export function serializeCheckpoints(checkpoints: ProjectCheckpoint[] = []): ProjectCheckpoint[] {
@@ -241,6 +244,9 @@ function restoreWorkspace(input: unknown): WorkspaceSnapshot {
         cardId: shot.cardId,
         duration: clamp(Number(shot.duration) || 4, 1, 15),
       })),
+    ...(restoreSounds(saved.sounds, cards).length
+      ? { sounds: restoreSounds(saved.sounds, cards) }
+      : {}),
     ...(Number.isFinite(saved.film?.x) && Number.isFinite(saved.film?.y)
       ? { film: { x: saved.film!.x, y: saved.film!.y } }
       : {}),
