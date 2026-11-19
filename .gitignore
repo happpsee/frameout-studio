@@ -33,3 +33,6 @@ output/
 
 # The frameout plugin's MCP bundle (pnpm --filter @frameout/mcp build)
 plugins/frameout/server/
+
+# Design notes and research: kept on the maintainer's machine, not in the repository
+/docs/

@@ -1,5 +1,9 @@
 # 帧外 FRAMEOUT
 
+[![check](https://github.com/happpsee/frameout-studio/actions/workflows/check.yml/badge.svg)](https://github.com/happpsee/frameout-studio/actions/workflows/check.yml) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+
+> An open-source, local-first AI video canvas: generate images and video shots with your own API keys, arrange them on an infinite canvas, and export the film as MP4. TypeScript monorepo (React + Express + Electron). Contributions welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 全 TypeScript 的 pnpm + Turborepo monorepo：Vite + React 前端、Express 后端、Electron 桌面端，以及前后端与桌面端共用的 `@frameout/shared`。原来的原生页面和 Worker 已迁移，首页、画布、素材卡片、镜头序列、预览和 API 设置均由 React 组件渲染。
 
 ## macOS 桌面版
@@ -152,3 +156,11 @@ pnpm check
 ## 公网部署
 
 服务器部署文件和 HTTPS 配置见 [部署说明](deploy/README.md)。可用于国内云厂商的香港节点，或满足备案要求的大陆节点；需填入实际域名后部署。
+
+## 参与贡献
+
+欢迎 Issue 和 PR，开发环境、检查命令和 PR 约定见 [CONTRIBUTING.md](CONTRIBUTING.md)。不知道从哪开始，可以看带 `good first issue` 标签的 Issue。
+
+## 许可证
+
+[MIT](LICENSE)。第三方素材和依赖的许可见 `apps/web/public/assets/SOURCES.md` 与各自的包。

@@ -1,0 +1,40 @@
+name: 问题反馈 / Bug report
+description: 某个功能不正常
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: 发生了什么
+      description: 期望是什么，实际是什么
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1. 打开画布
+        2. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: env
+    attributes:
+      label: 使用的版本
+      options:
+        - 浏览器版
+        - macOS 桌面版
+        - 自己部署的服务器版
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: 供应商和模型（如果和生成有关）
+      placeholder: 例如 火山方舟 / Seedance
+  - type: textarea
+    id: extra
+    attributes:
+      label: 截图、日志或其他信息
+      description: 请先去掉 API Key 等敏感信息
